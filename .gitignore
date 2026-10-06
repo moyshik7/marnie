@@ -1,0 +1,89 @@
+# ==========================================
+# Marnie — Git Ignore Configuration
+# ==========================================
+
+# ── Dependencies ──────────────────────────
+node_modules/
+frontend/node_modules/
+.pnp
+.pnp.js
+
+# ── Production Builds & Outputs ───────────
+dist/
+build/
+frontend/dist/
+*.tsbuildinfo
+
+# ── SQLite Databases & Storage ───────────
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/*.sqlite
+data/*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Preserve data directory structure
+!data/.gitkeep
+
+# ── Dynamic Agent Workspace ───────────────
+workspace/*
+!workspace/.gitkeep
+
+# ── Environment & Secrets ─────────────────
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+frontend/.env
+frontend/.env.local
+
+# Preserve example template
+!.env.example
+
+# ── Logs & Debugging ──────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ── Testing & Coverage ────────────────────
+coverage/
+.nyc_output/
+
+# ── Temporary & Cache Files ───────────────
+tmp/
+temp/
+scratch/
+.cache/
+.eslintcache
+.parcel-cache/
+.vite/
+frontend/.vite/
+
+# ── OS & System Files ─────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ── Editor & IDE Configurations ───────────
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
