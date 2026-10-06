@@ -125,6 +125,7 @@ export async function sendMessageStream({
   const decoder = new TextDecoder();
   let buffer = '';
   let fullAccumulated = '';
+  let fullThinking = '';
 
   while (true) {
     const { done, value } = await reader.read();
@@ -142,13 +143,18 @@ export async function sendMessageStream({
 
       try {
         const parsed = JSON.parse(dataStr);
+        if (parsed.thinking) {
+          fullThinking += parsed.thinking;
+        }
         if (parsed.token) {
           fullAccumulated += parsed.token;
-          onChunk(parsed.token, fullAccumulated);
+        }
+        if (parsed.token || parsed.thinking) {
+          onChunk(parsed.token || '', fullAccumulated, parsed.thinking || '', fullThinking);
         }
         if (parsed.done) {
-          if (onDone) onDone(fullAccumulated);
-          return fullAccumulated;
+          if (onDone) onDone(fullAccumulated, fullThinking);
+          return { content: fullAccumulated, thinking: fullThinking };
         }
       } catch {
         // ignore parse errors
@@ -156,8 +162,8 @@ export async function sendMessageStream({
     }
   }
 
-  if (onDone) onDone(fullAccumulated);
-  return fullAccumulated;
+  if (onDone) onDone(fullAccumulated, fullThinking);
+  return { content: fullAccumulated, thinking: fullThinking };
 }
 
 // ── Settings ────────────────────────────────────────────────

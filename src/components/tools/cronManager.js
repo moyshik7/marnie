@@ -62,14 +62,24 @@ function _startTask(job) {
   return task;
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+function stripEmojis(text) {
+  if (!text || typeof text !== 'string') return text;
+  return text.replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').replace(/\s{2,}/g, ' ').trim();
+}
 
 function createJob({ name, expression, action_type, action_data }) {
   if (!cron.validate(expression)) {
     throw Object.assign(new Error(`Invalid cron expression: ${expression}`), { status: 400 });
   }
   const id = uuidv4();
-  const job = { id, name, expression, action_type, action_data: JSON.stringify(action_data), enabled: 1 };
+  let cleanData = action_data;
+  if (cleanData && typeof cleanData === 'object') {
+    cleanData = { ...cleanData };
+    if (cleanData.message) cleanData.message = stripEmojis(cleanData.message);
+    if (cleanData.title) cleanData.title = stripEmojis(cleanData.title);
+  }
+  const cleanName = stripEmojis(name);
+  const job = { id, name: cleanName, expression, action_type, action_data: JSON.stringify(cleanData), enabled: 1 };
   stmtCreate.run(job);
   _startTask({ ...job });
   return stmtGet.get(id);

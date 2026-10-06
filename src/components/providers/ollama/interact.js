@@ -66,7 +66,7 @@ async function chat({ model, messages, options = {}, tools = [] }) {
 /**
  * Streaming chat completion. Calls onChunk for each streamed token.
  */
-async function chatStream({ model, messages, options = {}, onChunk, onDone }) {
+async function chatStream({ model, messages, options = {}, tools = [], onChunk, onDone }) {
   const chosenModel = await resolveModel(model);
   const payload = {
     model: chosenModel,
@@ -74,6 +74,7 @@ async function chatStream({ model, messages, options = {}, onChunk, onDone }) {
     stream: true,
     options,
   };
+  if (tools && tools.length > 0) payload.tools = tools;
 
   const res = await axios.post(`${BASE_URL()}/api/chat`, payload, {
     responseType: 'stream',

@@ -203,11 +203,11 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
         }}>
           <div>
             <h2 style={{
-              fontFamily: 'var(--font-serif)',
-              fontSize: '1.45rem',
-              fontWeight: 500,
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.35rem',
+              fontWeight: 700,
               color: 'var(--text-primary)',
-              letterSpacing: '-0.01em',
+              letterSpacing: '-0.02em',
             }}>
               Workspace Settings & Integrations
             </h2>

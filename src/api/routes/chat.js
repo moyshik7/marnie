@@ -4,6 +4,44 @@ const router = require('express').Router();
 const { v4: uuidv4 } = require('uuid');
 const db = require('../../db/index');
 const ollama = require('../../components/providers/ollama/interact');
+const { executeTool, buildSystemPrompt, parseToolCalls, OLLAMA_TOOLS } = require('../../components/tools/registry');
+
+function getEffectiveSystemPrompt(customSystem = '') {
+  let dbSystemPrompt = '';
+  try {
+    const row = db.prepare("SELECT value FROM settings WHERE key = 'system_prompt'").get();
+    if (row && row.value) dbSystemPrompt = row.value;
+  } catch {}
+
+  const merged = [dbSystemPrompt, customSystem].filter(Boolean).join('\n\n');
+  return buildSystemPrompt(merged);
+}
+
+async function runToolCallsAndFormat(toolCalls) {
+  let output = '';
+  for (const call of toolCalls) {
+    try {
+      const res = await executeTool(call.name, call.arguments);
+      output += `\n\n> **Executed Tool:** \`${call.name}\`\n`;
+      if (res && typeof res === 'object') {
+        if (call.name === 'send_alert' || call.name === 'discord_alert' || (res.sent === true && Object.keys(res).length === 1)) {
+          output += `\nSuccessful\n`;
+        } else if (res.stdout !== undefined || res.stderr !== undefined) {
+          if (res.stdout) output += `\`\`\`\n${res.stdout.trimEnd()}\n\`\`\`\n`;
+          if (res.stderr) output += `\`\`\`stderr\n${res.stderr.trimEnd()}\n\`\`\`\n`;
+          if (!res.stdout && !res.stderr) output += `*(Process finished with exit code ${res.exitCode})*\n`;
+        } else {
+          output += `\`\`\`json\n${JSON.stringify(res, null, 2)}\n\`\`\`\n`;
+        }
+      } else {
+        output += `\`\`\`\n${String(res)}\n\`\`\`\n`;
+      }
+    } catch (err) {
+      output += `\n\n> **Tool Failed (\`${call.name}\`):** ${err.message}\n`;
+    }
+  }
+  return output;
+}
 
 // --- DB helpers -----------------------------------------------------------
 const stmtConvCreate  = db.prepare(`
@@ -136,6 +174,32 @@ router.get('/conversations/:id/messages', (req, res) => {
 // Chat Completion
 // ═══════════════════════════════════════════════════════════════════════════
 
+function sanitizeHistoryForLLM(rawMessages) {
+  return rawMessages.map((m) => {
+    let content = m.content || '';
+    if (m.role === 'assistant') {
+      // 1. Strip internal <think>...</think> blocks from previous turns so they don't pollute subsequent generation
+      content = content.replace(/<think>[\s\S]*?<\/think>\s*/gi, '').trim();
+
+      // 2. Strip fake/displayed tool execution markdown (> **Executed Tool:** ... or > 🛠️ **Executed Tool:** ...)
+      const hadToolExec = />\s*(?:🛠️)?\s*\*{0,2}Executed Tool:\*{0,2}\s*`?(\w+)`?/gi.test(content);
+      if (hadToolExec) {
+        content = content
+          .replace(/>\s*(?:🛠️)?\s*\*{0,2}Executed Tool:\*{0,2}\s*`?(\w+)`?[\s\S]*?(?:Successful|```(?:json)?[\s\S]*?```|$)/gi, '[Action: Tool "$1" executed successfully]')
+          .trim();
+      }
+
+      if (!content || content.startsWith('[Action: Tool')) {
+        content = content || '[System: Tool execution completed successfully.]';
+      }
+    }
+    return {
+      role: m.role,
+      content,
+    };
+  });
+}
+
 /**
  * POST /api/chat/conversations/:id/complete
  * Send a user message and get an AI response.
@@ -159,16 +223,13 @@ router.post('/conversations/:id/complete', async (req, res) => {
   // Persist user message
   insertMsg(conv.id, 'user', message);
 
-  // Build message history for LLM
-  const history = stmtMsgList.all(conv.id).map((m) => ({
-    role: m.role,
-    content: m.content,
-  }));
+  // Build sanitized message history for LLM
+  const rawHistory = stmtMsgList.all(conv.id);
+  const history = sanitizeHistoryForLLM(rawHistory);
 
-  // Prepend system prompt if provided
-  const messages = system
-    ? [{ role: 'system', content: system }, ...history]
-    : history;
+  // Prepend comprehensive workspace system prompt
+  const effectiveSystem = getEffectiveSystemPrompt(system);
+  const messages = [{ role: 'system', content: effectiveSystem }, ...history];
 
   try {
     if (stream) {
@@ -178,28 +239,104 @@ router.post('/conversations/:id/complete', async (req, res) => {
       res.setHeader('Connection', 'keep-alive');
 
       let fullContent = '';
+      let fullThinking = '';
+      const nativeToolCalls = [];
 
       await ollama.chatStream({
         model: model || conv.model,
         messages,
         options,
+        tools: OLLAMA_TOOLS,
         onChunk: (chunk) => {
           const token = chunk.message?.content || '';
-          fullContent += token;
-          res.write(`data: ${JSON.stringify({ token, done: chunk.done })}\n\n`);
+          const thinking = chunk.message?.thinking || '';
+          if (thinking) {
+            fullThinking += thinking;
+          }
+          if (token) {
+            fullContent += token;
+          }
+          if (token || thinking) {
+            res.write(`data: ${JSON.stringify({ token, thinking, done: chunk.done })}\n\n`);
+          }
+          if (chunk.message?.tool_calls && chunk.message.tool_calls.length > 0) {
+            nativeToolCalls.push(...chunk.message.tool_calls);
+          }
         },
-        onDone: () => {
-          // persist assistant message after stream ends
-          insertMsg(conv.id, 'assistant', fullContent);
+        onDone: async () => {
+          // Combine native tool calls and parsed text tool calls
+          const allToolCalls = [];
+          for (const tc of nativeToolCalls) {
+            if (tc.function) {
+              const args = typeof tc.function.arguments === 'string'
+                ? JSON.parse(tc.function.arguments || '{}')
+                : (tc.function.arguments || {});
+              allToolCalls.push({ name: tc.function.name, arguments: args });
+            }
+          }
+
+          const parsedCalls = parseToolCalls(fullContent);
+          for (const pc of parsedCalls) {
+            if (!allToolCalls.some((t) => t.name === pc.name)) {
+              allToolCalls.push(pc);
+            }
+          }
+
+          if (allToolCalls.length > 0) {
+            const toolOutput = await runToolCallsAndFormat(allToolCalls);
+            fullContent += toolOutput;
+            res.write(`data: ${JSON.stringify({ token: toolOutput, done: false })}\n\n`);
+          }
+
+          // Persist assistant message in SQLite, preserving thinking if present
+          const persistedContent = fullThinking
+            ? `<think>\n${fullThinking.trim()}\n</think>\n\n${fullContent.trim()}`
+            : fullContent;
+          insertMsg(conv.id, 'assistant', persistedContent);
           res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
           res.end();
         },
       });
     } else {
       // ── Non-streaming ──────────────────────────────────────────────────
-      const response = await ollama.chat({ model: model || conv.model, messages, options });
-      const assistantContent = response.message?.content || '';
-      const saved = insertMsg(conv.id, 'assistant', assistantContent);
+      const response = await ollama.chat({
+        model: model || conv.model,
+        messages,
+        options,
+        tools: OLLAMA_TOOLS,
+      });
+
+      let assistantContent = response.message?.content || '';
+      const thinkingContent = response.message?.thinking || '';
+      const allToolCalls = [];
+
+      if (response.message?.tool_calls && response.message.tool_calls.length > 0) {
+        for (const tc of response.message.tool_calls) {
+          if (tc.function) {
+            const args = typeof tc.function.arguments === 'string'
+              ? JSON.parse(tc.function.arguments || '{}')
+              : (tc.function.arguments || {});
+            allToolCalls.push({ name: tc.function.name, arguments: args });
+          }
+        }
+      }
+
+      const parsedCalls = parseToolCalls(assistantContent);
+      for (const pc of parsedCalls) {
+        if (!allToolCalls.some((t) => t.name === pc.name)) {
+          allToolCalls.push(pc);
+        }
+      }
+
+      if (allToolCalls.length > 0) {
+        const toolOutput = await runToolCallsAndFormat(allToolCalls);
+        assistantContent += toolOutput;
+      }
+
+      const persistedContent = thinkingContent
+        ? `<think>\n${thinkingContent.trim()}\n</think>\n\n${assistantContent.trim()}`
+        : assistantContent;
+      const saved = insertMsg(conv.id, 'assistant', persistedContent);
       res.json({
         message: parseMsg(saved),
         usage: response.eval_count ? { eval_count: response.eval_count, prompt_eval_count: response.prompt_eval_count } : undefined,
@@ -217,28 +354,115 @@ router.post('/conversations/:id/complete', async (req, res) => {
  * Body: { messages, model?, options?, stream? }
  */
 router.post('/complete', async (req, res) => {
-  const { messages, model, options = {}, stream = false } = req.body;
-  if (!Array.isArray(messages) || messages.length === 0) {
+  const { messages: rawMessages, model, options = {}, stream = false } = req.body;
+  if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
     return res.status(400).json({ error: '`messages` (array) is required' });
   }
+
+  // Inject system prompt if not present
+  const hasSystem = rawMessages.some((m) => m.role === 'system');
+  const cleanMessages = sanitizeHistoryForLLM(rawMessages);
+  const messages = hasSystem
+    ? cleanMessages
+    : [{ role: 'system', content: getEffectiveSystemPrompt() }, ...cleanMessages];
 
   try {
     if (stream) {
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
+
+      let fullContent = '';
+      let fullThinking = '';
+      const nativeToolCalls = [];
+
       await ollama.chatStream({
         model,
         messages,
         options,
+        tools: OLLAMA_TOOLS,
         onChunk: (chunk) => {
-          res.write(`data: ${JSON.stringify({ token: chunk.message?.content || '', done: chunk.done })}\n\n`);
+          const token = chunk.message?.content || '';
+          const thinking = chunk.message?.thinking || '';
+          if (thinking) {
+            fullThinking += thinking;
+          }
+          if (token) {
+            fullContent += token;
+          }
+          if (token || thinking) {
+            res.write(`data: ${JSON.stringify({ token, thinking, done: chunk.done })}\n\n`);
+          }
+          if (chunk.message?.tool_calls && chunk.message.tool_calls.length > 0) {
+            nativeToolCalls.push(...chunk.message.tool_calls);
+          }
         },
-        onDone: () => { res.end(); },
+        onDone: async () => {
+          const allToolCalls = [];
+          for (const tc of nativeToolCalls) {
+            if (tc.function) {
+              const args = typeof tc.function.arguments === 'string'
+                ? JSON.parse(tc.function.arguments || '{}')
+                : (tc.function.arguments || {});
+              allToolCalls.push({ name: tc.function.name, arguments: args });
+            }
+          }
+
+          const parsedCalls = parseToolCalls(fullContent);
+          for (const pc of parsedCalls) {
+            if (!allToolCalls.some((t) => t.name === pc.name)) {
+              allToolCalls.push(pc);
+            }
+          }
+
+          if (allToolCalls.length > 0) {
+            const toolOutput = await runToolCallsAndFormat(allToolCalls);
+            fullContent += toolOutput;
+            res.write(`data: ${JSON.stringify({ token: toolOutput, done: false })}\n\n`);
+          }
+          res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+          res.end();
+        },
       });
     } else {
-      const response = await ollama.chat({ model, messages, options });
-      res.json({ message: response.message, usage: response });
+      const response = await ollama.chat({
+        model,
+        messages,
+        options,
+        tools: OLLAMA_TOOLS,
+      });
+
+      let assistantContent = response.message?.content || '';
+      const thinkingContent = response.message?.thinking || '';
+      const allToolCalls = [];
+
+      if (response.message?.tool_calls && response.message.tool_calls.length > 0) {
+        for (const tc of response.message.tool_calls) {
+          if (tc.function) {
+            const args = typeof tc.function.arguments === 'string'
+              ? JSON.parse(tc.function.arguments || '{}')
+              : (tc.function.arguments || {});
+            allToolCalls.push({ name: tc.function.name, arguments: args });
+          }
+        }
+      }
+
+      const parsedCalls = parseToolCalls(assistantContent);
+      for (const pc of parsedCalls) {
+        if (!allToolCalls.some((t) => t.name === pc.name)) {
+          allToolCalls.push(pc);
+        }
+      }
+
+      if (allToolCalls.length > 0) {
+        const toolOutput = await runToolCallsAndFormat(allToolCalls);
+        assistantContent += toolOutput;
+      }
+
+      const finalContent = thinkingContent
+        ? `<think>\n${thinkingContent.trim()}\n</think>\n\n${assistantContent.trim()}`
+        : assistantContent;
+      res.json({ message: { role: 'assistant', content: finalContent }, usage: response });
     }
   } catch (err) {
     res.status(502).json({ error: 'LLM provider error', detail: err.message });

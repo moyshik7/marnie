@@ -23,7 +23,12 @@ function getWebhookUrl(explicitUrl) {
  * @param {string} [opts.level]        - 'info' | 'success' | 'warning' | 'error' (affects embed colour)
  * @returns {Promise<{ sent: boolean }>}
  */
-async function sendAlert({ webhookUrl, message, username = 'Marnie', avatarUrl, embeds, level = 'info' }) {
+function stripEmojis(text) {
+  if (!text || typeof text !== 'string') return text;
+  return text.replace(/[\p{Extended_Pictographic}\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').replace(/\s{2,}/g, ' ').trim();
+}
+
+async function sendAlert({ webhookUrl, message, title, username = 'Marnie', avatarUrl, embeds, level = 'info' }) {
   const url = getWebhookUrl(webhookUrl);
   if (!url) {
     throw Object.assign(
@@ -32,13 +37,35 @@ async function sendAlert({ webhookUrl, message, username = 'Marnie', avatarUrl, 
     );
   }
 
+  const cleanMessage = stripEmojis(message);
+  const cleanTitle = stripEmojis(title);
+
   const colorMap = { info: 0x5865f2, success: 0x57f287, warning: 0xfee75c, error: 0xed4245 };
   const color = colorMap[level] ?? colorMap.info;
 
+  // Ensure ALL messages are sent as rich embeds
+  let resolvedEmbeds = embeds;
+  if (!resolvedEmbeds || resolvedEmbeds.length === 0) {
+    const embedObj = {
+      color,
+      description: cleanMessage || '',
+      timestamp: new Date().toISOString(),
+    };
+    if (cleanTitle) embedObj.title = cleanTitle;
+    resolvedEmbeds = [embedObj];
+  } else {
+    resolvedEmbeds = resolvedEmbeds.map((e) => ({
+      color: e.color ?? color,
+      timestamp: e.timestamp ?? new Date().toISOString(),
+      ...e,
+      description: e.description ? stripEmojis(e.description) : undefined,
+      title: e.title ? stripEmojis(e.title) : undefined,
+    }));
+  }
+
   const body = {
     username,
-    content: message || undefined,
-    embeds: embeds ? embeds.map((e) => ({ color, ...e })) : undefined,
+    embeds: resolvedEmbeds,
   };
   if (avatarUrl) body.avatar_url = avatarUrl;
 

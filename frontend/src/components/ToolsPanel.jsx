@@ -245,10 +245,11 @@ export default function ToolsPanel({ isOpen, onClose }) {
         }}>
           <div>
             <h2 style={{
-              fontFamily: 'var(--font-serif)',
-              fontSize: '1.4rem',
-              fontWeight: 500,
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.35rem',
+              fontWeight: 700,
               color: 'var(--text-primary)',
+              letterSpacing: '-0.02em',
             }}>
               System Tools & Workspace Inspector
             </h2>

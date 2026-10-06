@@ -70,27 +70,25 @@ export default function Sidebar({
         justifyContent: 'space-between',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: 'var(--radius-sm)',
-            backgroundColor: 'var(--accent-terracotta)',
-            color: '#FFFFFF',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(200, 91, 56, 0.25)',
-          }}>
-            <Sparkles size={18} />
-          </div>
+          <img
+            src="/logo.png"
+            alt="Marnie"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: 'var(--radius-sm)',
+              objectFit: 'contain',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+            }}
+          />
           <div>
             <div style={{
-              fontFamily: 'var(--font-serif)',
+              fontFamily: 'var(--font-display)',
               fontSize: '1.25rem',
-              fontWeight: 500,
+              fontWeight: 700,
               lineHeight: 1.1,
               color: 'var(--text-primary)',
-              letterSpacing: '-0.01em',
+              letterSpacing: '-0.02em',
             }}>
               Marnie
             </div>
@@ -390,7 +388,7 @@ export default function Sidebar({
           <span>Settings & Integrations</span>
         </button>
 
-        {/* Theme and Model info */}
+        {/* Theme and footer info */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -399,20 +397,9 @@ export default function Sidebar({
           fontSize: '0.75rem',
           color: 'var(--text-muted)',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
-            <Bot size={14} color="var(--accent-terracotta)" />
-            <span style={{
-              maxWidth: '180px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              fontWeight: 600,
-              color: 'var(--text-primary)',
-              fontSize: '0.78rem',
-            }}>
-              {activeModel || 'Ollama'}
-            </span>
-          </div>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+            Marnie AI Workspace
+          </span>
 
           <button
             onClick={onToggleTheme}
