@@ -19,7 +19,8 @@ import {
   MicOff,
   AlertTriangle,
   X,
-  HelpCircle
+  HelpCircle,
+  BotMessageSquare
 } from 'lucide-react';
 import { sendMessageStream } from '../services/api';
 import ThemeToggle from './ThemeToggle';
@@ -569,29 +570,16 @@ export default function ChatView({
               }}>
                 {[
                   {
-                    title: 'System Terminal',
-                    desc: 'Execute bash commands and inspect processes',
-                    icon: Terminal,
-                    prompt: 'Run a bash command to check the system disk usage and current uptime.',
-                  },
-                  {
-                    title: 'Code Sandbox',
-                    desc: 'Execute JavaScript in a fresh child process',
-                    icon: Code,
-                    prompt: 'Write and run a Node.js script to calculate Fibonacci numbers up to 20.',
-                  },
-                  {
                     title: 'Persistent Tasks',
                     desc: 'Create SQLite tasks with deadlines and priority',
                     icon: CheckSquare,
                     prompt: 'Add a new high-priority task titled "Set up SearXNG web search engine".',
-                  },
-                  {
-                    title: 'Discord Notification',
-                    desc: 'Dispatch styled embed alerts via webhooks',
-                    icon: Flame,
-                    prompt: 'Send a success notification to the Discord webhook channel.',
-                  },
+                  }, {
+                    title: "Deep Research",
+                    desc: 'Enable deep research mode for comprehensive analysis',
+                    icon: BotMessageSquare,
+                    prompt: 'Conduct a deep research on the latest advancements in AI language models.',
+                  }
                 ].map((card, i) => {
                   const Icon = card.icon;
                   return (

@@ -484,7 +484,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                   </button>
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-                  Channel webhook for real-time task notifications, cron job alerts, and error reports.
+                  Channel webhook for real-time task notifications, Scheduled Job alerts, and error reports.
                 </div>
 
                 {discordStatus && (
@@ -519,7 +519,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                 <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                   How Discord alerts work:
                 </div>
-                <div>• Cron jobs configured with <code>discord</code> action type will automatically dispatch embeds to this channel.</div>
+                <div>• Scheduled Jobs configured with <code>discord</code> action type will automatically dispatch embeds to this channel.</div>
                 <div>• The <code>/api/alerts/notify</code> endpoint sends styled embeds with color levels: Info (Blue), Success (Green), Warning (Yellow), Error (Red).</div>
               </div>
             </div>
@@ -696,7 +696,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                   <div style={{ fontSize: '0.95rem', fontWeight: 600 }}>SQLite Persistent Database</div>
                 </div>
                 <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  All conversations, user messages, assistant tool calls, background tasks, and cron schedules are written to <code>./data/marnie.db</code> using <code>better-sqlite3</code> with WAL mode enabled.
+                  All conversations, user messages, assistant tool calls, background tasks, and scheduled jobs are written to <code>./data/marnie.db</code> using <code>better-sqlite3</code> with WAL mode enabled.
                 </div>
                 <div style={{
                   padding: '0.5rem 0.75rem',

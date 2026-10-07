@@ -135,7 +135,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
       setCronName('');
       fetchCron();
     } catch (err) {
-      alert(`Error creating cron job: ${err.message}`);
+      alert(`Error creating scheduled job: ${err.message}`);
     }
   };
 
@@ -254,7 +254,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
               System Tools & Workspace Inspector
             </h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              Direct inspection for SQLite tasks, background crons, terminal execution, and sandboxes.
+              Direct inspection for SQLite tasks, background scheduled jobs, terminal execution, and sandboxes.
             </p>
           </div>
           <button
@@ -279,9 +279,9 @@ export default function ToolsPanel({ isOpen, onClose }) {
         }}>
           {[
             { id: 'tasks', label: 'Tasks', icon: CheckSquare },
-            { id: 'cron', label: 'Cronjobs', icon: Clock },
+            { id: 'cron', label: 'Scheduled Jobs', icon: Clock },
             { id: 'bash', label: 'Bash Terminal', icon: Terminal },
-            { id: 'code', label: 'JS Sandbox', icon: Code },
+            { id: 'code', label: 'Code Sandbox', icon: Code },
             { id: 'filesystem', label: 'File Search', icon: FolderSearch },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -508,7 +508,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {cronJobs.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-                    No recurring cron jobs scheduled.
+                    No recurring scheduled jobs scheduled.
                   </div>
                 ) : (
                   cronJobs.map((job) => (

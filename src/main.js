@@ -33,13 +33,15 @@ app.use((req, res, next) => {
   next();
 });
 
+/*
 // ── Request logger ──────────────────────────────────────
 app.use((req, _res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
+*/
 
-// ── Routes ───────────────────────────────────────────────
+
 app.use('/api/chat',     require('./api/routes/chat'));
 app.use('/api/tools',    require('./api/routes/tools'));
 app.use('/api/tasks',    require('./api/routes/tasks'));
@@ -47,12 +49,12 @@ app.use('/api/cron',     require('./api/routes/cron'));
 app.use('/api/alerts',   require('./api/routes/alerts'));
 app.use('/api/settings', require('./api/routes/settings'));
 
-// ── Health check ─────────────────────────────────────────
+
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// ── Static frontend serving (if built) ────────────────────
+
 const FRONTEND_DIST = path.resolve(__dirname, '../frontend/dist');
 if (fs.existsSync(FRONTEND_DIST)) {
   app.use(express.static(FRONTEND_DIST));
@@ -62,23 +64,22 @@ if (fs.existsSync(FRONTEND_DIST)) {
   });
 }
 
-// ── 404 handler ──────────────────────────────────────────
+
 app.use((_req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-// ── Global error handler ─────────────────────────────────
+
 app.use((err, _req, res, _next) => {
   console.error('[ERROR]', err);
   res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
 });
 
-// ── Start ─────────────────────────────────────────────────
+
 const PORT = parseInt(process.env.PORT || '3000', 10);
 app.listen(PORT, () => {
   console.log(`\nMarnie running on http://localhost:${PORT}`);
   console.log(`   Workspace dir : ${WORKSPACE_DIR}`);
-  console.log(`   DB path       : ${path.resolve(process.env.DB_PATH || './data/marnie.db')}\n`);
 });
 
 module.exports = app;

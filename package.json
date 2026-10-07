@@ -4,10 +4,11 @@
   "description": "A self-hosted AI workspace like Odysseus but made in nodejs with more (and in some cases less) features according to my own preference",
   "main": "src/main.js",
   "scripts": {
-    "start": "node src/main.js",
+    "start": "npm run build && node src/main.js",
     "dev": "nodemon src/main.js",
     "frontend:dev": "cd frontend && npm run dev",
-    "frontend:build": "cd frontend && npm run build"
+    "frontend:build": "cd frontend && npm run build",
+    "build": "npm run frontend:build"
   },
   "dependencies": {
     "axios": "^1.7.9",

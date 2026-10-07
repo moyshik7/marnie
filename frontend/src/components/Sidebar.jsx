@@ -385,7 +385,7 @@ export default function Sidebar({
           }}
         >
           <Settings size={16} />
-          <span>Settings & Integrations</span>
+          <span>Settings</span>
         </button>
 
         {/* Theme and footer info */}
@@ -400,23 +400,6 @@ export default function Sidebar({
           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
             Marnie AI Workspace
           </span>
-
-          <button
-            onClick={onToggleTheme}
-            title={theme === 'dark' ? 'Switch to Light Ivory' : 'Switch to Warm Dark'}
-            style={{
-              padding: '0.3rem',
-              borderRadius: 'var(--radius-full)',
-              color: 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
-          >
-            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-          </button>
         </div>
       </div>
     </aside>
