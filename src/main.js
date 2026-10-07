@@ -11,7 +11,7 @@ require('./db/index');
 // Bootstrap workspace directory
 const WORKSPACE_DIR = path.resolve(process.env.WORKSPACE_DIR || './workspace');
 if (!fs.existsSync(WORKSPACE_DIR)) {
-  fs.mkdirSync(WORKSPACE_DIR, { recursive: true });
+  	fs.mkdirSync(WORKSPACE_DIR, { recursive: true });
 }
 
 // Bootstrap cron jobs from DB
@@ -22,22 +22,22 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// ── CORS & Request headers ──────────────────────────────
+
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
+  	res.header('Access-Control-Allow-Origin', '*');
+  	res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  	res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  	if (req.method === 'OPTIONS') {
+    	return res.sendStatus(200);
+  	}
+  	next();
 });
 
 /*
 // ── Request logger ──────────────────────────────────────
 app.use((req, _res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-  next();
+  	console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  	next();
 });
 */
 
@@ -51,35 +51,35 @@ app.use('/api/settings', require('./api/routes/settings'));
 
 
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  	res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 
 const FRONTEND_DIST = path.resolve(__dirname, '../frontend/dist');
 if (fs.existsSync(FRONTEND_DIST)) {
-  app.use(express.static(FRONTEND_DIST));
-  app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api/') || req.path === '/health') return next();
-    res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
-  });
+  	app.use(express.static(FRONTEND_DIST));
+  	app.get('*', (req, res, next) => {
+    	if (req.path.startsWith('/api/') || req.path === '/health') return next();
+    	res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+  	});
 }
 
 
 app.use((_req, res) => {
-  res.status(404).json({ error: 'Not found' });
+  	res.status(404).json({ error: 'Not found' });
 });
 
 
 app.use((err, _req, res, _next) => {
-  console.error('[ERROR]', err);
-  res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
+  	console.error('[ERROR]', err);
+  	res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
 });
 
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 app.listen(PORT, () => {
-  console.log(`\nMarnie running on http://localhost:${PORT}`);
-  console.log(`   Workspace dir : ${WORKSPACE_DIR}`);
+  	console.log(`\nMarnie running on http://localhost:${PORT}`);
+  	console.log(`   Workspace dir : ${WORKSPACE_DIR}`);
 });
 
 module.exports = app;
