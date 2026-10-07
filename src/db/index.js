@@ -67,6 +67,23 @@ db.exec(`
     value       TEXT NOT NULL,
     updated_at  INTEGER NOT NULL DEFAULT (strftime('%s','now'))
   );
+
+  CREATE TABLE IF NOT EXISTS deep_researches (
+    id            TEXT PRIMARY KEY,
+    topic         TEXT NOT NULL,
+    status        TEXT NOT NULL DEFAULT 'in_progress' CHECK(status IN ('pending','in_progress','completed','failed','cancelled')),
+    model         TEXT,
+    min_revisions INTEGER NOT NULL DEFAULT 1,
+    max_revisions INTEGER NOT NULL DEFAULT 3,
+    max_results   INTEGER NOT NULL DEFAULT 5,
+    summary       TEXT,
+    report        TEXT,
+    logs          TEXT,
+    sources       TEXT,
+    error         TEXT,
+    created_at    INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+    updated_at    INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+  );
 `);
 
 // Seed default settings if not exists

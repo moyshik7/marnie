@@ -48,6 +48,7 @@ app.use('/api/tasks',    require('./api/routes/tasks'));
 app.use('/api/cron',     require('./api/routes/cron'));
 app.use('/api/alerts',   require('./api/routes/alerts'));
 app.use('/api/settings', require('./api/routes/settings'));
+app.use('/api/research', require('./api/routes/research'));
 
 
 app.get('/health', (_req, res) => {

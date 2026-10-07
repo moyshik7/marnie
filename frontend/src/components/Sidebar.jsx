@@ -23,6 +23,9 @@ export default function Sidebar({
     onRenameConversation,
     onOpenSettings,
     onOpenTools,
+    onOpenDeepResearch,
+    activeSection = "chat",
+    isResearchOngoing = false,
     theme,
     onToggleTheme,
     backendConnected,
@@ -451,7 +454,63 @@ export default function Sidebar({
                     }}
                 >
                     <Wrench size={16} />
-                    <span>System Tools & Tasks</span>
+                    <span>Tools & Tasks</span>
+                </button>
+
+                {/* Deep Research view trigger */}
+                <button
+                    onClick={onOpenDeepResearch}
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "0.55rem 0.65rem",
+                        borderRadius: "var(--radius-sm)",
+                        color: "var(--text-secondary)",
+                        backgroundColor: activeSection === "research"
+                            ? "var(--bg-card)"
+                            : "transparent",
+                        border: activeSection === "research"
+                            ? "1px solid var(--border-subtle)"
+                            : "1px solid transparent",
+                        fontSize: "0.85rem",
+                        width: "100%",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                        if (activeSection !== "research") {
+                            e.currentTarget.style.backgroundColor = "var(--bg-tertiary)";
+                            e.currentTarget.style.color = "var(--text-primary)";
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (activeSection !== "research") {
+                            e.currentTarget.style.backgroundColor = "transparent";
+                            e.currentTarget.style.color = "var(--text-secondary)";
+                        }
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+                        <Sparkles size={16} style={{ color: "var(--accent-gold)" }} />
+                        <span style={{ fontWeight: activeSection === "research" ? 600 : 400 }}>
+                            Deep Research
+                        </span>
+                    </div>
+
+                    {isResearchOngoing && (
+                        <div
+                            title="Research in progress"
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.35rem",
+                            }}
+                        >
+                            <span className="blinking-green-dot" />
+                        </div>
+                    )}
                 </button>
 
                 {/* Settings modal trigger */}
@@ -499,7 +558,7 @@ export default function Sidebar({
                             color: "var(--text-muted)",
                         }}
                     >
-                        Marnie AI Workspace
+                        Marnie Workspace
                     </span>
                 </div>
             </div>

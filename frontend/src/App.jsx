@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import ChatView from "./components/ChatView";
+import DeepResearchView from "./components/DeepResearchView";
 import SettingsModal from "./components/SettingsModal";
 import ToolsPanel from "./components/ToolsPanel";
 import {
@@ -13,6 +14,7 @@ import {
     getSettings,
     updateSettings,
     listModels,
+    checkOngoingResearch,
 } from "./services/api";
 
 export default function App() {
@@ -29,7 +31,9 @@ export default function App() {
     const [availableModels, setAvailableModels] = useState([]);
     const [backendConnected, setBackendConnected] = useState(false);
 
-    // Modals state
+    // Modals & Navigation state
+    const [activeSection, setActiveSection] = useState("chat"); // 'chat' | 'research'
+    const [isResearchOngoing, setIsResearchOngoing] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isToolsOpen, setIsToolsOpen] = useState(false);
 
@@ -43,12 +47,23 @@ export default function App() {
         setTheme((prev) => (prev === "dark" ? "light" : "dark"));
     };
 
-    // Check health and load conversations, models & settings
+    // Check health, research ongoing status and load conversations, models & settings
     useEffect(() => {
         initializeWorkspace();
         const interval = setInterval(checkHealth, 15000);
-        return () => clearInterval(interval);
+        const researchInterval = setInterval(pollResearchStatus, 4000);
+        return () => {
+            clearInterval(interval);
+            clearInterval(researchInterval);
+        };
     }, []);
+
+    const pollResearchStatus = async () => {
+        try {
+            const res = await checkOngoingResearch();
+            setIsResearchOngoing(Boolean(res?.ongoing));
+        } catch {}
+    };
 
     const checkHealth = async () => {
         try {
@@ -232,6 +247,16 @@ export default function App() {
         }
     };
 
+    const handleSelectConversation = (id) => {
+        setActiveSection("chat");
+        selectConversation(id);
+    };
+
+    const handleCreateNewConversation = async () => {
+        setActiveSection("chat");
+        await handleNewConversation();
+    };
+
     return (
         <div
             style={{
@@ -245,34 +270,46 @@ export default function App() {
             {/* Claude-style Sidebar */}
             <Sidebar
                 conversations={conversations}
-                activeConversationId={activeConversationId}
-                onSelectConversation={(id) => selectConversation(id)}
-                onNewConversation={handleNewConversation}
+                activeConversationId={activeSection === "chat" ? activeConversationId : null}
+                onSelectConversation={handleSelectConversation}
+                onNewConversation={handleCreateNewConversation}
                 onDeleteConversation={handleDeleteConversation}
                 onRenameConversation={handleRenameConversation}
                 onOpenSettings={() => setIsSettingsOpen(true)}
                 onOpenTools={() => setIsToolsOpen(true)}
+                onOpenDeepResearch={() => setActiveSection("research")}
+                activeSection={activeSection}
+                isResearchOngoing={isResearchOngoing}
                 theme={theme}
                 onToggleTheme={toggleTheme}
                 backendConnected={backendConnected}
                 activeModel={activeModel}
             />
 
-            {/* Main Chat Screen */}
+            {/* Main View Area: Chat vs Deep Research */}
             <main style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-                <ChatView
-                    conversation={activeConversation}
-                    activeModel={activeModel}
-                    availableModels={availableModels}
-                    onModelChanged={handleModelChange}
-                    theme={theme}
-                    onToggleTheme={toggleTheme}
-                    onOpenTools={() => setIsToolsOpen(true)}
-                    onOpenSettings={() => setIsSettingsOpen(true)}
-                    onRefreshConversations={() =>
-                        refreshConversations(activeModel)
-                    }
-                />
+                {activeSection === "research" ? (
+                    <DeepResearchView
+                        activeModel={activeModel}
+                        availableModels={availableModels}
+                        onClose={() => setActiveSection("chat")}
+                        onResearchCountChange={(hasOngoing) => setIsResearchOngoing(hasOngoing)}
+                    />
+                ) : (
+                    <ChatView
+                        conversation={activeConversation}
+                        activeModel={activeModel}
+                        availableModels={availableModels}
+                        onModelChanged={handleModelChange}
+                        theme={theme}
+                        onToggleTheme={toggleTheme}
+                        onOpenTools={() => setIsToolsOpen(true)}
+                        onOpenSettings={() => setIsSettingsOpen(true)}
+                        onRefreshConversations={() =>
+                            refreshConversations(activeModel)
+                        }
+                    />
+                )}
             </main>
 
             {/* Settings Modal (Discord Webhook, Ollama URL, Models, Future Labs) */}

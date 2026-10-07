@@ -277,3 +277,32 @@ export async function listTimers() {
 export async function cancelTimer(id) {
   return request(`/tools/timer/${id}`, { method: 'DELETE' });
 }
+
+// ── Deep Research ───────────────────────────────────────────
+export async function listResearches() {
+  return request('/research');
+}
+
+export async function checkOngoingResearch() {
+  return request('/research/status/ongoing');
+}
+
+export async function getResearch(id) {
+  return request(`/research/${id}`);
+}
+
+export async function startDeepResearch(params) {
+  return request('/research', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
+
+export async function cancelDeepResearch(id) {
+  return request(`/research/${id}/cancel`, { method: 'POST' });
+}
+
+export async function deleteDeepResearch(id) {
+  return request(`/research/${id}`, { method: 'DELETE' });
+}
+

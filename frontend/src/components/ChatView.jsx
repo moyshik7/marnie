@@ -324,13 +324,10 @@ export default function ChatView({
     // Feature toggles
     const [webSearchActive, setWebSearchActive] = useState(false);
     const [searchProvider, setSearchProvider] = useState("duckduckgo");
-    const [deepResearchActive, setDeepResearchActive] = useState(false);
     const [agentModeActive, setAgentModeActive] = useState(true);
 
     const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
-    const [showExtraTools, setShowExtraTools] = useState(false);
     const modelDropdownRef = useRef(null);
-    const extraToolsRef = useRef(null);
 
     const abortControllerRef = useRef(null);
     const messagesEndRef = useRef(null);
@@ -370,22 +367,6 @@ export default function ChatView({
         return () =>
             document.removeEventListener("mousedown", handleClickOutside);
     }, [modelDropdownOpen]);
-
-    // Close extra tools on outside click
-    useEffect(() => {
-        if (!showExtraTools) return;
-        const handleClickOutside = (e) => {
-            if (
-                extraToolsRef.current &&
-                !extraToolsRef.current.contains(e.target)
-            ) {
-                setShowExtraTools(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () =>
-            document.removeEventListener("mousedown", handleClickOutside);
-    }, [showExtraTools]);
 
     // Clean up Web Speech recognition on unmount
     useEffect(() => {
@@ -569,10 +550,6 @@ export default function ChatView({
             augmentedSystem +=
                 `\n[Mode: ${providerLabel} Web Search enabled for verified web answers]`;
         }
-        if (deepResearchActive) {
-            augmentedSystem +=
-                "\n[Mode: Deep Research enabled - provide thorough, comprehensive analysis with detailed reasoning]";
-        }
         if (agentModeActive) {
             augmentedSystem +=
                 "\n[Mode: Agent Mode enabled - identify goals, break down sub-tasks, and prepare tool executions]";
@@ -734,28 +711,6 @@ export default function ChatView({
                 >
                     {/* Top Light/Dark Theme Switcher Toggle */}
                     <ThemeToggle theme={theme} onToggle={onToggleTheme} />
-
-                    {/* Quick Tools button */}
-                    <button
-                        onClick={onOpenTools}
-                        title="Open Tools & Tasks Panel"
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.35rem",
-                            padding: "0.35rem 0.75rem",
-                            borderRadius: "var(--radius-full)",
-                            backgroundColor: "var(--bg-secondary)",
-                            border: "1px solid var(--border-subtle)",
-                            fontSize: "0.78rem",
-                            fontWeight: 500,
-                            color: "var(--text-secondary)",
-                            cursor: "pointer",
-                        }}
-                    >
-                        <Wrench size={13} />
-                        <span>Tools</span>
-                    </button>
                 </div>
             </header>
 
@@ -1189,93 +1144,7 @@ export default function ChatView({
                         position: "relative",
                     }}
                 >
-                    {/* Extra options popover when ^ chevron is clicked */}
-                    {showExtraTools && (
-                        <div
-                            ref={extraToolsRef}
-                            style={{
-                                position: "absolute",
-                                bottom: "calc(100% + 8px)",
-                                left: "1rem",
-                                backgroundColor: "var(--bg-card)",
-                                border: "1px solid var(--border-strong)",
-                                borderRadius: "var(--radius-md)",
-                                boxShadow: "var(--shadow-lg)",
-                                padding: "0.5rem 0.75rem",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.6rem",
-                                zIndex: 30,
-                                animation: "fadeIn 0.15s ease",
-                            }}
-                        >
-                            {/* Voice input */}
-                            <button
-                                type="button"
-                                onClick={toggleSpeechRecognition}
-                                title={
-                                    isListening
-                                        ? "Stop listening"
-                                        : "Voice input (Speech to text)"
-                                }
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.35rem",
-                                    padding: "0.3rem 0.6rem",
-                                    borderRadius: "var(--radius-sm)",
-                                    backgroundColor: isListening
-                                        ? "rgba(239, 68, 68, 0.16)"
-                                        : "var(--bg-secondary)",
-                                    border: isListening
-                                        ? "1px solid #EF4444"
-                                        : "1px solid var(--border-subtle)",
-                                    color: isListening
-                                        ? "#EF4444"
-                                        : "var(--text-secondary)",
-                                    fontSize: "0.75rem",
-                                    fontWeight: 500,
-                                    cursor: "pointer",
-                                }}
-                            >
-                                {isListening ? <MicOff size={13} /> : <Mic size={13} />}
-                                <span>{isListening ? "Listening..." : "Voice input"}</span>
-                            </button>
-
-                            {/* Deep Research */}
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setDeepResearchActive(!deepResearchActive)
-                                }
-                                title="Deep Research Mode"
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.35rem",
-                                    padding: "0.3rem 0.6rem",
-                                    borderRadius: "var(--radius-sm)",
-                                    backgroundColor: deepResearchActive
-                                        ? "rgba(217, 119, 6, 0.14)"
-                                        : "var(--bg-secondary)",
-                                    border: deepResearchActive
-                                        ? "1px solid var(--accent-gold)"
-                                        : "1px solid var(--border-subtle)",
-                                    color: deepResearchActive
-                                        ? "var(--accent-gold)"
-                                        : "var(--text-secondary)",
-                                    fontSize: "0.75rem",
-                                    fontWeight: 500,
-                                    cursor: "pointer",
-                                }}
-                            >
-                                <Sparkles size={13} />
-                                <span>Deep Research</span>
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Top Row: Textarea on left, Model Switcher trigger on right */}
+                    {/* Top Row: Textarea on left, Voice Input button + Model Switcher trigger on right */}
                     <div
                         style={{
                             display: "flex",
@@ -1295,9 +1164,7 @@ export default function ChatView({
                             placeholder={
                                 webSearchActive
                                     ? `Message Marnie with ${searchProvider === "searxng" ? "SearXNG" : "DuckDuckGo"}...`
-                                    : deepResearchActive
-                                      ? "Message Marnie (Deep Research)..."
-                                      : "Message Marnie ..."
+                                    : "Message Marnie ..."
                             }
                             rows={1}
                             style={{
@@ -1316,69 +1183,122 @@ export default function ChatView({
                             }}
                         />
 
-                        {/* Model Switcher inside Chatbox (Top Right) */}
+                        {/* Right side of typing bar: Direct Voice Input Button + Model Switcher */}
                         <div
-                            ref={modelDropdownRef}
-                            style={{ position: "relative", flexShrink: 0 }}
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.4rem",
+                                flexShrink: 0,
+                            }}
                         >
+                            {/* Direct Voice Input Button */}
                             <button
                                 type="button"
-                                onClick={() => setModelDropdownOpen((prev) => !prev)}
-                                title="Switch model"
+                                onClick={toggleSpeechRecognition}
+                                title={
+                                    isListening
+                                        ? "Stop speech recognition"
+                                        : "Voice input (Speech to text)"
+                                }
                                 style={{
                                     display: "inline-flex",
                                     alignItems: "center",
-                                    gap: "0.45rem",
-                                    padding: "0.25rem 0.5rem",
+                                    justifyContent: "center",
+                                    width: "28px",
+                                    height: "28px",
                                     borderRadius: "var(--radius-sm)",
-                                    background: "transparent",
-                                    color: "var(--text-secondary)",
-                                    fontSize: "0.82rem",
-                                    fontWeight: 500,
+                                    backgroundColor: isListening
+                                        ? "rgba(239, 68, 68, 0.16)"
+                                        : "transparent",
+                                    border: isListening
+                                        ? "1px solid #EF4444"
+                                        : "1px solid transparent",
+                                    color: isListening
+                                        ? "#EF4444"
+                                        : "var(--text-muted)",
                                     cursor: "pointer",
                                     transition: "all 0.15s ease",
                                 }}
                                 onMouseEnter={(e) => {
-                                    e.currentTarget.style.color =
-                                        "var(--text-primary)";
-                                    e.currentTarget.style.backgroundColor =
-                                        "var(--bg-secondary)";
+                                    if (!isListening) {
+                                        e.currentTarget.style.color = "var(--text-primary)";
+                                        e.currentTarget.style.backgroundColor = "var(--bg-secondary)";
+                                    }
                                 }}
                                 onMouseLeave={(e) => {
-                                    e.currentTarget.style.color =
-                                        "var(--text-secondary)";
-                                    e.currentTarget.style.backgroundColor =
-                                        "transparent";
+                                    if (!isListening) {
+                                        e.currentTarget.style.color = "var(--text-muted)";
+                                        e.currentTarget.style.backgroundColor = "transparent";
+                                    }
                                 }}
                             >
-                                {/* 3 vertical bars / equalizer icon matching screenshot */}
-                                <svg
-                                    width="12"
-                                    height="12"
-                                    viewBox="0 0 16 16"
-                                    fill="currentColor"
-                                    style={{ opacity: 0.85, flexShrink: 0 }}
-                                >
-                                    <rect x="2" y="7" width="2.2" height="7" rx="1.1" />
-                                    <rect x="7" y="2" width="2.2" height="12" rx="1.1" />
-                                    <rect x="12" y="5" width="2.2" height="9" rx="1.1" />
-                                </svg>
-                                <span
+                                {isListening ? <MicOff size={15} /> : <Mic size={15} />}
+                            </button>
+
+                            {/* Model Switcher inside Chatbox */}
+                            <div
+                                ref={modelDropdownRef}
+                                style={{ position: "relative", flexShrink: 0 }}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => setModelDropdownOpen((prev) => !prev)}
+                                    title="Switch model"
                                     style={{
-                                        maxWidth: "140px",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "0.45rem",
+                                        padding: "0.25rem 0.5rem",
+                                        borderRadius: "var(--radius-sm)",
+                                        background: "transparent",
+                                        color: "var(--text-secondary)",
+                                        fontSize: "0.62rem",
+                                        fontWeight: 500,
+                                        cursor: "pointer",
+                                        transition: "all 0.15s ease",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color =
+                                            "var(--text-primary)";
+                                        e.currentTarget.style.backgroundColor =
+                                            "var(--bg-secondary)";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color =
+                                            "var(--text-secondary)";
+                                        e.currentTarget.style.backgroundColor =
+                                            "transparent";
                                     }}
                                 >
-                                    {activeModel || "Select Model"}
-                                </span>
-                                {modelDropdownOpen ? (
-                                    <ChevronUp size={12} />
-                                ) : (
-                                    <ChevronDown size={12} />
-                                )}
-                            </button>
+                                    {/* 3 vertical bars / equalizer icon matching screenshot */}
+                                    <svg
+                                        width="10"
+                                        height="10"
+                                        viewBox="0 0 14 14"
+                                        fill="currentColor"
+                                        style={{ opacity: 0.75, flexShrink: 0 }}
+                                    >
+                                        <rect x="2" y="7" width="2.2" height="7" rx="1.1" />
+                                        <rect x="7" y="2" width="2.2" height="12" rx="1.1" />
+                                        <rect x="12" y="5" width="2.2" height="9" rx="1.1" />
+                                    </svg>
+                                    <span
+                                        style={{
+                                            maxWidth: "140px",
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            whiteSpace: "nowrap",
+                                        }}
+                                    >
+                                        {activeModel || "Select Model"}
+                                    </span>
+                                    {modelDropdownOpen ? (
+                                        <ChevronUp size={12} />
+                                    ) : (
+                                        <ChevronDown size={12} />
+                                    )}
+                                </button>
 
                             {/* Dropdown Menu (Pops up above) */}
                             {modelDropdownOpen && (
@@ -1492,6 +1412,7 @@ export default function ChatView({
                             )}
                         </div>
                     </div>
+                </div>
 
                     {/* Bottom Controls Bar */}
                     <div
@@ -1502,7 +1423,7 @@ export default function ChatView({
                             paddingTop: "0.25rem",
                         }}
                     >
-                        {/* Left Action Buttons: Chevron, Search, Terminal */}
+                        {/* Left Action Buttons: Search, Terminal */}
                         <div
                             style={{
                                 display: "flex",
@@ -1510,41 +1431,6 @@ export default function ChatView({
                                 gap: "0.45rem",
                             }}
                         >
-                            {/* Chevron up toggle */}
-                            <button
-                                type="button"
-                                onClick={() => setShowExtraTools((prev) => !prev)}
-                                title={
-                                    showExtraTools
-                                        ? "Hide options"
-                                        : "More tools (Voice, Deep Research)"
-                                }
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    width: "28px",
-                                    height: "28px",
-                                    color: showExtraTools
-                                        ? "var(--text-primary)"
-                                        : "var(--text-muted)",
-                                    cursor: "pointer",
-                                    transition: "color 0.15s ease",
-                                    borderRadius: "6px",
-                                }}
-                                onMouseEnter={(e) =>
-                                    (e.currentTarget.style.color =
-                                        "var(--text-primary)")
-                                }
-                                onMouseLeave={(e) =>
-                                    (e.currentTarget.style.color = showExtraTools
-                                        ? "var(--text-primary)"
-                                        : "var(--text-muted)")
-                                }
-                            >
-                                <ChevronUp size={16} />
-                            </button>
-
                             {/* Search Button (Web Search toggle) */}
                             <button
                                 type="button"
