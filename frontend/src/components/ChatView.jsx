@@ -576,10 +576,17 @@ export default function ChatView({
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
+                    justifyContent: "center",
                     padding: "1.5rem 1rem 8rem 1rem",
                 }}
             >
-                <div style={{ width: "100%", maxWidth: "800px" }}>
+                <div style={{
+                    width: "100%",
+                    maxWidth: "800px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}>
                     {/* Welcome Screen when no messages */}
                     {messages.length === 0 && !isStreaming ? (
                         <div
@@ -612,9 +619,10 @@ export default function ChatView({
                                     maxWidth: "540px",
                                     lineHeight: 1.6,
                                     marginBottom: "2.5rem",
+                                    fontFamily: "monospace",
                                 }}
                             >
-                                Start something new
+                                The world is yours
                             </p>
 
                             {/* Quick Prompt Suggestions */}
