@@ -9,6 +9,8 @@ const fileWrite = require('./fileWrite');
 const tasks = require('./tasks');
 const cronManager = require('./cronManager');
 const discord = require('./discord');
+const timer = require('./timer');
+const webSearch = require('./webSearch');
 
 const TOOLS = {
   run_javascript: {
@@ -99,6 +101,25 @@ const TOOLS = {
     },
     execute: async ({ message, title, level }) => discord.sendAlert({ message, title, level }),
   },
+  set_timer: {
+    description: 'Set a countdown timer that sends a Discord alert notification when the time expires.',
+    parameters: {
+      seconds: { type: 'number', description: 'Duration in seconds (e.g. 60)' },
+      duration: { type: 'string', description: "Duration string (e.g. '30s', '5m', '1h') if seconds not provided" },
+      message: { type: 'string', description: 'Message to send to Discord when the timer finishes', required: true },
+      title: { type: 'string', description: "Optional title for the Discord alert embed (default 'Timer Alert')" },
+    },
+    execute: async ({ seconds, duration, message, title }) => timer.setTimer({ seconds, duration, message, title }),
+  },
+  web_search: {
+    description: 'Search the live web for up-to-date information, documentation, news, or answers using DuckDuckGo or SearXNG.',
+    parameters: {
+      query: { type: 'string', description: 'The search keywords or query to look up', required: true },
+      max_results: { type: 'number', description: 'Maximum number of results to return (default 5)' },
+      provider: { type: 'string', description: "Search provider override ('duckduckgo' or 'searxng')" },
+    },
+    execute: async ({ query, max_results, provider }) => webSearch.search({ query, maxResults: max_results, provider }),
+  },
 };
 
 /**
@@ -122,6 +143,17 @@ async function executeTool(name, args = {}) {
     task_list: 'list_tasks',
     cron_create: 'create_cron',
     discord_alert: 'send_alert',
+    timer: 'set_timer',
+    create_timer: 'set_timer',
+    countdown: 'set_timer',
+    search: 'web_search',
+    duckduckgo: 'web_search',
+    duckduckgo_search: 'web_search',
+    ddg: 'web_search',
+    ddg_search: 'web_search',
+    searxng: 'web_search',
+    searxng_search: 'web_search',
+    google: 'web_search',
   };
 
   const toolName = aliasMap[name] || name;
@@ -175,12 +207,17 @@ AVAILABLE TOOLS:
 ${toolsDescription}
 
 TOOL USAGE GUIDELINES:
+- For searching the live internet for recent facts, news, documentation, or answers, call \`web_search\`.
 - For sending Discord alerts, notifications, or messages right now, call \`send_alert\`.
+- For setting countdown timers that trigger a Discord alert after a given time, call \`set_timer\`.
 - For scheduling timers, reminders, or background jobs, call \`create_cron\`.
 - For running JavaScript or Node.js code snippets, call \`run_javascript\`.
 - For shell commands (e.g., git, package managers, system status), call \`run_bash\`.
 - For reading files before making edits, call \`read_file\` first, then \`write_file\`.
 - For saving user tasks and to-dos, call \`create_task\`.
+- MERMAID & DIAGRAMS INSTRUCTION: Whenever illustrating workflows, systems, architectures, timelines, state diagrams, or schemas, ALWAYS provide clear, valid Mermaid diagrams enclosed in \`\`\`mermaid code blocks. The workspace has built-in live preview for Mermaid diagrams.
+- LATEX MATH INSTRUCTION: For mathematical equations, proofs, and formulas, ALWAYS use LaTeX notation ($$...$$ for display block equations, $...$ for inline math). The workspace renders LaTeX with KaTeX.
+- NO EM DASHES INSTRUCTION: NEVER use em dashes (—). Always use standard hyphens or dashes (-) in your text.
 - When you emit a tool call, the system will execute it and deliver the real stdout/stderr back to the workspace.
 
 ${customSystemPrompt ? `\nADDITIONAL USER INSTRUCTIONS:\n${customSystemPrompt}` : ''}`.trim();
@@ -233,7 +270,7 @@ function parseToolCalls(text) {
       const parsed = JSON.parse(match[1].trim());
       const toolName = parsed.name || parsed.tool;
       if (toolName && typeof toolName === 'string') {
-        const knownTools = ['run_javascript', 'run_bash', 'search_filesystem', 'read_file', 'create_file', 'write_file', 'create_task', 'list_tasks', 'create_cron', 'send_alert', 'javascript', 'bash', 'terminal', 'js'];
+        const knownTools = ['run_javascript', 'run_bash', 'search_filesystem', 'read_file', 'create_file', 'write_file', 'create_task', 'list_tasks', 'create_cron', 'send_alert', 'set_timer', 'timer', 'web_search', 'search', 'javascript', 'bash', 'terminal', 'js'];
         if (knownTools.includes(toolName.toLowerCase()) && !calls.some(c => c.raw === match[0])) {
           calls.push({
             raw: match[0],

@@ -104,4 +104,27 @@ router.post('/file/write', wrap((req, res) => {
   res.json(result);
 }));
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Timer endpoints
+// POST /api/tools/timer
+// GET /api/tools/timer
+// DELETE /api/tools/timer/:id
+// ═══════════════════════════════════════════════════════════════════════════
+const timer = require('../../components/tools/timer');
+
+router.post('/timer', wrap(async (req, res) => {
+  const { seconds, duration, minutes, message, title } = req.body;
+  const result = await timer.setTimer({ seconds, duration, minutes, message, title });
+  res.status(201).json(result);
+}));
+
+router.get('/timer', wrap((_req, res) => {
+  res.json({ timers: timer.listTimers() });
+}));
+
+router.delete('/timer/:id', wrap((req, res) => {
+  const result = timer.cancelTimer(req.params.id);
+  res.json(result);
+}));
+
 module.exports = router;

@@ -76,10 +76,27 @@ app.use((err, _req, res, _next) => {
 });
 
 
+function startServer(port) {
+  	const server = app.listen(port, () => {
+    	const actualPort = server.address().port;
+    	console.log(`\nMarnie running on http://localhost:${actualPort}`);
+    	console.log(`   Workspace dir : ${WORKSPACE_DIR}`);
+  	});
+
+  	server.on('error', (err) => {
+    	if (err.code === 'EADDRINUSE') {
+      		console.warn(`Port ${port} is in use, trying ${port + 1}...`);
+      		startServer(port + 1);
+    	} else {
+      		console.error('[ERROR] Server failed to start:', err);
+      		process.exit(1);
+    	}
+  	});
+
+  	return server;
+}
+
 const PORT = parseInt(process.env.PORT || '3000', 10);
-app.listen(PORT, () => {
-  	console.log(`\nMarnie running on http://localhost:${PORT}`);
-  	console.log(`   Workspace dir : ${WORKSPACE_DIR}`);
-});
+startServer(PORT);
 
 module.exports = app;

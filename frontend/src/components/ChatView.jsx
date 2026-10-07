@@ -8,6 +8,9 @@ import {
     Globe,
     Brain,
     ChevronDown,
+    ChevronUp,
+    ChevronRight,
+    Search,
     Terminal,
     Code,
     CheckSquare,
@@ -21,9 +24,167 @@ import {
     X,
     HelpCircle,
     BotMessageSquare,
+    ArrowUp,
 } from "lucide-react";
-import { sendMessageStream } from "../services/api";
+import katex from "katex";
+import mermaid from "mermaid";
+import { sendMessageStream, getSettings } from "../services/api";
 import ThemeToggle from "./ThemeToggle";
+
+// Initialize mermaid once
+try {
+    mermaid.initialize({
+        startOnLoad: false,
+        theme: "default",
+        securityLevel: "loose",
+        fontFamily: "var(--font-sans)",
+    });
+} catch {}
+
+function MermaidBlock({ chart }) {
+    const [svg, setSvg] = useState("");
+    const [error, setError] = useState(null);
+    const [viewRaw, setViewRaw] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+        let isMounted = true;
+        const renderChart = async () => {
+            try {
+                const uniqueId = `mermaid-${Math.random().toString(36).substring(2, 9)}`;
+                const { svg: renderedSvg } = await mermaid.render(uniqueId, chart.trim());
+                if (isMounted) {
+                    setSvg(renderedSvg);
+                    setError(null);
+                }
+            } catch (err) {
+                if (isMounted) {
+                    setError(err.message || "Failed to render Mermaid diagram");
+                }
+            }
+        };
+        renderChart();
+        return () => {
+            isMounted = false;
+        };
+    }, [chart]);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(chart);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    if (error) {
+        return (
+            <div
+                style={{
+                    margin: "0.85rem 0",
+                    padding: "0.75rem 1rem",
+                    borderRadius: "var(--radius-sm)",
+                    backgroundColor: "rgba(239, 68, 68, 0.08)",
+                    border: "1px solid rgba(239, 68, 68, 0.25)",
+                    fontSize: "0.82rem",
+                }}
+            >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+                    <span style={{ fontWeight: 600, color: "#ef4444" }}>Mermaid Render Notice</span>
+                    <button
+                        onClick={handleCopy}
+                        style={{
+                            fontSize: "0.72rem",
+                            color: "var(--text-muted)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.25rem",
+                            cursor: "pointer",
+                        }}
+                    >
+                        {copied ? <Check size={12} /> : <Copy size={12} />}
+                        {copied ? "Copied" : "Copy Code"}
+                    </button>
+                </div>
+                <pre style={{ margin: 0, overflowX: "auto" }}>
+                    <code>{chart}</code>
+                </pre>
+            </div>
+        );
+    }
+
+    return (
+        <div
+            style={{
+                margin: "0.85rem 0",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--border-subtle)",
+                backgroundColor: "var(--bg-card)",
+                overflow: "hidden",
+            }}
+        >
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "0.4rem 0.75rem",
+                    borderBottom: "1px solid var(--border-subtle)",
+                    backgroundColor: "var(--bg-secondary)",
+                    fontSize: "0.74rem",
+                    color: "var(--text-muted)",
+                }}
+            >
+                <span style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    Diagram (Mermaid)
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <button
+                        onClick={() => setViewRaw(!viewRaw)}
+                        style={{
+                            color: "var(--text-muted)",
+                            cursor: "pointer",
+                            fontSize: "0.72rem",
+                        }}
+                    >
+                        {viewRaw ? "Preview" : "Code"}
+                    </button>
+                    <button
+                        onClick={handleCopy}
+                        style={{
+                            color: "var(--text-muted)",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.25rem",
+                            fontSize: "0.72rem",
+                        }}
+                    >
+                        {copied ? <Check size={12} /> : <Copy size={12} />}
+                        {copied ? "Copied" : "Copy"}
+                    </button>
+                </div>
+            </div>
+
+            {viewRaw ? (
+                <pre style={{ margin: 0, padding: "0.85rem", overflowX: "auto" }}>
+                    <code>{chart}</code>
+                </pre>
+            ) : (
+                <div
+                    ref={containerRef}
+                    dangerouslySetInnerHTML={{ __html: svg }}
+                    style={{
+                        padding: "1rem",
+                        display: "flex",
+                        justifyContent: "center",
+                        overflowX: "auto",
+                        backgroundColor: "var(--bg-card)",
+                    }}
+                />
+            )}
+        </div>
+    );
+}
 
 function parseMessageContent(rawContent) {
     if (!rawContent || typeof rawContent !== "string")
@@ -36,6 +197,110 @@ function parseMessageContent(rawContent) {
         };
     }
     return { thinking: "", answer: rawContent };
+}
+
+function ThinkingBox({ thinking, isStreaming = false, defaultExpanded = true }) {
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+
+    if (!thinking) return null;
+
+    return (
+        <div
+            className="thinking-box"
+            style={{
+                borderRadius: "var(--radius-sm)",
+                backgroundColor: "var(--bg-secondary)",
+                border: "1px solid var(--border-subtle)",
+                marginBottom: "0.85rem",
+                overflow: "hidden",
+                transition: "all 0.15s ease",
+            }}
+        >
+            <div
+                onClick={() => setIsExpanded((prev) => !prev)}
+                title={isExpanded ? "Collapse thought process" : "Expand thought process"}
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: isExpanded
+                        ? "0.5rem 0.75rem 0.4rem 0.75rem"
+                        : "0.5rem 0.75rem",
+                    cursor: "pointer",
+                    userSelect: "none",
+                    fontWeight: 600,
+                    fontSize: "0.74rem",
+                    letterSpacing: "0.04em",
+                    color: "var(--text-muted)",
+                    transition: "color 0.15s ease, background-color 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                    e.currentTarget.style.color = "var(--text-primary)";
+                    e.currentTarget.style.backgroundColor = "var(--bg-card-hover)";
+                }}
+                onMouseLeave={(e) => {
+                    e.currentTarget.style.color = "var(--text-muted)";
+                    e.currentTarget.style.backgroundColor = "transparent";
+                }}
+            >
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.45rem",
+                    }}
+                >
+                    <Brain size={13} style={{ color: "var(--accent-terracotta)" }} />
+                    <span style={{ textTransform: "uppercase" }}>Thought Process</span>
+                    {isStreaming && (
+                        <span
+                            className="typing-dot"
+                            style={{
+                                display: "inline-block",
+                                width: "4px",
+                                height: "8px",
+                                backgroundColor: "var(--accent-terracotta)",
+                                marginLeft: "2px",
+                            }}
+                        />
+                    )}
+                </div>
+
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.3rem",
+                        fontSize: "0.72rem",
+                    }}
+                >
+                    <span style={{ opacity: 0.8 }}>
+                        {isExpanded ? "Collapse" : "Expand"}
+                    </span>
+                    {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                </div>
+            </div>
+
+            {isExpanded && (
+                <div
+                    style={{
+                        padding: "0.4rem 0.75rem 0.75rem 0.75rem",
+                        borderTop: "1px dashed var(--border-subtle)",
+                        fontSize: "0.78rem",
+                        lineHeight: 1.6,
+                        color: "var(--text-muted)",
+                        fontFamily: "var(--font-mono)",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                        maxHeight: "360px",
+                        overflowY: "auto",
+                    }}
+                >
+                    {thinking}
+                </div>
+            )}
+        </div>
+    );
 }
 
 export default function ChatView({
@@ -58,8 +323,14 @@ export default function ChatView({
 
     // Feature toggles
     const [webSearchActive, setWebSearchActive] = useState(false);
+    const [searchProvider, setSearchProvider] = useState("duckduckgo");
     const [deepResearchActive, setDeepResearchActive] = useState(false);
     const [agentModeActive, setAgentModeActive] = useState(true);
+
+    const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
+    const [showExtraTools, setShowExtraTools] = useState(false);
+    const modelDropdownRef = useRef(null);
+    const extraToolsRef = useRef(null);
 
     const abortControllerRef = useRef(null);
     const messagesEndRef = useRef(null);
@@ -68,6 +339,53 @@ export default function ChatView({
     const [isListening, setIsListening] = useState(false);
     const [speechModalInfo, setSpeechModalInfo] = useState(null);
     const [copiedSetting, setCopiedSetting] = useState(false);
+
+    // Load search provider from settings
+    useEffect(() => {
+        let isMounted = true;
+        getSettings()
+            .then((data) => {
+                if (isMounted && data?.settings?.search_provider) {
+                    setSearchProvider(data.settings.search_provider);
+                }
+            })
+            .catch(() => {});
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    // Close model dropdown on outside click
+    useEffect(() => {
+        if (!modelDropdownOpen) return;
+        const handleClickOutside = (e) => {
+            if (
+                modelDropdownRef.current &&
+                !modelDropdownRef.current.contains(e.target)
+            ) {
+                setModelDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, [modelDropdownOpen]);
+
+    // Close extra tools on outside click
+    useEffect(() => {
+        if (!showExtraTools) return;
+        const handleClickOutside = (e) => {
+            if (
+                extraToolsRef.current &&
+                !extraToolsRef.current.contains(e.target)
+            ) {
+                setShowExtraTools(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, [showExtraTools]);
 
     // Clean up Web Speech recognition on unmount
     useEffect(() => {
@@ -247,8 +565,9 @@ export default function ChatView({
         // Prepare system instructions incorporating mode flags
         let augmentedSystem = "";
         if (webSearchActive) {
+            const providerLabel = searchProvider === "searxng" ? "SearXNG" : "DuckDuckGo";
             augmentedSystem +=
-                "\n[Mode: SearXNG Web Search enabled for verified web answers]";
+                `\n[Mode: ${providerLabel} Web Search enabled for verified web answers]`;
         }
         if (deepResearchActive) {
             augmentedSystem +=
@@ -381,7 +700,7 @@ export default function ChatView({
                     gap: "1rem",
                 }}
             >
-                {/* Model selector & chat title */}
+                {/* Chat title */}
                 <div
                     style={{
                         display: "flex",
@@ -390,57 +709,11 @@ export default function ChatView({
                         minWidth: 0,
                     }}
                 >
-                    <div style={{ position: "relative" }}>
-                        <select
-                            value={activeModel || ""}
-                            onChange={(e) => {
-                                if (onModelChanged && e.target.value) {
-                                    onModelChanged(e.target.value);
-                                }
-                            }}
-                            style={{
-                                appearance: "none",
-                                backgroundColor: "var(--bg-secondary)",
-                                border: "1px solid var(--border-strong)",
-                                borderRadius: "var(--radius-full)",
-                                padding: "0.42rem 2.2rem 0.42rem 0.95rem",
-                                fontSize: "0.84rem",
-                                fontWeight: 600,
-                                color: "var(--text-primary)",
-                                outline: "none",
-                                cursor: "pointer",
-                                boxShadow: "var(--shadow-sm)",
-                            }}
-                        >
-                            {availableModels.length > 0 ? (
-                                availableModels.map((m) => (
-                                    <option key={m} value={m}>
-                                        {m}
-                                    </option>
-                                ))
-                            ) : (
-                                <option value={activeModel || "qwen3.5:9b"}>
-                                    {activeModel || "qwen3.5:9b"}
-                                </option>
-                            )}
-                        </select>
-                        <ChevronDown
-                            size={13}
-                            style={{
-                                position: "absolute",
-                                right: "11px",
-                                top: "50%",
-                                transform: "translateY(-50%)",
-                                pointerEvents: "none",
-                                color: "var(--text-muted)",
-                            }}
-                        />
-                    </div>
-
                     <span
                         style={{
-                            fontSize: "0.86rem",
-                            color: "var(--text-muted)",
+                            fontSize: "0.92rem",
+                            fontWeight: 600,
+                            color: "var(--text-primary)",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
@@ -450,100 +723,17 @@ export default function ChatView({
                     </span>
                 </div>
 
-                {/* Right side: Top Theme Switcher & Action Toggles */}
+                {/* Right side: Theme Switcher & Tools */}
                 <div
                     style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "0.5rem",
+                        gap: "0.6rem",
                         flexShrink: 0,
                     }}
                 >
                     {/* Top Light/Dark Theme Switcher Toggle */}
                     <ThemeToggle theme={theme} onToggle={onToggleTheme} />
-
-                    {/* Agent Mode Toggle */}
-                    <button
-                        onClick={() => setAgentModeActive(!agentModeActive)}
-                        title="Agent Mode: Sub-Agent Spawning & Execution"
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.35rem",
-                            padding: "0.35rem 0.65rem",
-                            borderRadius: "var(--radius-full)",
-                            backgroundColor: agentModeActive
-                                ? "rgba(200, 91, 56, 0.14)"
-                                : "var(--bg-secondary)",
-                            border: agentModeActive
-                                ? "1px solid var(--accent-terracotta)"
-                                : "1px solid var(--border-subtle)",
-                            fontSize: "0.75rem",
-                            fontWeight: 500,
-                            color: agentModeActive
-                                ? "var(--accent-terracotta)"
-                                : "var(--text-muted)",
-                        }}
-                    >
-                        <Brain size={13} />
-                        <span>Agent</span>
-                    </button>
-
-                    {/* Deep Research Toggle */}
-                    <button
-                        onClick={() =>
-                            setDeepResearchActive(!deepResearchActive)
-                        }
-                        title="Deep Research Mode (Future Roadmap)"
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.35rem",
-                            padding: "0.35rem 0.65rem",
-                            borderRadius: "var(--radius-full)",
-                            backgroundColor: deepResearchActive
-                                ? "rgba(217, 119, 6, 0.14)"
-                                : "var(--bg-secondary)",
-                            border: deepResearchActive
-                                ? "1px solid var(--accent-gold)"
-                                : "1px solid var(--border-subtle)",
-                            fontSize: "0.75rem",
-                            fontWeight: 500,
-                            color: deepResearchActive
-                                ? "var(--accent-gold)"
-                                : "var(--text-muted)",
-                        }}
-                    >
-                        <Sparkles size={13} />
-                        <span>Research</span>
-                    </button>
-
-                    {/* Web Search Toggle */}
-                    <button
-                        onClick={() => setWebSearchActive(!webSearchActive)}
-                        title="SearXNG Private Web Search (Future Roadmap)"
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.35rem",
-                            padding: "0.35rem 0.65rem",
-                            borderRadius: "var(--radius-full)",
-                            backgroundColor: webSearchActive
-                                ? "rgba(59, 130, 246, 0.14)"
-                                : "var(--bg-secondary)",
-                            border: webSearchActive
-                                ? "1px solid #3B82F6"
-                                : "1px solid var(--border-subtle)",
-                            fontSize: "0.75rem",
-                            fontWeight: 500,
-                            color: webSearchActive
-                                ? "#2563EB"
-                                : "var(--text-muted)",
-                        }}
-                    >
-                        <Globe size={13} />
-                        <span>SearXNG</span>
-                    </button>
 
                     {/* Quick Tools button */}
                     <button
@@ -553,13 +743,14 @@ export default function ChatView({
                             display: "flex",
                             alignItems: "center",
                             gap: "0.35rem",
-                            padding: "0.35rem 0.65rem",
+                            padding: "0.35rem 0.75rem",
                             borderRadius: "var(--radius-full)",
                             backgroundColor: "var(--bg-secondary)",
                             border: "1px solid var(--border-subtle)",
-                            fontSize: "0.75rem",
+                            fontSize: "0.78rem",
                             fontWeight: 500,
                             color: "var(--text-secondary)",
+                            cursor: "pointer",
                         }}
                     >
                         <Wrench size={13} />
@@ -576,17 +767,32 @@ export default function ChatView({
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    justifyContent: "center",
-                    padding: "1.5rem 1rem 8rem 1rem",
+                    justifyContent:
+                        messages.length === 0 && !isStreaming
+                            ? "center"
+                            : "flex-start",
+                    padding:
+                        messages.length === 0 && !isStreaming
+                            ? "1.5rem 1rem 8rem 1rem"
+                            : "2.75rem 1rem 10rem 1rem",
                 }}
             >
-                <div style={{
-                    width: "100%",
-                    maxWidth: "800px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}>
+                <div
+                    style={{
+                        width: "100%",
+                        maxWidth: "800px",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent:
+                            messages.length === 0 && !isStreaming
+                                ? "center"
+                                : "flex-start",
+                        paddingTop:
+                            messages.length > 0 || isStreaming
+                                ? "1.5rem"
+                                : "0",
+                    }}
+                >
                     {/* Welcome Screen when no messages */}
                     {messages.length === 0 && !isStreaming ? (
                         <div
@@ -806,41 +1012,10 @@ export default function ChatView({
                                                         return (
                                                             <>
                                                                 {thinking && (
-                                                                    <div className="thinking-box">
-                                                                        <div
-                                                                            style={{
-                                                                                display:
-                                                                                    "flex",
-                                                                                alignItems:
-                                                                                    "center",
-                                                                                gap: "0.4rem",
-                                                                                fontWeight: 600,
-                                                                                marginBottom:
-                                                                                    "0.35rem",
-                                                                                fontSize:
-                                                                                    "0.72rem",
-                                                                                textTransform:
-                                                                                    "uppercase",
-                                                                                letterSpacing:
-                                                                                    "0.05em",
-                                                                                color: "var(--text-muted)",
-                                                                            }}
-                                                                        >
-                                                                            <Brain
-                                                                                size={
-                                                                                    12
-                                                                                }
-                                                                            />
-                                                                            <span>
-                                                                                Thinking
-                                                                            </span>
-                                                                        </div>
-                                                                        <div>
-                                                                            {
-                                                                                thinking
-                                                                            }
-                                                                        </div>
-                                                                    </div>
+                                                                    <ThinkingBox
+                                                                        thinking={thinking}
+                                                                        defaultExpanded={true}
+                                                                    />
                                                                 )}
                                                                 <div className="markdown-body">
                                                                     {formatMarkdown(
@@ -946,38 +1121,11 @@ export default function ChatView({
 
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         {streamingThinking && (
-                                            <div className="thinking-box">
-                                                <div
-                                                    style={{
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        gap: "0.4rem",
-                                                        fontWeight: 600,
-                                                        marginBottom: "0.35rem",
-                                                        fontSize: "0.72rem",
-                                                        textTransform:
-                                                            "uppercase",
-                                                        letterSpacing: "0.05em",
-                                                        color: "var(--text-muted)",
-                                                    }}
-                                                >
-                                                    <Brain size={12} />
-                                                    <span>Thinking</span>
-                                                    <span
-                                                        className="typing-dot"
-                                                        style={{
-                                                            display:
-                                                                "inline-block",
-                                                            width: "4px",
-                                                            height: "8px",
-                                                            backgroundColor:
-                                                                "var(--text-muted)",
-                                                            marginLeft: "2px",
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div>{streamingThinking}</div>
-                                            </div>
+                                            <ThinkingBox
+                                                thinking={streamingThinking}
+                                                isStreaming={true}
+                                                defaultExpanded={true}
+                                            />
                                         )}
                                         {streamingContent && (
                                             <div className="markdown-body">
@@ -1029,30 +1177,321 @@ export default function ChatView({
                         maxWidth: "800px",
                         backgroundColor: "var(--bg-card)",
                         border: "1px solid var(--border-strong)",
-                        borderRadius: "var(--radius-lg)",
+                        borderRadius: "16px",
                         boxShadow: "var(--shadow-md)",
-                        padding: "0.75rem 1rem 0.65rem 1.15rem",
+                        padding: "0.85rem 1.1rem 0.75rem 1.1rem",
                         display: "flex",
                         flexDirection: "column",
-                        gap: "0.45rem",
-                        transition: "border-color 0.15s ease",
+                        gap: "0.6rem",
+                        minHeight: "96px",
+                        justifyContent: "space-between",
+                        transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+                        position: "relative",
                     }}
                 >
-                    {/* Auto-growing Textarea */}
-                    <textarea
-                        ref={textareaRef}
-                        className="auto-grow"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder={
-                            webSearchActive
-                                ? "Ask with SearXNG web search enabled..."
-                                : deepResearchActive
-                                  ? "Ask for in-depth research and reasoning..."
-                                  : "Ask Marnie, run code, or execute workspace tools..."
-                        }
-                    />
+                    {/* Extra options popover when ^ chevron is clicked */}
+                    {showExtraTools && (
+                        <div
+                            ref={extraToolsRef}
+                            style={{
+                                position: "absolute",
+                                bottom: "calc(100% + 8px)",
+                                left: "1rem",
+                                backgroundColor: "var(--bg-card)",
+                                border: "1px solid var(--border-strong)",
+                                borderRadius: "var(--radius-md)",
+                                boxShadow: "var(--shadow-lg)",
+                                padding: "0.5rem 0.75rem",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.6rem",
+                                zIndex: 30,
+                                animation: "fadeIn 0.15s ease",
+                            }}
+                        >
+                            {/* Voice input */}
+                            <button
+                                type="button"
+                                onClick={toggleSpeechRecognition}
+                                title={
+                                    isListening
+                                        ? "Stop listening"
+                                        : "Voice input (Speech to text)"
+                                }
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.35rem",
+                                    padding: "0.3rem 0.6rem",
+                                    borderRadius: "var(--radius-sm)",
+                                    backgroundColor: isListening
+                                        ? "rgba(239, 68, 68, 0.16)"
+                                        : "var(--bg-secondary)",
+                                    border: isListening
+                                        ? "1px solid #EF4444"
+                                        : "1px solid var(--border-subtle)",
+                                    color: isListening
+                                        ? "#EF4444"
+                                        : "var(--text-secondary)",
+                                    fontSize: "0.75rem",
+                                    fontWeight: 500,
+                                    cursor: "pointer",
+                                }}
+                            >
+                                {isListening ? <MicOff size={13} /> : <Mic size={13} />}
+                                <span>{isListening ? "Listening..." : "Voice input"}</span>
+                            </button>
+
+                            {/* Deep Research */}
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setDeepResearchActive(!deepResearchActive)
+                                }
+                                title="Deep Research Mode"
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.35rem",
+                                    padding: "0.3rem 0.6rem",
+                                    borderRadius: "var(--radius-sm)",
+                                    backgroundColor: deepResearchActive
+                                        ? "rgba(217, 119, 6, 0.14)"
+                                        : "var(--bg-secondary)",
+                                    border: deepResearchActive
+                                        ? "1px solid var(--accent-gold)"
+                                        : "1px solid var(--border-subtle)",
+                                    color: deepResearchActive
+                                        ? "var(--accent-gold)"
+                                        : "var(--text-secondary)",
+                                    fontSize: "0.75rem",
+                                    fontWeight: 500,
+                                    cursor: "pointer",
+                                }}
+                            >
+                                <Sparkles size={13} />
+                                <span>Deep Research</span>
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Top Row: Textarea on left, Model Switcher trigger on right */}
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            justifyContent: "space-between",
+                            gap: "0.75rem",
+                            width: "100%",
+                        }}
+                    >
+                        {/* Auto-growing Textarea */}
+                        <textarea
+                            ref={textareaRef}
+                            className="auto-grow"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder={
+                                webSearchActive
+                                    ? `Message Marnie with ${searchProvider === "searxng" ? "SearXNG" : "DuckDuckGo"}...`
+                                    : deepResearchActive
+                                      ? "Message Marnie (Deep Research)..."
+                                      : "Message Marnie ..."
+                            }
+                            rows={1}
+                            style={{
+                                flex: 1,
+                                minHeight: "36px",
+                                maxHeight: "160px",
+                                resize: "none",
+                                background: "transparent",
+                                border: "none",
+                                outline: "none",
+                                color: "var(--text-primary)",
+                                fontSize: "0.95rem",
+                                lineHeight: 1.5,
+                                padding: "2px 0 0 0",
+                                fontFamily: "inherit",
+                            }}
+                        />
+
+                        {/* Model Switcher inside Chatbox (Top Right) */}
+                        <div
+                            ref={modelDropdownRef}
+                            style={{ position: "relative", flexShrink: 0 }}
+                        >
+                            <button
+                                type="button"
+                                onClick={() => setModelDropdownOpen((prev) => !prev)}
+                                title="Switch model"
+                                style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "0.45rem",
+                                    padding: "0.25rem 0.5rem",
+                                    borderRadius: "var(--radius-sm)",
+                                    background: "transparent",
+                                    color: "var(--text-secondary)",
+                                    fontSize: "0.82rem",
+                                    fontWeight: 500,
+                                    cursor: "pointer",
+                                    transition: "all 0.15s ease",
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color =
+                                        "var(--text-primary)";
+                                    e.currentTarget.style.backgroundColor =
+                                        "var(--bg-secondary)";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color =
+                                        "var(--text-secondary)";
+                                    e.currentTarget.style.backgroundColor =
+                                        "transparent";
+                                }}
+                            >
+                                {/* 3 vertical bars / equalizer icon matching screenshot */}
+                                <svg
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 16 16"
+                                    fill="currentColor"
+                                    style={{ opacity: 0.85, flexShrink: 0 }}
+                                >
+                                    <rect x="2" y="7" width="2.2" height="7" rx="1.1" />
+                                    <rect x="7" y="2" width="2.2" height="12" rx="1.1" />
+                                    <rect x="12" y="5" width="2.2" height="9" rx="1.1" />
+                                </svg>
+                                <span
+                                    style={{
+                                        maxWidth: "140px",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                    }}
+                                >
+                                    {activeModel || "Select Model"}
+                                </span>
+                                {modelDropdownOpen ? (
+                                    <ChevronUp size={12} />
+                                ) : (
+                                    <ChevronDown size={12} />
+                                )}
+                            </button>
+
+                            {/* Dropdown Menu (Pops up above) */}
+                            {modelDropdownOpen && (
+                                <div
+                                    style={{
+                                        position: "absolute",
+                                        bottom: "calc(100% + 8px)",
+                                        right: 0,
+                                        minWidth: "220px",
+                                        maxWidth: "280px",
+                                        backgroundColor: "var(--bg-card)",
+                                        border: "1px solid var(--border-strong)",
+                                        borderRadius: "var(--radius-md)",
+                                        boxShadow: "var(--shadow-lg)",
+                                        padding: "0.4rem",
+                                        zIndex: 100,
+                                        maxHeight: "260px",
+                                        overflowY: "auto",
+                                        animation: "fadeIn 0.15s ease",
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            padding: "0.35rem 0.6rem 0.25rem 0.6rem",
+                                            fontSize: "0.7rem",
+                                            fontWeight: 600,
+                                            color: "var(--text-muted)",
+                                            textTransform: "uppercase",
+                                            letterSpacing: "0.05em",
+                                        }}
+                                    >
+                                        Select Model
+                                    </div>
+                                    {availableModels.length > 0 ? (
+                                        availableModels.map((m) => {
+                                            const isSelected = m === activeModel;
+                                            return (
+                                                <button
+                                                    key={m}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (onModelChanged)
+                                                            onModelChanged(m);
+                                                        setModelDropdownOpen(false);
+                                                    }}
+                                                    style={{
+                                                        width: "100%",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent:
+                                                            "space-between",
+                                                        padding: "0.45rem 0.65rem",
+                                                        borderRadius:
+                                                            "var(--radius-sm)",
+                                                        backgroundColor: isSelected
+                                                            ? "var(--accent-light)"
+                                                            : "transparent",
+                                                        color: isSelected
+                                                            ? "var(--accent-terracotta)"
+                                                            : "var(--text-primary)",
+                                                        fontSize: "0.82rem",
+                                                        fontWeight: isSelected
+                                                            ? 600
+                                                            : 400,
+                                                        textAlign: "left",
+                                                        cursor: "pointer",
+                                                        transition:
+                                                            "background-color 0.12s ease",
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        if (!isSelected)
+                                                            e.currentTarget.style.backgroundColor =
+                                                                "var(--bg-card-hover)";
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        if (!isSelected)
+                                                            e.currentTarget.style.backgroundColor =
+                                                                "transparent";
+                                                    }}
+                                                >
+                                                    <span
+                                                        style={{
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            whiteSpace: "nowrap",
+                                                        }}
+                                                    >
+                                                        {m}
+                                                    </span>
+                                                    {isSelected && (
+                                                        <Check
+                                                            size={14}
+                                                            color="var(--accent-terracotta)"
+                                                        />
+                                                    )}
+                                                </button>
+                                            );
+                                        })
+                                    ) : (
+                                        <div
+                                            style={{
+                                                padding: "0.5rem 0.65rem",
+                                                fontSize: "0.8rem",
+                                                color: "var(--text-muted)",
+                                            }}
+                                        >
+                                            {activeModel || "No models loaded"}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
 
                     {/* Bottom Controls Bar */}
                     <div
@@ -1063,71 +1502,7 @@ export default function ChatView({
                             paddingTop: "0.25rem",
                         }}
                     >
-                        {/* Feature Pills status */}
-                        <div
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.5rem",
-                                fontSize: "0.75rem",
-                                color: "var(--text-muted)",
-                            }}
-                        >
-                            <span
-                                style={{
-                                    color: agentModeActive
-                                        ? "var(--accent-terracotta)"
-                                        : "inherit",
-                                }}
-                            >
-                                {agentModeActive ? "Agent" : "Chat"}
-                            </span>
-                            {webSearchActive && (
-                                <>
-                                    <span>•</span>
-                                    <span style={{ color: "#2563EB" }}>
-                                        Web Search
-                                    </span>
-                                </>
-                            )}
-                            {deepResearchActive && (
-                                <>
-                                    <span>•</span>
-                                    <span
-                                        style={{ color: "var(--accent-gold)" }}
-                                    >
-                                        Deep Research
-                                    </span>
-                                </>
-                            )}
-                            {isListening && (
-                                <>
-                                    <span>•</span>
-                                    <span
-                                        style={{
-                                            color: "#EF4444",
-                                            fontWeight: 500,
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "0.25rem",
-                                        }}
-                                    >
-                                        <span
-                                            style={{
-                                                width: "6px",
-                                                height: "6px",
-                                                borderRadius: "50%",
-                                                backgroundColor: "#EF4444",
-                                                display: "inline-block",
-                                            }}
-                                        />
-                                        Listening...
-                                    </span>
-                                </>
-                            )}
-                        </div>
-
-                        {/* Actions: Voice input & Send / Stop Button */}
+                        {/* Left Action Buttons: Chevron, Search, Terminal */}
                         <div
                             style={{
                                 display: "flex",
@@ -1135,39 +1510,71 @@ export default function ChatView({
                                 gap: "0.45rem",
                             }}
                         >
-                            {/* Voice Input (Web Speech API) */}
+                            {/* Chevron up toggle */}
                             <button
                                 type="button"
-                                onClick={toggleSpeechRecognition}
+                                onClick={() => setShowExtraTools((prev) => !prev)}
                                 title={
-                                    isListening
-                                        ? "Stop listening"
-                                        : "Voice input (Speech to text)"
+                                    showExtraTools
+                                        ? "Hide options"
+                                        : "More tools (Voice, Deep Research)"
                                 }
                                 style={{
-                                    width: "32px",
-                                    height: "32px",
-                                    borderRadius: "var(--radius-full)",
-                                    backgroundColor: isListening
-                                        ? "rgba(239, 68, 68, 0.16)"
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: "28px",
+                                    height: "28px",
+                                    color: showExtraTools
+                                        ? "var(--text-primary)"
+                                        : "var(--text-muted)",
+                                    cursor: "pointer",
+                                    transition: "color 0.15s ease",
+                                    borderRadius: "6px",
+                                }}
+                                onMouseEnter={(e) =>
+                                    (e.currentTarget.style.color =
+                                        "var(--text-primary)")
+                                }
+                                onMouseLeave={(e) =>
+                                    (e.currentTarget.style.color = showExtraTools
+                                        ? "var(--text-primary)"
+                                        : "var(--text-muted)")
+                                }
+                            >
+                                <ChevronUp size={16} />
+                            </button>
+
+                            {/* Search Button (Web Search toggle) */}
+                            <button
+                                type="button"
+                                onClick={() => setWebSearchActive(!webSearchActive)}
+                                title={
+                                    webSearchActive
+                                        ? `${searchProvider === "searxng" ? "SearXNG" : "DuckDuckGo"} Web Search enabled`
+                                        : `Enable ${searchProvider === "searxng" ? "SearXNG" : "DuckDuckGo"} Web Search`
+                                }
+                                style={{
+                                    width: "30px",
+                                    height: "30px",
+                                    borderRadius: "8px",
+                                    backgroundColor: webSearchActive
+                                        ? "rgba(59, 130, 246, 0.18)"
                                         : "var(--bg-secondary)",
-                                    border: isListening
-                                        ? "1px solid #EF4444"
+                                    border: webSearchActive
+                                        ? "1px solid #3B82F6"
                                         : "1px solid var(--border-subtle)",
-                                    color: isListening
-                                        ? "#EF4444"
+                                    color: webSearchActive
+                                        ? "#3B82F6"
                                         : "var(--text-secondary)",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
                                     cursor: "pointer",
-                                    transition: "all 0.18s ease",
-                                    boxShadow: isListening
-                                        ? "0 0 10px rgba(239, 68, 68, 0.35)"
-                                        : "none",
+                                    transition: "all 0.15s ease",
                                 }}
                                 onMouseEnter={(e) => {
-                                    if (!isListening) {
+                                    if (!webSearchActive) {
                                         e.currentTarget.style.color =
                                             "var(--text-primary)";
                                         e.currentTarget.style.borderColor =
@@ -1175,7 +1582,7 @@ export default function ChatView({
                                     }
                                 }}
                                 onMouseLeave={(e) => {
-                                    if (!isListening) {
+                                    if (!webSearchActive) {
                                         e.currentTarget.style.color =
                                             "var(--text-secondary)";
                                         e.currentTarget.style.borderColor =
@@ -1183,13 +1590,151 @@ export default function ChatView({
                                     }
                                 }}
                             >
-                                {isListening ? (
-                                    <MicOff size={15} />
-                                ) : (
-                                    <Mic size={15} />
-                                )}
+                                <Search size={14} />
                             </button>
 
+                            {/* Terminal / Tools Button */}
+                            <button
+                                type="button"
+                                onClick={onOpenTools}
+                                title="Open Tools & Workspace Terminal"
+                                style={{
+                                    width: "30px",
+                                    height: "30px",
+                                    borderRadius: "8px",
+                                    backgroundColor: "var(--bg-secondary)",
+                                    border: "1px solid var(--border-subtle)",
+                                    color: "var(--text-secondary)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                    transition: "all 0.15s ease",
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color =
+                                        "var(--text-primary)";
+                                    e.currentTarget.style.borderColor =
+                                        "var(--border-strong)";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color =
+                                        "var(--text-secondary)";
+                                    e.currentTarget.style.borderColor =
+                                        "var(--border-subtle)";
+                                }}
+                            >
+                                <span
+                                    style={{
+                                        fontFamily: "var(--font-mono)",
+                                        fontSize: "0.8rem",
+                                        fontWeight: 700,
+                                        letterSpacing: "-1px",
+                                        lineHeight: 1,
+                                    }}
+                                >
+                                    &gt;_
+                                </span>
+                            </button>
+
+                            {/* Active speech recognition indicator */}
+                            {isListening && (
+                                <span
+                                    style={{
+                                        color: "#EF4444",
+                                        fontSize: "0.75rem",
+                                        fontWeight: 500,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "0.25rem",
+                                        marginLeft: "0.25rem",
+                                    }}
+                                >
+                                    <span
+                                        style={{
+                                            width: "6px",
+                                            height: "6px",
+                                            borderRadius: "50%",
+                                            backgroundColor: "#EF4444",
+                                            display: "inline-block",
+                                        }}
+                                    />
+                                    Listening...
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Right Action Controls: Agent / Chat Pill Toggle + Send Button */}
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.6rem",
+                            }}
+                        >
+                            {/* Segmented Pill Toggle: [ Agent | Chat ] */}
+                            <div
+                                style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    backgroundColor: "var(--bg-secondary)",
+                                    border: "1px solid var(--border-subtle)",
+                                    borderRadius: "9999px",
+                                    padding: "2px",
+                                    gap: "2px",
+                                }}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => setAgentModeActive(true)}
+                                    title="Agent Mode: Goals, tasks, and tool execution"
+                                    style={{
+                                        padding: "0.22rem 0.7rem",
+                                        borderRadius: "9999px",
+                                        fontSize: "0.78rem",
+                                        fontWeight: agentModeActive ? 600 : 500,
+                                        backgroundColor: agentModeActive
+                                            ? "var(--bg-card)"
+                                            : "transparent",
+                                        color: agentModeActive
+                                            ? "var(--text-primary)"
+                                            : "var(--text-muted)",
+                                        boxShadow: agentModeActive
+                                            ? "var(--shadow-sm)"
+                                            : "none",
+                                        cursor: "pointer",
+                                        transition: "all 0.15s ease",
+                                    }}
+                                >
+                                    Agent
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setAgentModeActive(false)}
+                                    title="Chat Mode: Standard conversational chat"
+                                    style={{
+                                        padding: "0.22rem 0.7rem",
+                                        borderRadius: "9999px",
+                                        fontSize: "0.78rem",
+                                        fontWeight: !agentModeActive ? 600 : 500,
+                                        backgroundColor: !agentModeActive
+                                            ? "var(--bg-card)"
+                                            : "transparent",
+                                        color: !agentModeActive
+                                            ? "var(--text-primary)"
+                                            : "var(--text-muted)",
+                                        boxShadow: !agentModeActive
+                                            ? "var(--shadow-sm)"
+                                            : "none",
+                                        cursor: "pointer",
+                                        transition: "all 0.15s ease",
+                                    }}
+                                >
+                                    Chat
+                                </button>
+                            </div>
+
+                            {/* Send / Stop Button */}
                             {isStreaming ? (
                                 <button
                                     onClick={handleStop}
@@ -1197,12 +1742,13 @@ export default function ChatView({
                                     style={{
                                         width: "32px",
                                         height: "32px",
-                                        borderRadius: "var(--radius-full)",
+                                        borderRadius: "8px",
                                         backgroundColor: "var(--text-primary)",
                                         color: "var(--bg-primary)",
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "center",
+                                        cursor: "pointer",
                                     }}
                                 >
                                     <Square size={13} fill="currentColor" />
@@ -1215,10 +1761,9 @@ export default function ChatView({
                                     style={{
                                         width: "32px",
                                         height: "32px",
-                                        borderRadius: "var(--radius-full)",
-                                        backgroundColor: input.trim()
-                                            ? "var(--accent-terracotta)"
-                                            : "var(--border-strong)",
+                                        borderRadius: "8px",
+                                        backgroundColor: "var(--accent-terracotta)",
+                                        opacity: input.trim() ? 1 : 0.65,
                                         color: "#FFFFFF",
                                         display: "flex",
                                         alignItems: "center",
@@ -1239,7 +1784,7 @@ export default function ChatView({
                                                 "var(--accent-terracotta)";
                                     }}
                                 >
-                                    <Send size={15} />
+                                    <ArrowUp size={16} strokeWidth={2.5} />
                                 </button>
                             )}
                         </div>
@@ -1578,13 +2123,40 @@ export default function ChatView({
 }
 
 
+function renderKaTeX(formula, isBlock = false) {
+    try {
+        const html = katex.renderToString(formula, {
+            displayMode: isBlock,
+            throwOnError: false,
+        });
+        return (
+            <span
+                dangerouslySetInnerHTML={{ __html: html }}
+                style={isBlock ? { display: "block", margin: "0.75rem 0", textAlign: "center", overflowX: "auto" } : {}}
+            />
+        );
+    } catch {
+        return <code>{formula}</code>;
+    }
+}
+
 function formatMarkdown(content) {
     if (!content) return null;
 
-    // Split content by code blocks ```...```
-    const parts = content.split(/(```[\s\S]*?```)/g);
+    // Filter em dashes from non-code portions before rendering
+    // (code blocks in ```...``` are kept untouched)
+    const rawParts = content.split(/(```[\s\S]*?```)/g);
+    const normalizedParts = rawParts.map((p) => {
+        if (p.startsWith("```") && p.endsWith("```")) return p;
+        return p.replace(/[\u2014\u2013]/g, " - ");
+    });
+    const cleanContent = normalizedParts.join("");
+
+    // Split content by code blocks ```...``` and display math $$...$$
+    const parts = cleanContent.split(/(```[\s\S]*?```|\$\$[\s\S]*?\$\$)/g);
 
     return parts.map((part, index) => {
+        // 1. Code blocks
         if (part.startsWith("```") && part.endsWith("```")) {
             const firstLineBreak = part.indexOf("\n");
             const lang =
@@ -1595,6 +2167,11 @@ function formatMarkdown(content) {
                 firstLineBreak !== -1
                     ? part.slice(firstLineBreak + 1, -3)
                     : part.slice(3, -3);
+
+            // Check if lang is mermaid
+            if (lang.toLowerCase() === "mermaid") {
+                return <MermaidBlock key={index} chart={code} />;
+            }
 
             // If code block is just { "sent": true }, display as plain text Successful
             try {
@@ -1646,7 +2223,13 @@ function formatMarkdown(content) {
             );
         }
 
-        // Process inline markdown (paragraphs, headers, bold, italics, inline code)
+        // 2. Block math $$...$$
+        if (part.startsWith("$$") && part.endsWith("$$")) {
+            const formula = part.slice(2, -2).trim();
+            return <div key={index}>{renderKaTeX(formula, true)}</div>;
+        }
+
+        // 3. Process inline markdown (paragraphs, headers, bold, italics, inline math $...$)
         const lines = part.split("\n");
         return (
             <React.Fragment key={index}>
@@ -1683,16 +2266,23 @@ function formatMarkdown(content) {
 }
 
 function renderInline(str) {
-    const tokens = str.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g);
+    // Split by inline code (`...`), bold (**...**), italics (*...*), or inline math ($...$)
+    const tokens = str.split(/(`[^`]+`|\$\$(?:[^\$]+)\$\$|\$(?:[^\$\n]+)\$|\*\*[^*]+\*\*|\*[^*]+\*)/g);
     return tokens.map((tok, i) => {
         if (tok.startsWith("`") && tok.endsWith("`")) {
             return <code key={i}>{tok.slice(1, -1)}</code>;
         }
+        if (tok.startsWith("$$") && tok.endsWith("$$")) {
+            return <span key={i}>{renderKaTeX(tok.slice(2, -2), true)}</span>;
+        }
+        if (tok.startsWith("$") && tok.endsWith("$") && tok.length > 2) {
+            return <span key={i}>{renderKaTeX(tok.slice(1, -1), false)}</span>;
+        }
         if (tok.startsWith("**") && tok.endsWith("**")) {
-            return <strong key={i}>{tok.slice(2, -2)}</strong>;
+            return <strong key={i}>{renderInline(tok.slice(2, -2))}</strong>;
         }
         if (tok.startsWith("*") && tok.endsWith("*")) {
-            return <em key={i}>{tok.slice(1, -1)}</em>;
+            return <em key={i}>{renderInline(tok.slice(1, -1))}</em>;
         }
         return tok;
     });

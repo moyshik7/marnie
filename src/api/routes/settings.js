@@ -40,6 +40,7 @@ const updateSettingsHandler = (req, res) => {
     'default_model',
     'discord_webhook_url',
     'searxng_url',
+    'search_provider',
     'deep_research_enabled',
     'agent_mode_enabled',
     'system_prompt',

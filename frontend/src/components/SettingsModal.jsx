@@ -8,6 +8,7 @@ import {
     Database,
     RefreshCw,
     BotIcon,
+    Globe,
 } from "lucide-react";
 import {
     getSettings,
@@ -36,6 +37,7 @@ export default function SettingsModal({
     const [availableModels, setAvailableModels] = useState([]);
     const [discordWebhook, setDiscordWebhook] = useState("");
     const [searxngUrl, setSearxngUrl] = useState("http://localhost:8080");
+    const [searchProvider, setSearchProvider] = useState("duckduckgo");
     const [deepResearchEnabled, setDeepResearchEnabled] = useState(false);
     const [agentModeEnabled, setAgentModeEnabled] = useState(true);
     const [systemPrompt, setSystemPrompt] = useState("");
@@ -63,6 +65,7 @@ export default function SettingsModal({
             if (s.default_model) setDefaultModel(s.default_model);
             if (s.discord_webhook_url) setDiscordWebhook(s.discord_webhook_url);
             if (s.searxng_url) setSearxngUrl(s.searxng_url);
+            if (s.search_provider) setSearchProvider(s.search_provider);
             if (s.deep_research_enabled)
                 setDeepResearchEnabled(s.deep_research_enabled === "true");
             if (s.agent_mode_enabled)
@@ -133,6 +136,7 @@ export default function SettingsModal({
                 default_model: defaultModel,
                 discord_webhook_url: discordWebhook,
                 searxng_url: searxngUrl,
+                search_provider: searchProvider,
                 deep_research_enabled: String(deepResearchEnabled),
                 agent_mode_enabled: String(agentModeEnabled),
                 system_prompt: systemPrompt,
@@ -151,6 +155,7 @@ export default function SettingsModal({
                     default_model: defaultModel,
                     discord_webhook_url: discordWebhook,
                     searxng_url: searxngUrl,
+                    search_provider: searchProvider,
                     deep_research_enabled: deepResearchEnabled,
                     agent_mode_enabled: agentModeEnabled,
                 });
@@ -267,6 +272,7 @@ export default function SettingsModal({
                     {[
                         { id: "ollama", label: "AI", icon: Cpu },
                         { id: "discord", label: "Integrations", icon: Bell },
+                        { id: "websearch", label: "Web Search", icon: Globe },
                         {
                             id: "future",
                             label: "Research & Agents (Future)",
@@ -610,6 +616,178 @@ export default function SettingsModal({
                                     Channel webhook for real-time task
                                     notifications, Scheduled Job alerts, and
                                     error reports.
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB: WEB SEARCH */}
+                    {activeTab === "websearch" && (
+                        <div
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "1.25rem",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    padding: "0.85rem 1rem",
+                                    backgroundColor: "rgba(200, 91, 56, 0.08)",
+                                    border: "1px solid rgba(200, 91, 56, 0.25)",
+                                    borderRadius: "var(--radius-sm)",
+                                    fontSize: "0.82rem",
+                                    color: "var(--text-primary)",
+                                    lineHeight: 1.5,
+                                }}
+                            >
+                                <strong>Web Search Provider:</strong> Choose how Marnie retrieves real-time web results. You can switch between DuckDuckGo (instant, no setup required) and a private self-hosted SearXNG instance.
+                            </div>
+
+                            {/* Search Provider Selector */}
+                            <div>
+                                <label
+                                    style={{
+                                        display: "block",
+                                        fontSize: "0.82rem",
+                                        fontWeight: 600,
+                                        color: "var(--text-primary)",
+                                        marginBottom: "0.5rem",
+                                    }}
+                                >
+                                    Active Search Engine
+                                </label>
+                                <div
+                                    style={{
+                                        display: "grid",
+                                        gridTemplateColumns: "1fr 1fr",
+                                        gap: "0.75rem",
+                                    }}
+                                >
+                                    <div
+                                        onClick={() => setSearchProvider("duckduckgo")}
+                                        style={{
+                                            padding: "0.85rem 1rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            border: searchProvider === "duckduckgo"
+                                                ? "2px solid var(--accent-terracotta)"
+                                                : "1px solid var(--border-subtle)",
+                                            backgroundColor: searchProvider === "duckduckgo"
+                                                ? "rgba(200, 91, 56, 0.06)"
+                                                : "var(--bg-card)",
+                                            cursor: "pointer",
+                                            transition: "all 0.15s ease",
+                                        }}
+                                    >
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.3rem" }}>
+                                            <span style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-primary)" }}>
+                                                DuckDuckGo
+                                            </span>
+                                            <span
+                                                style={{
+                                                    fontSize: "0.68rem",
+                                                    padding: "0.15rem 0.45rem",
+                                                    borderRadius: "4px",
+                                                    backgroundColor: "rgba(34, 197, 94, 0.15)",
+                                                    color: "#22c55e",
+                                                    fontWeight: 600,
+                                                }}
+                                            >
+                                                Default / Ready
+                                            </span>
+                                        </div>
+                                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
+                                            Fast, privacy-friendly search without needing any local daemon or API key.
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        onClick={() => setSearchProvider("searxng")}
+                                        style={{
+                                            padding: "0.85rem 1rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            border: searchProvider === "searxng"
+                                                ? "2px solid var(--accent-terracotta)"
+                                                : "1px solid var(--border-subtle)",
+                                            backgroundColor: searchProvider === "searxng"
+                                                ? "rgba(200, 91, 56, 0.06)"
+                                                : "var(--bg-card)",
+                                            cursor: "pointer",
+                                            transition: "all 0.15s ease",
+                                        }}
+                                    >
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.3rem" }}>
+                                            <span style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-primary)" }}>
+                                                SearXNG
+                                            </span>
+                                            <span
+                                                style={{
+                                                    fontSize: "0.68rem",
+                                                    padding: "0.15rem 0.45rem",
+                                                    borderRadius: "4px",
+                                                    backgroundColor: "var(--bg-tertiary)",
+                                                    color: "var(--text-muted)",
+                                                }}
+                                            >
+                                                Self-Hosted
+                                            </span>
+                                        </div>
+                                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
+                                            Self-hosted metasearch instance aggregating 70+ search engines.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* SearXNG URL input (shown if searxng is selected or as secondary config) */}
+                            <div>
+                                <label
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        fontSize: "0.82rem",
+                                        fontWeight: 600,
+                                        color: "var(--text-primary)",
+                                        marginBottom: "0.35rem",
+                                    }}
+                                >
+                                    <span>SearXNG Search Endpoint</span>
+                                    {searchProvider !== "searxng" && (
+                                        <span
+                                            style={{
+                                                fontSize: "0.7rem",
+                                                color: "var(--text-muted)",
+                                            }}
+                                        >
+                                            (Optional unless SearXNG is active)
+                                        </span>
+                                    )}
+                                </label>
+                                <input
+                                    type="text"
+                                    value={searxngUrl}
+                                    onChange={(e) => setSearxngUrl(e.target.value)}
+                                    placeholder="http://localhost:8080"
+                                    style={{
+                                        width: "100%",
+                                        padding: "0.6rem 0.75rem",
+                                        borderRadius: "var(--radius-sm)",
+                                        border: "1px solid var(--border-strong)",
+                                        backgroundColor: "var(--bg-card)",
+                                        fontSize: "0.88rem",
+                                        color: "var(--text-primary)",
+                                        outline: "none",
+                                    }}
+                                />
+                                <div
+                                    style={{
+                                        fontSize: "0.75rem",
+                                        color: "var(--text-muted)",
+                                        marginTop: "0.35rem",
+                                    }}
+                                >
+                                    URL of your local or remote SearXNG instance (e.g. <code>http://localhost:8080</code>).
                                 </div>
                             </div>
                         </div>

@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const db = require('../../db/index');
 const ollama = require('../../components/providers/ollama/interact');
 const { executeTool, buildSystemPrompt, parseToolCalls, OLLAMA_TOOLS } = require('../../components/tools/registry');
+const { filterEmDashes } = require('../../components/tools/emDashFilter');
 
 function getEffectiveSystemPrompt(customSystem = '') {
   let dbSystemPrompt = '';
@@ -26,6 +27,18 @@ async function runToolCallsAndFormat(toolCalls) {
       if (res && typeof res === 'object') {
         if (call.name === 'send_alert' || call.name === 'discord_alert' || (res.sent === true && Object.keys(res).length === 1)) {
           output += `\nSuccessful\n`;
+        } else if ((call.name === 'set_timer' || call.name === 'timer') && res.status) {
+          output += `\n${res.status}\n`;
+        } else if ((call.name === 'web_search' || call.name === 'duckduckgo_search' || call.name === 'searxng_search') && Array.isArray(res.results)) {
+          if (res.results.length === 0) {
+            output += `\n*No results found for "${res.query || ''}".*\n`;
+          } else {
+            output += `\n**Web Search Results (${res.provider || 'web'}):**\n\n`;
+            for (let i = 0; i < res.results.length; i++) {
+              const r = res.results[i];
+              output += `${i + 1}. [${r.title || 'Untitled'}](${r.url})\n   ${r.snippet || ''}\n\n`;
+            }
+          }
         } else if (res.stdout !== undefined || res.stderr !== undefined) {
           if (res.stdout) output += `\`\`\`\n${res.stdout.trimEnd()}\n\`\`\`\n`;
           if (res.stderr) output += `\`\`\`stderr\n${res.stderr.trimEnd()}\n\`\`\`\n`;
@@ -68,11 +81,14 @@ function touchConv(id) {
 
 function insertMsg(convId, role, content, toolCalls = null, toolCallId = null) {
   const id = uuidv4();
+  const filteredContent = role === 'assistant' && typeof content === 'string'
+    ? filterEmDashes(content)
+    : content;
   stmtMsgInsert.run({
     id,
     conversation_id: convId,
     role,
-    content,
+    content: filteredContent,
     tool_calls: toolCalls ? JSON.stringify(toolCalls) : null,
     tool_call_id: toolCallId,
   });
@@ -462,7 +478,7 @@ router.post('/complete', async (req, res) => {
       const finalContent = thinkingContent
         ? `<think>\n${thinkingContent.trim()}\n</think>\n\n${assistantContent.trim()}`
         : assistantContent;
-      res.json({ message: { role: 'assistant', content: finalContent }, usage: response });
+      res.json({ message: { role: 'assistant', content: filterEmDashes(finalContent) }, usage: response });
     }
   } catch (err) {
     res.status(502).json({ error: 'LLM provider error', detail: err.message });

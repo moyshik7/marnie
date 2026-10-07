@@ -35,20 +35,29 @@ A self-hosted AI workspace made in nodejs with features according to my own pref
 
 ## Integrations:
 - [x] Discord Webhook
+- [x] Duckduckgo search
+- [x] SearXNG
+- [ ] Brave search
+- [ ] Mail
 
 ## LLM Sources
 - [x] Ollama
+- [ ] llama.cpp
 - [ ] Gemini API
 - [ ] Anthropic API
 - [ ] OpenAI API
 - [ ] Deepseek API
 - [ ] Openrouter
+- [ ] Cloudflare
+- [ ] Vercel
 
 ## Features
 - [x] Chat
 - [x] Agent Mode
 - [ ] Deep Research
 - [ ] Deep Research Report
+- [x] Mermaid Preview
+- [x] Latex Math Preview
 
 
 

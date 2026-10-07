@@ -261,3 +261,19 @@ export async function resumeCronJob(id) {
 export async function deleteCronJob(id) {
   return request(`/cron/${id}`, { method: 'DELETE' });
 }
+
+// ── Timers ──────────────────────────────────────────────────
+export async function setTimer({ seconds, duration, message, title }) {
+  return request('/tools/timer', {
+    method: 'POST',
+    body: JSON.stringify({ seconds, duration, message, title }),
+  });
+}
+
+export async function listTimers() {
+  return request('/tools/timer');
+}
+
+export async function cancelTimer(id) {
+  return request(`/tools/timer/${id}`, { method: 'DELETE' });
+}
