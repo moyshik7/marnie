@@ -1,6 +1,17 @@
 # Marnie
-A self-hosted AI workspace like Odysseus (by pewdiepie) but made in nodejs with more (and in some cases less) features according to my own preference
+A self-hosted AI workspace made in nodejs with features according to my own preference.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/screenshot-browser.png" alt="Marnie Ui (In browser)"/>
+</p>
+
+<br />
+
 ### Name taken from 2014 anime "When Marnie Was There"
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/when-marnie-was-there-original-poster.png" alt="When Marnie was here original poster"/>
+</p>
 
 
 ## Tools
