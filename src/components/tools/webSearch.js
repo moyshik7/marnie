@@ -93,7 +93,25 @@ async function searchSearXNG(query, maxResults = 5, customUrl) {
  * Unified web search tool.
  * Provider can be 'duckduckgo' or 'searxng' (defaults to search_provider setting in DB).
  */
-async function search({ query, maxResults = 5, provider } = {}) {
+async function search(arg1, arg2) {
+  let query;
+  let maxResults = 5;
+  let provider;
+
+  if (typeof arg1 === 'string') {
+    query = arg1;
+    if (typeof arg2 === 'object' && arg2 !== null) {
+      if (arg2.maxResults !== undefined) maxResults = arg2.maxResults;
+      if (arg2.provider !== undefined) provider = arg2.provider;
+    } else if (typeof arg2 === 'number') {
+      maxResults = arg2;
+    }
+  } else if (typeof arg1 === 'object' && arg1 !== null) {
+    query = arg1.query;
+    if (arg1.maxResults !== undefined) maxResults = arg1.maxResults;
+    if (arg1.provider !== undefined) provider = arg1.provider;
+  }
+
   if (!query || typeof query !== 'string' || !query.trim()) {
     throw Object.assign(new Error('`query` parameter is required for web search.'), { status: 400 });
   }
@@ -137,6 +155,7 @@ async function search({ query, maxResults = 5, provider } = {}) {
 
 module.exports = {
   search,
+  searchWeb: search,
   searchDuckDuckGo,
   searchSearXNG,
 };

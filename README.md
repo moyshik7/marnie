@@ -15,10 +15,10 @@ A self-hosted AI workspace made in nodejs with features according to my own pref
 
 
 ## Tools
-- [ ] Web search
+- [x] Web search
 - [x] Terminal access
 - [x] Filesystem search
-- [ ] Get current datetime
+- [x] Get current datetime
 - [ ] Get current weather
 - [ ] Send api requests
     - [ ] GET
@@ -39,6 +39,7 @@ A self-hosted AI workspace made in nodejs with features according to my own pref
 - [x] SearXNG
 - [ ] Brave search
 - [ ] Mail
+- [ ] OCR for uploaded files
 
 ## LLM Sources
 - [x] Ollama

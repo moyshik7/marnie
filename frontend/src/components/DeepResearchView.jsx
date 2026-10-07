@@ -45,7 +45,9 @@ export default function DeepResearchView({
 
     // Form inputs for new research
     const [topic, setTopic] = useState("");
-    const [model, setModel] = useState(activeModel || "llama3.2");
+    const [model, setModel] = useState(
+        activeModel || (availableModels.length > 0 ? availableModels[0] : "qwen3.5:9b")
+    );
     const [minRevisions, setMinRevisions] = useState(1);
     const [maxRevisions, setMaxRevisions] = useState(3);
     const [maxResults, setMaxResults] = useState(5);
@@ -55,10 +57,18 @@ export default function DeepResearchView({
     const [activeTab, setActiveTab] = useState("all"); // 'all' | 'in_progress' | 'completed'
 
     useEffect(() => {
-        if (activeModel && (!model || model === "llama3.2")) {
+        if (availableModels && availableModels.length > 0) {
+            if (!model || model === "llama3.2" || !availableModels.includes(model)) {
+                const preferred =
+                    activeModel && availableModels.includes(activeModel)
+                        ? activeModel
+                        : availableModels[0];
+                setModel(preferred);
+            }
+        } else if (activeModel && activeModel !== "llama3.2") {
             setModel(activeModel);
         }
-    }, [activeModel]);
+    }, [availableModels, activeModel]);
 
     // Initial load and periodic polling
     useEffect(() => {
@@ -105,9 +115,14 @@ export default function DeepResearchView({
 
         setSubmitting(true);
         try {
+            const chosenModel =
+                model ||
+                activeModel ||
+                (availableModels.length > 0 ? availableModels[0] : "qwen3.5:9b");
+
             const created = await startDeepResearch({
                 topic: topic.trim(),
-                model: model || activeModel,
+                model: chosenModel,
                 minRevisions: parseInt(minRevisions, 10) || 1,
                 maxRevisions: parseInt(maxRevisions, 10) || 3,
                 maxResults: parseInt(maxResults, 10) || 5,
@@ -115,10 +130,10 @@ export default function DeepResearchView({
 
             setTopic("");
             setIsCreating(false);
-            await fetchResearches();
             if (created?.id) {
                 setSelectedResearchId(created.id);
             }
+            await fetchResearches();
         } catch (err) {
             alert(`Error launching research: ${err.message}`);
         } finally {
@@ -181,14 +196,14 @@ export default function DeepResearchView({
             {/* Left Column: Research Sessions List & Filters */}
             <div
                 style={{
-                    width: selectedResearch ? "360px" : "100%",
-                    maxWidth: selectedResearch ? "400px" : "100%",
+                    width: "360px",
+                    minWidth: "320px",
+                    maxWidth: "380px",
                     height: "100%",
-                    borderRight: selectedResearch ? "1px solid var(--border-subtle)" : "none",
+                    borderRight: "1px solid var(--border-subtle)",
                     display: "flex",
                     flexDirection: "column",
                     backgroundColor: "var(--bg-secondary)",
-                    transition: "width 0.2s ease",
                     flexShrink: 0,
                 }}
             >
@@ -662,6 +677,7 @@ export default function DeepResearchView({
                                     onChange={(e) => setTopic(e.target.value)}
                                     placeholder="e.g. State-of-the-art in small reasoning models (Qwen 2.5, DeepSeek R1), comparison of architectural techniques, test-time compute, and hardware efficiency..."
                                     rows={4}
+                                    autoFocus
                                     style={{
                                         width: "100%",
                                         padding: "0.75rem 1rem",
@@ -717,7 +733,10 @@ export default function DeepResearchView({
                                             outline: "none",
                                         }}
                                     >
-                                        {availableModels.map((m) => (
+                                        {(availableModels.length > 0
+                                            ? availableModels
+                                            : [model || activeModel || "qwen3.5:9b"]
+                                        ).map((m) => (
                                             <option key={m} value={m}>
                                                 {m}
                                             </option>

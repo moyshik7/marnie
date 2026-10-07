@@ -34,16 +34,20 @@ async function listModels() {
  * Otherwise fallback to DB default or first available model in Ollama.
  */
 async function resolveModel(requestedModel) {
-  if (requestedModel && typeof requestedModel === 'string' && requestedModel.trim()) {
-    return requestedModel.trim();
-  }
-  const configured = DEFAULT_MODEL();
   try {
     const models = await listModels();
+    if (requestedModel && typeof requestedModel === 'string' && requestedModel.trim()) {
+      const trimmed = requestedModel.trim();
+      if (models.includes(trimmed)) return trimmed;
+      const baseName = trimmed.split(':')[0];
+      const match = models.find((m) => m === trimmed || m.startsWith(baseName + ':') || m === baseName);
+      if (match) return match;
+    }
+    const configured = DEFAULT_MODEL();
     if (models.includes(configured)) return configured;
     if (models.length > 0) return models[0];
   } catch {}
-  return configured;
+  return requestedModel || DEFAULT_MODEL();
 }
 
 /**
