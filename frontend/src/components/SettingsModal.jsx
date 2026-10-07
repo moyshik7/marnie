@@ -3,15 +3,11 @@ import {
     X,
     Check,
     AlertCircle,
-    Server,
     Bell,
     Cpu,
     Database,
-    Sparkles,
-    Globe,
-    Bot,
     RefreshCw,
-    ExternalLink,
+    BotIcon,
 } from "lucide-react";
 import {
     getSettings,
@@ -270,15 +266,15 @@ export default function SettingsModal({
                 >
                     {[
                         { id: "ollama", label: "AI", icon: Cpu },
-                        { id: "discord", label: "Discord Webhook", icon: Bell },
+                        { id: "discord", label: "Integrations", icon: Bell },
                         {
                             id: "future",
                             label: "Research & Agents (Future)",
-                            icon: Sparkles,
+                            icon: BotIcon,
                         },
                         {
                             id: "storage",
-                            label: "Memory & SQLite",
+                            label: "Memory",
                             icon: Database,
                         },
                     ].map((tab) => {
@@ -503,7 +499,7 @@ export default function SettingsModal({
                                         marginBottom: "0.35rem",
                                     }}
                                 >
-                                    Workspace System Prompt
+                                    System Prompt
                                 </label>
                                 <textarea
                                     value={systemPrompt}
@@ -614,68 +610,6 @@ export default function SettingsModal({
                                     Channel webhook for real-time task
                                     notifications, Scheduled Job alerts, and
                                     error reports.
-                                </div>
-
-                                {discordStatus && (
-                                    <div
-                                        style={{
-                                            marginTop: "0.65rem",
-                                            padding: "0.5rem 0.75rem",
-                                            borderRadius: "var(--radius-sm)",
-                                            backgroundColor: discordStatus.ok
-                                                ? "rgba(74, 222, 128, 0.12)"
-                                                : "rgba(239, 68, 68, 0.12)",
-                                            color: discordStatus.ok
-                                                ? "#15803D"
-                                                : "#DC2626",
-                                            fontSize: "0.8rem",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "0.4rem",
-                                        }}
-                                    >
-                                        {discordStatus.ok ? (
-                                            <Check size={14} />
-                                        ) : (
-                                            <AlertCircle size={14} />
-                                        )}
-                                        <span>{discordStatus.message}</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div
-                                style={{
-                                    padding: "1rem",
-                                    backgroundColor: "var(--bg-secondary)",
-                                    borderRadius: "var(--radius-sm)",
-                                    border: "1px solid var(--border-subtle)",
-                                    fontSize: "0.82rem",
-                                    color: "var(--text-secondary)",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: "0.5rem",
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        fontWeight: 600,
-                                        color: "var(--text-primary)",
-                                    }}
-                                >
-                                    How Discord alerts work:
-                                </div>
-                                <div>
-                                    • Scheduled Jobs configured with{" "}
-                                    <code>discord</code> action type will
-                                    automatically dispatch embeds to this
-                                    channel.
-                                </div>
-                                <div>
-                                    • The <code>/api/alerts/notify</code>{" "}
-                                    endpoint sends styled embeds with color
-                                    levels: Info (Blue), Success (Green),
-                                    Warning (Yellow), Error (Red).
                                 </div>
                             </div>
                         </div>

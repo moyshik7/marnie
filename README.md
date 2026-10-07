@@ -5,8 +5,8 @@ A self-hosted AI workspace like Odysseus (by pewdiepie) but made in nodejs with 
 
 ## Tools
 - [ ] Web search
-- [ ] Terminal access
-- [ ] Filesystem search
+- [x] Terminal access
+- [x] Filesystem search
 - [ ] Get current datetime
 - [ ] Get current weather
 - [ ] Send api requests
@@ -14,16 +14,16 @@ A self-hosted AI workspace like Odysseus (by pewdiepie) but made in nodejs with 
     - [ ] POST
 - [ ] Code run
     - [ ] Python
-    - [ ] Javascript (Nodejs)
-- [ ] Local File Create
-- [ ] Local File Read
-- [ ] Local File Write (Needs to read first to write to specific lines or edit the lines)
-- [ ] Create Tasks
-- [ ] Create cronjobs
+    - [x] Javascript (Nodejs)
+- [x] Local File Create
+- [x] Local File Read
+- [x] Local File Write (Needs to read first to write to specific lines or edit the lines)
+- [x] Create Tasks
+- [x] Create ~~cronjobs~~ scheduled tasks
 
 
 ## Integrations:
-- [ ] Discord Webhook
+- [x] Discord Webhook
 
 ## LLM Sources
 - [x] Ollama
@@ -34,8 +34,10 @@ A self-hosted AI workspace like Odysseus (by pewdiepie) but made in nodejs with 
 - [ ] Openrouter
 
 ## Features
-- [ ] Chat
+- [x] Chat
+- [x] Agent Mode
 - [ ] Deep Research
+- [ ] Deep Research Report
 
 
 
