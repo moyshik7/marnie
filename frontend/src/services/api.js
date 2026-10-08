@@ -214,6 +214,20 @@ export async function searchFiles(directory, pattern, useRegex = false) {
   });
 }
 
+export async function callApiTool({ url, method, headers, params, data, timeout }) {
+  return request('/tools/api-call', {
+    method: 'POST',
+    body: JSON.stringify({ url, method, headers, params, data, timeout }),
+  });
+}
+
+export async function scrapeWebpage(url, maxLength = 2000) {
+  return request('/tools/scrape', {
+    method: 'POST',
+    body: JSON.stringify({ url, maxLength }),
+  });
+}
+
 // ── Tasks ───────────────────────────────────────────────────
 export async function listTasks(status) {
   const query = status ? `?status=${encodeURIComponent(status)}` : '';

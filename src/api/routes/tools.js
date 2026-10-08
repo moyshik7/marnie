@@ -127,4 +127,29 @@ router.delete('/timer/:id', wrap((req, res) => {
   res.json(result);
 }));
 
+// ═══════════════════════════════════════════════════════════════════════════
+// POST /api/tools/api-call
+// Body: { url, method?, headers?, params?, data?, timeout? }
+// ═══════════════════════════════════════════════════════════════════════════
+const apiCall = require('../../components/tools/apiCall');
+
+router.post('/api-call', wrap(async (req, res) => {
+  const { url, method, headers, params, data, body, timeout } = req.body;
+  const result = await apiCall.callApi({ url, method, headers, params, data, body, timeout });
+  res.json(result);
+}));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// POST /api/tools/scrape
+// Body: { url, maxLength? }
+// ═══════════════════════════════════════════════════════════════════════════
+const webSearch = require('../../components/tools/webSearch');
+
+router.post('/scrape', wrap(async (req, res) => {
+  const { url, maxLength, max_length } = req.body;
+  if (!url) return res.status(400).json({ error: '`url` is required' });
+  const content = await webSearch.fetchPageContent(url, maxLength || max_length || 2000);
+  res.json({ url, content });
+}));
+
 module.exports = router;

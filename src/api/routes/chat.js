@@ -46,6 +46,13 @@ async function runToolCallsAndFormat(toolCalls) {
           }
         } else if ((call.name === 'fetch_webpage' || call.name === 'scrape_webpage') && res.url) {
           callOutput += `\n**Scraped Webpage Content (${res.url}):**\n\n${res.content}\n\n`;
+        } else if ((call.name === 'api_call' || call.name === 'http_request' || call.name === 'api') && res.status !== undefined) {
+          callOutput += `\n**HTTP Status:** \`${res.status} ${res.statusText || ''}\` (Duration: ${res.durationMs}ms)\n`;
+          if (res.data !== undefined && res.data !== null) {
+            const dataStr = typeof res.data === 'object' ? JSON.stringify(res.data, null, 2) : String(res.data);
+            const truncated = dataStr.length > 3500 ? dataStr.slice(0, 3500) + '\n... (truncated)' : dataStr;
+            callOutput += `\`\`\`json\n${truncated}\n\`\`\`\n`;
+          }
         } else if (res.stdout !== undefined || res.stderr !== undefined) {
           if (res.stdout) callOutput += `\`\`\`\n${res.stdout.trimEnd()}\n\`\`\`\n`;
           if (res.stderr) callOutput += `\`\`\`stderr\n${res.stderr.trimEnd()}\n\`\`\`\n`;

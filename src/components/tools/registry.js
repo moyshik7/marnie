@@ -11,6 +11,7 @@ const cronManager = require('./cronManager');
 const discord = require('./discord');
 const timer = require('./timer');
 const webSearch = require('./webSearch');
+const apiCall = require('./apiCall');
 
 const TOOLS = {
   run_javascript: {
@@ -134,6 +135,18 @@ const TOOLS = {
       };
     },
   },
+  api_call: {
+    description: 'Make a raw HTTP/API request (GET, POST, PUT, PATCH, DELETE, etc.) with custom headers, query params, and body data using axios.',
+    parameters: {
+      url: { type: 'string', description: 'The full HTTP/HTTPS URL to request', required: true },
+      method: { type: 'string', description: "HTTP method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' (default 'GET')" },
+      headers: { type: 'object', description: 'Optional key-value object of custom request headers' },
+      params: { type: 'object', description: 'Optional URL query parameters key-value object' },
+      data: { type: 'object', description: 'Optional request body payload (JSON object, string, or array)' },
+      timeout: { type: 'number', description: 'Request timeout in milliseconds (default 15000)' },
+    },
+    execute: async (args) => apiCall.callApi(args),
+  },
 };
 
 /**
@@ -172,6 +185,12 @@ async function executeTool(name, args = {}) {
     scrape_url: 'fetch_webpage',
     fetch_url: 'fetch_webpage',
     scrape: 'fetch_webpage',
+    api: 'api_call',
+    http_request: 'api_call',
+    curl: 'api_call',
+    http: 'api_call',
+    fetch: 'api_call',
+    request: 'api_call',
   };
 
   const toolName = aliasMap[name] || name;
@@ -201,7 +220,7 @@ You operate inside a real Linux environment and are equipped with native tools t
 
 CRITICAL INSTRUCTIONS:
 1. NEVER apologize or state "As an AI language model, I cannot execute code", "I cannot access external environments", or "I cannot interact with the operating system". You ARE connected to a real live backend and CAN execute code and commands.
-2. Whenever the user requests running code, testing commands, searching files, creating files, scheduling jobs, sending discord alerts, or creating tasks, YOU MUST EXECUTE the appropriate tool.
+2. Whenever the user requests running code, testing commands, searching files, creating files, scheduling jobs, sending discord alerts, making API calls, scraping websites, or creating tasks, YOU MUST EXECUTE the appropriate tool.
 3. STRICT NO-EMOJI RULE: DO NOT use emojis anywhere in your responses, thought process, tool arguments, reminders, cron actions, or discord alerts (absolutely NO bells, party poppers, cakes, or other emojis). All text must be clean, professional, plain text without emojis unless the user explicitly requests emojis.
 4. DO NOT write fake markdown headers like "> **Executed Tool:** ..." or "> 🛠️ **Executed Tool:** ...". The backend automatically runs your tool and returns real execution output. Writing fake execution markdown will fail and will not perform the action.
 5. To execute a tool, write a tool call block using either of the following formats (or use native tool calling):
@@ -227,17 +246,8 @@ ${toolsDescription}
 TOOL USAGE GUIDELINES:
 - WEB SEARCH INSTRUCTIONS: For searching the live internet for recent facts, news, documentation, or answers, call \`web_search\`. CRITICAL: Keep search terms short and concise (strictly 2 to 5 words, e.g. "latest nodejs release" or "qwen 2.5 benchmarks"). Do NOT use long sentences, questions, or conversational queries, as short keywords produce significantly better results.
 - SYNTHESIZING SEARCH RESULTS: After \`web_search\` is executed and results are retrieved, you MUST synthesize the retrieved information and provide a comprehensive, direct, and well-structured answer to the user's question citing the relevant facts or links. Never stop after the tool execution.
-- For sending Discord alerts, notifications, or messages right now, call \`send_alert\`.
-- For setting countdown timers that trigger a Discord alert after a given time, call \`set_timer\`.
-- For scheduling timers, reminders, or background jobs, call \`create_cron\`.
-- For running JavaScript or Node.js code snippets, call \`run_javascript\`.
-- For shell commands (e.g., git, package managers, system status), call \`run_bash\`.
-- For reading files before making edits, call \`read_file\` first, then \`write_file\`.
-- For saving user tasks and to-dos, call \`create_task\`.
-- MERMAID & DIAGRAMS INSTRUCTION: Whenever illustrating workflows, systems, architectures, timelines, state diagrams, or schemas, ALWAYS provide clear, valid Mermaid diagrams enclosed in \`\`\`mermaid code blocks. The workspace has built-in live preview for Mermaid diagrams.
-- LATEX MATH INSTRUCTION: For mathematical equations, proofs, and formulas, ALWAYS use LaTeX notation ($$...$$ for display block equations, $...$ for inline math). The workspace renders LaTeX with KaTeX.
-- NO EM DASHES INSTRUCTION: NEVER use em dashes (—). Always use standard hyphens or dashes (-) in your text.
-- When you emit a tool call, the system will execute it and deliver the real stdout/stderr back to the workspace.
+- SCRAPING WEBPAGES: For fetching clean article/page text from a specific URL, call \`fetch_webpage\` with the target \`url\`.
+- RAW API REQUESTS: For making REST or arbitrary HTTP/API calls (GET, POST, PUT, PATCH, DELETE) with custom headers, query params, or JSON payloads, call \`api_call\`.
 - For sending Discord alerts, notifications, or messages right now, call \`send_alert\`.
 - For setting countdown timers that trigger a Discord alert after a given time, call \`set_timer\`.
 - For scheduling timers, reminders, or background jobs, call \`create_cron\`.
@@ -300,7 +310,13 @@ function parseToolCalls(text) {
       const parsed = JSON.parse(match[1].trim());
       const toolName = parsed.name || parsed.tool;
       if (toolName && typeof toolName === 'string') {
-        const knownTools = ['run_javascript', 'run_bash', 'search_filesystem', 'read_file', 'create_file', 'write_file', 'create_task', 'list_tasks', 'create_cron', 'send_alert', 'set_timer', 'timer', 'web_search', 'search', 'javascript', 'bash', 'terminal', 'js'];
+        const knownTools = [
+          'run_javascript', 'run_bash', 'search_filesystem', 'read_file', 'create_file', 'write_file',
+          'create_task', 'list_tasks', 'create_cron', 'send_alert', 'set_timer', 'timer',
+          'web_search', 'search', 'javascript', 'bash', 'terminal', 'js',
+          'fetch_webpage', 'scrape_webpage', 'scrape_url', 'fetch_url', 'scrape',
+          'api_call', 'api', 'http_request', 'curl', 'http', 'fetch', 'request'
+        ];
         if (knownTools.includes(toolName.toLowerCase()) && !calls.some(c => c.raw === match[0])) {
           calls.push({
             raw: match[0],
