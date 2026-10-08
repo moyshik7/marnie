@@ -10,8 +10,10 @@ import {
     Wrench,
     Sun,
     Moon,
-    Sparkles,
+    Microscope,
     Bot,
+    ChevronLeft,
+    ChevronRight,
 } from "lucide-react";
 
 export default function Sidebar({
@@ -30,6 +32,8 @@ export default function Sidebar({
     onToggleTheme,
     backendConnected,
     activeModel,
+    isCollapsed = false,
+    onToggleCollapse,
 }) {
     const [editingId, setEditingId] = useState(null);
     const [editTitle, setEditTitle] = useState("");
@@ -56,7 +60,7 @@ export default function Sidebar({
     return (
         <aside
             style={{
-                width: "280px",
+                width: isCollapsed ? "64px" : "280px",
                 height: "100vh",
                 backgroundColor: "var(--bg-secondary)",
                 borderRight: "1px solid var(--border-subtle)",
@@ -64,23 +68,39 @@ export default function Sidebar({
                 flexDirection: "column",
                 flexShrink: 0,
                 userSelect: "none",
-                transition: "background-color 0.2s ease",
+                transition: "width 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease",
+                overflow: "hidden",
             }}
         >
             {/* Top Branding */}
             <div
                 style={{
-                    padding: "1.25rem 1.1rem 1rem 1.1rem",
+                    padding: isCollapsed ? "1.25rem 0.5rem 1rem 0.5rem" : "1.25rem 1.1rem 1rem 1.1rem",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "space-between",
+                    justifyContent: isCollapsed ? "center" : "space-between",
                 }}
             >
-                <div
+                <button
+                    onClick={onToggleCollapse}
+                    title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                     style={{
                         display: "flex",
                         alignItems: "center",
                         gap: "0.65rem",
+                        background: "none",
+                        border: "none",
+                        padding: "0.2rem",
+                        borderRadius: "var(--radius-sm)",
+                        cursor: "pointer",
+                        outline: "none",
+                        textAlign: "left",
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.opacity = "0.85";
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = "1";
                     }}
                 >
                     <img
@@ -92,71 +112,78 @@ export default function Sidebar({
                             borderRadius: "var(--radius-sm)",
                             objectFit: "contain",
                             boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+                            flexShrink: 0,
+                            cursor: "pointer",
                         }}
                     />
-                    <div>
-                        <div
-                            style={{
-                                fontFamily: "var(--font-display)",
-                                fontSize: "1.25rem",
-                                fontWeight: 700,
-                                lineHeight: 1.1,
-                                color: "var(--text-primary)",
-                                letterSpacing: "-0.02em",
-                            }}
-                        >
-                            Marnie
+                    {!isCollapsed && (
+                        <div>
+                            <div
+                                style={{
+                                    fontFamily: "var(--font-display)",
+                                    fontSize: "1.25rem",
+                                    fontWeight: 700,
+                                    lineHeight: 1.1,
+                                    color: "var(--text-primary)",
+                                    letterSpacing: "-0.02em",
+                                }}
+                            >
+                                Marnie
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    )}
+                </button>
 
                 {/* Backend status dot */}
-                <div
-                    title={
-                        backendConnected
-                            ? "Backend Connected"
-                            : "Connecting to Backend..."
-                    }
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.35rem",
-                        padding: "0.2rem 0.5rem",
-                        borderRadius: "var(--radius-full)",
-                        backgroundColor: backendConnected
-                            ? "rgba(74, 222, 128, 0.12)"
-                            : "rgba(239, 68, 68, 0.12)",
-                        fontSize: "0.72rem",
-                        color: backendConnected ? "#16A34A" : "#DC2626",
-                        fontWeight: 500,
-                    }}
-                >
-                    <span
+                {!isCollapsed && (
+                    <div
+                        title={
+                            backendConnected
+                                ? "Backend Connected"
+                                : "Connecting to Backend..."
+                        }
                         style={{
-                            width: "6px",
-                            height: "6px",
-                            borderRadius: "50%",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.35rem",
+                            padding: "0.2rem 0.5rem",
+                            borderRadius: "var(--radius-full)",
                             backgroundColor: backendConnected
-                                ? "#16A34A"
-                                : "#DC2626",
-                            display: "inline-block",
+                                ? "rgba(74, 222, 128, 0.12)"
+                                : "rgba(239, 68, 68, 0.12)",
+                            fontSize: "0.72rem",
+                            color: backendConnected ? "#16A34A" : "#DC2626",
+                            fontWeight: 500,
                         }}
-                    />
-                    {backendConnected ? "Live" : "Offline"}
-                </div>
+                    >
+                        <span
+                            style={{
+                                width: "6px",
+                                height: "6px",
+                                borderRadius: "50%",
+                                backgroundColor: backendConnected
+                                    ? "#16A34A"
+                                    : "#DC2626",
+                                display: "inline-block",
+                            }}
+                        />
+                        {backendConnected ? "Live" : "Offline"}
+                    </div>
+                )}
             </div>
 
             {/* New Chat Button */}
-            <div style={{ padding: "0 1rem 0.75rem 1rem" }}>
+            <div style={{ padding: isCollapsed ? "0 0.5rem 0.75rem 0.5rem" : "0 1rem 0.75rem 1rem" }}>
                 <button
                     onClick={onNewConversation}
+                    title={isCollapsed ? "New Chat" : undefined}
                     style={{
                         width: "100%",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "0.5rem",
-                        padding: "0.7rem 1rem",
+                        padding: isCollapsed ? "0.65rem 0" : "0.7rem 1rem",
                         backgroundColor: "var(--bg-card)",
                         color: "var(--text-primary)",
                         border: "1px solid var(--border-subtle)",
@@ -180,7 +207,7 @@ export default function Sidebar({
                     }}
                 >
                     <Plus size={16} color="var(--accent-terracotta)" />
-                    <span>New Chat</span>
+                    {!isCollapsed && <span>New Chat</span>}
                 </button>
             </div>
 
@@ -189,44 +216,49 @@ export default function Sidebar({
                 style={{
                     flex: 1,
                     overflowY: "auto",
-                    padding: "0.5rem 0.75rem",
+                    overflowX: "hidden",
+                    padding: isCollapsed ? "0.5rem 0.35rem" : "0.5rem 0.75rem",
                     display: "flex",
                     flexDirection: "column",
                     gap: "0.2rem",
                 }}
             >
-                <div
-                    style={{
-                        fontSize: "0.72rem",
-                        fontWeight: 600,
-                        color: "var(--text-muted)",
-                        padding: "0.4rem 0.5rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                    }}
-                >
-                    Conversations
-                </div>
-
-                {conversations.length === 0 ? (
+                {!isCollapsed && (
                     <div
                         style={{
-                            padding: "1.5rem 0.5rem",
-                            textAlign: "center",
+                            fontSize: "0.72rem",
+                            fontWeight: 600,
                             color: "var(--text-muted)",
-                            fontSize: "0.85rem",
+                            padding: "0.4rem 0.5rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
                         }}
                     >
-                        No previous chats.
+                        Conversations
+                    </div>
+                )}
+
+                {conversations.length === 0 ? (
+                    !isCollapsed && (
                         <div
                             style={{
-                                marginTop: "0.25rem",
-                                fontSize: "0.75rem",
+                                padding: "1.5rem 0.5rem",
+                                textAlign: "center",
+                                color: "var(--text-muted)",
+                                fontSize: "0.85rem",
                             }}
                         >
-                            Start a new session above.
+                            No previous chats.
+                            <div
+                                style={{
+                                    marginTop: "0.25rem",
+                                    fontSize: "0.75rem",
+                                }}
+                            >
+                                Start a new session above.
+                            </div>
                         </div>
-                    </div>
+                    )
                 ) : (
                     conversations.map((conv) => {
                         const isActive = conv.id === activeConversationId;
@@ -236,11 +268,12 @@ export default function Sidebar({
                             <div
                                 key={conv.id}
                                 onClick={() => onSelectConversation(conv.id)}
+                                title={isCollapsed ? conv.title : undefined}
                                 style={{
                                     display: "flex",
                                     alignItems: "center",
-                                    justifyContent: "space-between",
-                                    padding: "0.55rem 0.65rem",
+                                    justifyContent: isCollapsed ? "center" : "space-between",
+                                    padding: isCollapsed ? "0.6rem 0" : "0.55rem 0.65rem",
                                     borderRadius: "var(--radius-sm)",
                                     backgroundColor: isActive
                                         ? "var(--bg-card)"
@@ -273,8 +306,9 @@ export default function Sidebar({
                                         display: "flex",
                                         alignItems: "center",
                                         gap: "0.5rem",
-                                        flex: 1,
+                                        flex: isCollapsed ? 0 : 1,
                                         minWidth: 0,
+                                        justifyContent: isCollapsed ? "center" : "flex-start",
                                     }}
                                 >
                                     <MessageSquare
@@ -284,135 +318,139 @@ export default function Sidebar({
                                                 ? "var(--accent-terracotta)"
                                                 : "var(--text-muted)"
                                         }
+                                        style={{ flexShrink: 0 }}
                                     />
 
-                                    {isEditing ? (
-                                        <input
-                                            type="text"
-                                            value={editTitle}
-                                            onChange={(e) =>
-                                                setEditTitle(e.target.value)
-                                            }
-                                            onKeyDown={(e) => {
-                                                if (e.key === "Enter")
-                                                    saveEditing(conv.id, e);
-                                                if (e.key === "Escape")
-                                                    cancelEditing(e);
-                                            }}
-                                            autoFocus
-                                            onClick={(e) => e.stopPropagation()}
-                                            style={{
-                                                flex: 1,
-                                                background: "var(--bg-primary)",
-                                                border: "1px solid var(--accent-terracotta)",
-                                                borderRadius: "4px",
-                                                padding: "0.15rem 0.35rem",
-                                                fontSize: "0.84rem",
-                                                outline: "none",
-                                            }}
-                                        />
-                                    ) : (
-                                        <span
-                                            style={{
-                                                overflow: "hidden",
-                                                textOverflow: "ellipsis",
-                                                whiteSpace: "nowrap",
-                                            }}
-                                        >
-                                            {conv.title || "Untitled Chat"}
-                                        </span>
+                                    {!isCollapsed && (
+                                        isEditing ? (
+                                            <input
+                                                type="text"
+                                                value={editTitle}
+                                                onChange={(e) =>
+                                                    setEditTitle(e.target.value)
+                                                }
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter")
+                                                        saveEditing(conv.id, e);
+                                                    if (e.key === "Escape")
+                                                        cancelEditing(e);
+                                                }}
+                                                autoFocus
+                                                onClick={(e) => e.stopPropagation()}
+                                                style={{
+                                                    flex: 1,
+                                                    background: "var(--bg-primary)",
+                                                    border: "1px solid var(--accent-terracotta)",
+                                                    borderRadius: "4px",
+                                                    padding: "0.15rem 0.35rem",
+                                                    fontSize: "0.84rem",
+                                                    outline: "none",
+                                                }}
+                                            />
+                                        ) : (
+                                            <span
+                                                style={{
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis",
+                                                    whiteSpace: "nowrap",
+                                                }}
+                                            >
+                                                {conv.title || "Untitled Chat"}
+                                            </span>
+                                        )
                                     )}
                                 </div>
 
-                                {/* Action buttons */}
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "0.2rem",
-                                        opacity: isActive ? 1 : 0.6,
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    {isEditing ? (
-                                        <>
-                                            <button
-                                                onClick={(e) =>
-                                                    saveEditing(conv.id, e)
-                                                }
-                                                title="Save"
-                                                style={{
-                                                    padding: "0.2rem",
-                                                    color: "var(--accent-terracotta)",
-                                                }}
-                                            >
-                                                <Check size={14} />
-                                            </button>
-                                            <button
-                                                onClick={cancelEditing}
-                                                title="Cancel"
-                                                style={{
-                                                    padding: "0.2rem",
-                                                    color: "var(--text-muted)",
-                                                }}
-                                            >
-                                                <X size={14} />
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <button
-                                                onClick={(e) =>
-                                                    startEditing(conv, e)
-                                                }
-                                                title="Rename"
-                                                style={{
-                                                    padding: "0.2rem",
-                                                    color: "var(--text-muted)",
-                                                }}
-                                                onMouseEnter={(e) =>
-                                                    (e.currentTarget.style.color =
-                                                        "var(--text-primary)")
-                                                }
-                                                onMouseLeave={(e) =>
-                                                    (e.currentTarget.style.color =
-                                                        "var(--text-muted)")
-                                                }
-                                            >
-                                                <Edit3 size={13} />
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (
-                                                        confirm(
-                                                            `Delete "${conv.title}"?`,
-                                                        )
-                                                    ) {
-                                                        onDeleteConversation(
-                                                            conv.id,
-                                                        );
+                                {!isCollapsed && (
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "0.2rem",
+                                            opacity: isActive ? 1 : 0.6,
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {isEditing ? (
+                                            <>
+                                                <button
+                                                    onClick={(e) =>
+                                                        saveEditing(conv.id, e)
                                                     }
-                                                }}
-                                                title="Delete"
-                                                style={{
-                                                    padding: "0.2rem",
-                                                    color: "var(--text-muted)",
-                                                }}
-                                                onMouseEnter={(e) =>
-                                                    (e.currentTarget.style.color =
-                                                        "#EF4444")
-                                                }
-                                                onMouseLeave={(e) =>
-                                                    (e.currentTarget.style.color =
-                                                        "var(--text-muted)")
-                                                }
-                                            >
-                                                <Trash2 size={13} />
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
+                                                    title="Save"
+                                                    style={{
+                                                        padding: "0.2rem",
+                                                        color: "var(--accent-terracotta)",
+                                                    }}
+                                                >
+                                                    <Check size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={cancelEditing}
+                                                    title="Cancel"
+                                                    style={{
+                                                        padding: "0.2rem",
+                                                        color: "var(--text-muted)",
+                                                    }}
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    onClick={(e) =>
+                                                        startEditing(conv, e)
+                                                    }
+                                                    title="Rename"
+                                                    style={{
+                                                        padding: "0.2rem",
+                                                        color: "var(--text-muted)",
+                                                    }}
+                                                    onMouseEnter={(e) =>
+                                                        (e.currentTarget.style.color =
+                                                            "var(--text-primary)")
+                                                    }
+                                                    onMouseLeave={(e) =>
+                                                        (e.currentTarget.style.color =
+                                                            "var(--text-muted)")
+                                                    }
+                                                >
+                                                    <Edit3 size={13} />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (
+                                                            confirm(
+                                                                `Delete "${conv.title}"?`,
+                                                            )
+                                                        ) {
+                                                            onDeleteConversation(
+                                                                conv.id,
+                                                            );
+                                                        }
+                                                    }}
+                                                    title="Delete"
+                                                    style={{
+                                                        padding: "0.2rem",
+                                                        color: "var(--text-muted)",
+                                                    }}
+                                                    onMouseEnter={(e) =>
+                                                        (e.currentTarget.style.color =
+                                                            "#EF4444")
+                                                    }
+                                                    onMouseLeave={(e) =>
+                                                        (e.currentTarget.style.color =
+                                                            "var(--text-muted)")
+                                                    }
+                                                >
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         );
                     })
@@ -422,26 +460,33 @@ export default function Sidebar({
             {/* Bottom Utilities & Settings */}
             <div
                 style={{
-                    padding: "0.75rem",
+                    padding: isCollapsed ? "0.5rem 0.35rem" : "0.75rem",
                     borderTop: "1px solid var(--border-subtle)",
                     display: "flex",
                     flexDirection: "column",
                     gap: "0.35rem",
+                    alignItems: isCollapsed ? "center" : "stretch",
                 }}
             >
                 {/* Tools drawer trigger */}
                 <button
                     onClick={onOpenTools}
+                    title={isCollapsed ? "Tools & Tasks" : undefined}
                     style={{
                         display: "flex",
                         alignItems: "center",
+                        justifyContent: isCollapsed ? "center" : "flex-start",
                         gap: "0.65rem",
-                        padding: "0.55rem 0.65rem",
+                        padding: isCollapsed ? "0.55rem 0" : "0.55rem 0.65rem",
                         borderRadius: "var(--radius-sm)",
                         color: "var(--text-secondary)",
                         fontSize: "0.85rem",
                         width: "100%",
-                        textAlign: "left",
+                        textAlign: isCollapsed ? "center" : "left",
+                        border: "none",
+                        backgroundColor: "transparent",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
                     }}
                     onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor =
@@ -453,18 +498,19 @@ export default function Sidebar({
                         e.currentTarget.style.color = "var(--text-secondary)";
                     }}
                 >
-                    <Wrench size={16} />
-                    <span>Tools & Tasks</span>
+                    <Wrench size={16} style={{ flexShrink: 0 }} />
+                    {!isCollapsed && <span>Tools & Tasks</span>}
                 </button>
 
-                {/* Deep Research view trigger */}
+                {/* Deep Research view trigger - matching grayish color */}
                 <button
                     onClick={onOpenDeepResearch}
+                    title={isCollapsed ? "Deep Research" : undefined}
                     style={{
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "0.55rem 0.65rem",
+                        justifyContent: isCollapsed ? "center" : "space-between",
+                        padding: isCollapsed ? "0.55rem 0" : "0.55rem 0.65rem",
                         borderRadius: "var(--radius-sm)",
                         color: "var(--text-secondary)",
                         backgroundColor: activeSection === "research"
@@ -475,7 +521,7 @@ export default function Sidebar({
                             : "1px solid transparent",
                         fontSize: "0.85rem",
                         width: "100%",
-                        textAlign: "left",
+                        textAlign: isCollapsed ? "center" : "left",
                         cursor: "pointer",
                         transition: "all 0.15s ease",
                     }}
@@ -492,14 +538,22 @@ export default function Sidebar({
                         }
                     }}
                 >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
-                        <Sparkles size={16} style={{ color: "var(--accent-gold)" }} />
-                        <span style={{ fontWeight: activeSection === "research" ? 600 : 400 }}>
-                            Deep Research
-                        </span>
+                    <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: isCollapsed ? "center" : "flex-start",
+                        gap: "0.65rem",
+                        width: isCollapsed ? "100%" : "auto"
+                    }}>
+                        <Microscope size={16} style={{ color: "var(--text-secondary)", flexShrink: 0 }} />
+                        {!isCollapsed && (
+                            <span style={{ fontWeight: activeSection === "research" ? 600 : 400 }}>
+                                Deep Research
+                            </span>
+                        )}
                     </div>
 
-                    {isResearchOngoing && (
+                    {!isCollapsed && isResearchOngoing && (
                         <div
                             title="Research in progress"
                             style={{
@@ -516,16 +570,22 @@ export default function Sidebar({
                 {/* Settings modal trigger */}
                 <button
                     onClick={onOpenSettings}
+                    title={isCollapsed ? "Settings" : undefined}
                     style={{
                         display: "flex",
                         alignItems: "center",
+                        justifyContent: isCollapsed ? "center" : "flex-start",
                         gap: "0.65rem",
-                        padding: "0.55rem 0.65rem",
+                        padding: isCollapsed ? "0.55rem 0" : "0.55rem 0.65rem",
                         borderRadius: "var(--radius-sm)",
                         color: "var(--text-secondary)",
                         fontSize: "0.85rem",
                         width: "100%",
-                        textAlign: "left",
+                        textAlign: isCollapsed ? "center" : "left",
+                        border: "none",
+                        backgroundColor: "transparent",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
                     }}
                     onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor =
@@ -537,30 +597,32 @@ export default function Sidebar({
                         e.currentTarget.style.color = "var(--text-secondary)";
                     }}
                 >
-                    <Settings size={16} />
-                    <span>Settings</span>
+                    <Settings size={16} style={{ flexShrink: 0 }} />
+                    {!isCollapsed && <span>Settings</span>}
                 </button>
 
                 {/* Theme and footer info */}
-                <div
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "0.4rem 0.65rem 0.1rem 0.65rem",
-                        fontSize: "0.75rem",
-                        color: "var(--text-muted)",
-                    }}
-                >
-                    <span
+                {!isCollapsed && (
+                    <div
                         style={{
-                            fontSize: "0.72rem",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "0.4rem 0.65rem 0.1rem 0.65rem",
+                            fontSize: "0.75rem",
                             color: "var(--text-muted)",
                         }}
                     >
-                        Marnie Workspace
-                    </span>
-                </div>
+                        <span
+                            style={{
+                                fontSize: "0.72rem",
+                                color: "var(--text-muted)",
+                            }}
+                        >
+                            Marnie Workspace
+                        </span>
+                    </div>
+                )}
             </div>
         </aside>
     );

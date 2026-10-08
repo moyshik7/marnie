@@ -36,6 +36,17 @@ export default function App() {
     const [isResearchOngoing, setIsResearchOngoing] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isToolsOpen, setIsToolsOpen] = useState(false);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+        return localStorage.getItem("marnie_sidebar_collapsed") === "true";
+    });
+
+    const toggleSidebar = () => {
+        setIsSidebarCollapsed((prev) => {
+            const next = !prev;
+            localStorage.setItem("marnie_sidebar_collapsed", String(next));
+            return next;
+        });
+    };
 
     // Apply theme to DOM document
     useEffect(() => {
@@ -284,6 +295,8 @@ export default function App() {
                 onToggleTheme={toggleTheme}
                 backendConnected={backendConnected}
                 activeModel={activeModel}
+                isCollapsed={isSidebarCollapsed}
+                onToggleCollapse={toggleSidebar}
             />
 
             {/* Main View Area: Chat vs Deep Research */}

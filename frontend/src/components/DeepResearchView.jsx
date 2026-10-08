@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-    Sparkles,
+    Microscope,
     Plus,
     Play,
     Pause,
@@ -230,7 +230,7 @@ export default function DeepResearchView({
                                 color: "var(--accent-gold)",
                             }}
                         >
-                            <Sparkles size={18} />
+                            <Microscope size={18} />
                         </div>
                         <div>
                             <h2
@@ -632,7 +632,7 @@ export default function DeepResearchView({
                                     marginBottom: "0.35rem",
                                 }}
                             >
-                                <Sparkles size={14} />
+                                <Microscope size={14} />
                                 <span>Autonomous Multi-Turn Intelligence</span>
                             </div>
                             <h1
@@ -1264,7 +1264,7 @@ export default function DeepResearchView({
                                 marginBottom: "1rem",
                             }}
                         >
-                            <Sparkles size={26} />
+                            <Microscope size={26} />
                         </div>
                         <h2
                             style={{

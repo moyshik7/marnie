@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import {
     Send,
     Square,
-    Sparkles,
     Copy,
     Check,
     Globe,
