@@ -1,9 +1,5 @@
-# ==========================================
-# Marnie - Multi-stage Dockerfile
-# ==========================================
-
 # ── Stage 1: Build Frontend ───────────────
-FROM node:20-slim AS frontend-builder
+FROM node:24-slim AS frontend-builder
 WORKDIR /app/frontend
 
 COPY frontend/package*.json ./
