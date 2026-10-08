@@ -4,6 +4,7 @@ import ChatView from "./components/ChatView";
 import DeepResearchView from "./components/DeepResearchView";
 import SettingsModal from "./components/SettingsModal";
 import ToolsPanel from "./components/ToolsPanel";
+import ReportViewer from "./components/ReportViewer";
 import {
     listConversations,
     createConversation,
@@ -18,10 +19,32 @@ import {
 } from "./services/api";
 
 export default function App() {
+    // Check if directly visiting /report/:slug
+    const [reportSlug, setReportSlug] = useState(() => {
+        const path = window.location.pathname;
+        if (path.startsWith("/report/")) {
+            return path.replace(/^\/report\//, "");
+        }
+        return null;
+    });
+
     // Theme state
     const [theme, setTheme] = useState(() => {
         return localStorage.getItem("marnie_theme") || "light";
     });
+
+    useEffect(() => {
+        const onPopState = () => {
+            const path = window.location.pathname;
+            if (path.startsWith("/report/")) {
+                setReportSlug(path.replace(/^\/report\//, ""));
+            } else {
+                setReportSlug(null);
+            }
+        };
+        window.addEventListener("popstate", onPopState);
+        return () => window.removeEventListener("popstate", onPopState);
+    }, []);
 
     // Conversations state
     const [conversations, setConversations] = useState([]);
@@ -267,6 +290,16 @@ export default function App() {
         setActiveSection("chat");
         await handleNewConversation();
     };
+
+    if (reportSlug) {
+        return (
+            <ReportViewer
+                slug={reportSlug}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+            />
+        );
+    }
 
     return (
         <div

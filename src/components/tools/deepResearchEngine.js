@@ -3,6 +3,7 @@
 const db = require('../../db/index');
 const ollama = require('../providers/ollama/interact');
 const { searchWeb } = require('./webSearch');
+const reportStorage = require('./reportStorage');
 
 // In-memory set of running research worker cancel tokens
 const runningControllers = new Map();
@@ -189,7 +190,10 @@ Produce a comprehensive research report:
 - Future Outlook & Concrete Takeaways
 - References & Cited Links
 
-Write in high-density, authoritative markdown. Provide mermaid diagrams in \`\`\`mermaid code blocks where helpful. Avoid em dashes (use regular dashes).`;
+Formatting & Mathematical Instructions:
+1. Provide mermaid diagrams in \`\`\`mermaid code blocks for architectures, workflows, timelines, and systems.
+2. Provide LaTeX math enclosed in $...$ for inline equations and $$...$$ for block formulas whenever discussing quantitative details, metrics, formulas, or statistical concepts.
+3. Write in high-density, authoritative markdown. Avoid em dashes (use regular dashes).`;
 
     const draftRes = await ollama.chat({
       model: research.model,
@@ -216,8 +220,9 @@ Review this research report critically:
 1. Verify clarity, analytical depth, and precision.
 2. Ensure counter-arguments, caveats, and citations are robust.
 3. Enhance explanations, code/data examples, or structural flow.
+4. Include LaTeX math expressions ($...$, $$...$$) and Mermaid flowcharts (\`\`\`mermaid) where helpful for clarity.
 
-Provide the improved, definitive revised version in markdown. Use \`\`\`mermaid diagrams if beneficial.`;
+Provide the improved, definitive revised version in markdown. Avoid em dashes (use regular dashes).`;
 
       const reviewRes = await ollama.chat({
         model: research.model,
@@ -232,15 +237,72 @@ Provide the improved, definitive revised version in markdown. Use \`\`\`mermaid 
       }
     }
 
-    if (controller.signal.aborted) return;
-
-    // Mark as completed
+    // Mark as completed in memory / DB
     updateResearch(researchId, {
       status: 'completed',
       report: currentDraft,
       summary: currentDraft.slice(0, 350) + '...',
     });
-    appendLog(researchId, 'Deep Research successfully finalized and ready for review.', 'finished');
+    appendLog(researchId, 'Generating report metadata and publishing standalone markdown dossier...', 'metadata');
+
+    // 4. Generate Frontmatter Metadata with AI model
+    let metaTitle = research.topic;
+    let metaKeywords = [];
+    const metaSources = gatheredSources.map((s) => s.url).filter(Boolean);
+
+    try {
+      const metaPrompt = `You are a Research Archivist. Analyze this research report and generate structured metadata for publishing.
+Report Topic: "${research.topic}"
+
+Report Excerpt:
+${currentDraft.slice(0, 2500)}
+
+Generate strictly valid JSON with this exact schema:
+{
+  "title": "A concise, engaging title for the report",
+  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4"]
+}
+Do not include any commentary or extra text. Output strictly JSON.`;
+
+      const metaRes = await ollama.chat({
+        model: research.model,
+        messages: [{ role: 'user', content: metaPrompt }],
+        options: { temperature: 0.2 },
+      });
+
+      const rawMeta = metaRes.message?.content || '';
+      const match = rawMeta.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (parsed.title) metaTitle = parsed.title;
+        if (Array.isArray(parsed.keywords)) metaKeywords = parsed.keywords;
+      }
+    } catch (metaErr) {
+      appendLog(researchId, `Metadata extraction notice: ${metaErr.message}`, 'notice');
+    }
+
+    if (metaKeywords.length === 0) {
+      metaKeywords = research.topic.split(/\s+/).slice(0, 5);
+    }
+
+    // 5. Save as individual markdown file under workspace/research/slug.md
+    const baseSlug = reportStorage.slugify(metaTitle || research.topic);
+    const slug = `${baseSlug}.md`;
+
+    const savedFile = reportStorage.saveReport(slug, {
+      title: metaTitle,
+      keywords: metaKeywords,
+      prompt: research.topic,
+      sources: metaSources,
+      time: new Date().toISOString(),
+    }, currentDraft);
+
+    updateResearch(researchId, {
+      summary: currentDraft.slice(0, 350) + '...',
+      error: savedFile, // store saved file name for reference
+    });
+
+    appendLog(researchId, `Deep Research published to workspace/research/${savedFile} (URL: /report/${savedFile})`, 'finished');
   } catch (err) {
     if (controller.signal.aborted) {
       appendLog(researchId, 'Deep Research cancelled by user.', 'cancelled');

@@ -4,6 +4,7 @@ const router = require('express').Router();
 const { v4: uuidv4 } = require('uuid');
 const db = require('../../db/index');
 const engine = require('../../components/tools/deepResearchEngine');
+const reportStorage = require('../../components/tools/reportStorage');
 
 /**
  * GET /api/research
@@ -26,6 +27,47 @@ router.get('/status/ongoing', (_req, res) => {
   try {
     const ongoing = engine.hasOngoingResearch();
     res.json({ ongoing });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/research/reports
+ * List all saved markdown reports in workspace/research/
+ */
+router.get('/reports', (_req, res) => {
+  try {
+    const reports = reportStorage.listReports();
+    res.json({ reports });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/research/reports/:slug
+ * Get a specific markdown report by slug (e.g. slug.md or slug)
+ */
+router.get('/reports/:slug', (req, res) => {
+  try {
+    const report = reportStorage.readReport(req.params.slug);
+    if (!report) return res.status(404).json({ error: 'Report not found' });
+    res.json(report);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * DELETE /api/research/reports/:slug
+ * Delete a markdown report from workspace/research/
+ */
+router.delete('/reports/:slug', (req, res) => {
+  try {
+    const success = reportStorage.deleteReport(req.params.slug);
+    if (!success) return res.status(404).json({ error: 'Report not found' });
+    res.json({ deleted: req.params.slug });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

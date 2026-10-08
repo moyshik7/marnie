@@ -977,25 +977,50 @@ export default function DeepResearchView({
                                 )}
 
                                 {selectedResearch.report && (
-                                    <button
-                                        onClick={handleCopyReport}
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            gap: "0.35rem",
-                                            padding: "0.45rem 0.85rem",
-                                            borderRadius: "var(--radius-sm)",
-                                            backgroundColor: "var(--bg-card)",
-                                            border: "1px solid var(--border-subtle)",
-                                            color: "var(--text-primary)",
-                                            fontSize: "0.8rem",
-                                            fontWeight: 500,
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        {copiedReport ? <Check size={13} color="#22c55e" /> : <Copy size={13} />}
-                                        <span>{copiedReport ? "Copied" : "Copy Dossier"}</span>
-                                    </button>
+                                    <>
+                                        <button
+                                            onClick={handleCopyReport}
+                                            style={{
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: "0.35rem",
+                                                padding: "0.45rem 0.85rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                backgroundColor: "var(--bg-card)",
+                                                border: "1px solid var(--border-subtle)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                cursor: "pointer",
+                                            }}
+                                        >
+                                            {copiedReport ? <Check size={13} color="#22c55e" /> : <Copy size={13} />}
+                                            <span>{copiedReport ? "Copied" : "Copy Dossier"}</span>
+                                        </button>
+
+                                        {selectedResearch.error && selectedResearch.error.endsWith('.md') && (
+                                            <a
+                                                href={`/report/${selectedResearch.error}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    gap: "0.35rem",
+                                                    padding: "0.45rem 0.85rem",
+                                                    borderRadius: "var(--radius-sm)",
+                                                    backgroundColor: "var(--accent-terracotta)",
+                                                    color: "#fff",
+                                                    textDecoration: "none",
+                                                    fontSize: "0.8rem",
+                                                    fontWeight: 600,
+                                                }}
+                                            >
+                                                <span>View Report URL</span>
+                                                <ExternalLink size={12} />
+                                            </a>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
