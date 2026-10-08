@@ -259,6 +259,23 @@ export default function App() {
         }
     };
 
+    const handleDiscussResearch = async (topic) => {
+        try {
+            const modelToUse =
+                activeModel ||
+                (availableModels.length > 0 ? availableModels[0] : "llama3.2");
+            const newConv = await createConversation(
+                `Discuss: ${topic.slice(0, 32)}`,
+                modelToUse,
+            );
+            await refreshConversations(modelToUse);
+            selectConversation(newConv.id, newConv);
+            setActiveSection("chat");
+        } catch (err) {
+            setActiveSection("chat");
+        }
+    };
+
     const handleDeleteConversation = async (id) => {
         try {
             await deleteConversation(id);
@@ -339,6 +356,7 @@ export default function App() {
                         activeModel={activeModel}
                         availableModels={availableModels}
                         onClose={() => setActiveSection("chat")}
+                        onDiscuss={handleDiscussResearch}
                         onResearchCountChange={(hasOngoing) => setIsResearchOngoing(hasOngoing)}
                     />
                 ) : (

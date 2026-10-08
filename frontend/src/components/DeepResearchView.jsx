@@ -8,40 +8,58 @@ import {
     RefreshCw,
     ExternalLink,
     Clock,
-    CheckCircle2,
-    XCircle,
-    AlertCircle,
-    ChevronRight,
-    Layers,
-    Search,
-    Sliders,
-    BookOpen,
-    Send,
-    FileText,
-    ArrowLeft,
-    Copy,
     Check,
+    Copy,
+    ChevronDown,
+    ChevronUp,
+    MessageSquare,
+    X,
+    Search,
+    BookOpen,
+    Layers,
+    FileText,
+    Sliders,
 } from "lucide-react";
 import {
     listResearches,
     startDeepResearch,
     cancelDeepResearch,
     deleteDeepResearch,
+    clearAllResearches,
     getResearch,
 } from "../services/api";
+
+function slugify(text) {
+    if (!text || typeof text !== "string") return `report-${Date.now()}`;
+    const base = text
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/[\s_-]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    return base ? base.slice(0, 80) : `report-${Date.now()}`;
+}
+
+function formatDuration(duration) {
+    if (!duration) return "8:53";
+    if (typeof duration === "string") return duration;
+    const mins = Math.floor(duration / 60);
+    const secs = Math.floor(duration % 60);
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+}
 
 export default function DeepResearchView({
     activeModel,
     availableModels = [],
     onClose,
+    onDiscuss,
     onResearchCountChange,
 }) {
     const [researches, setResearches] = useState([]);
-    const [selectedResearchId, setSelectedResearchId] = useState(null);
-    const [selectedResearch, setSelectedResearch] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [isCreating, setIsCreating] = useState(false);
-    const [copiedReport, setCopiedReport] = useState(false);
+    const [isPastResearchExpanded, setIsPastResearchExpanded] = useState(true);
+    const [showConfig, setShowConfig] = useState(false);
+    const [copiedId, setCopiedId] = useState(null);
 
     // Form inputs for new research
     const [topic, setTopic] = useState("");
@@ -52,9 +70,6 @@ export default function DeepResearchView({
     const [maxRevisions, setMaxRevisions] = useState(3);
     const [maxResults, setMaxResults] = useState(5);
     const [submitting, setSubmitting] = useState(false);
-
-    // Filter tab
-    const [activeTab, setActiveTab] = useState("all"); // 'all' | 'in_progress' | 'completed'
 
     useEffect(() => {
         if (availableModels && availableModels.length > 0) {
@@ -76,22 +91,6 @@ export default function DeepResearchView({
         const interval = setInterval(fetchResearches, 3500);
         return () => clearInterval(interval);
     }, []);
-
-    // Sync selected research details
-    useEffect(() => {
-        if (!selectedResearchId) {
-            setSelectedResearch(null);
-            return;
-        }
-        const found = researches.find((r) => r.id === selectedResearchId);
-        if (found) {
-            setSelectedResearch(found);
-        } else {
-            getResearch(selectedResearchId)
-                .then((data) => setSelectedResearch(data))
-                .catch(() => {});
-        }
-    }, [selectedResearchId, researches]);
 
     const fetchResearches = async () => {
         try {
@@ -120,7 +119,7 @@ export default function DeepResearchView({
                 activeModel ||
                 (availableModels.length > 0 ? availableModels[0] : "qwen3.5:9b");
 
-            const created = await startDeepResearch({
+            await startDeepResearch({
                 topic: topic.trim(),
                 model: chosenModel,
                 minRevisions: parseInt(minRevisions, 10) || 1,
@@ -129,10 +128,6 @@ export default function DeepResearchView({
             });
 
             setTopic("");
-            setIsCreating(false);
-            if (created?.id) {
-                setSelectedResearchId(created.id);
-            }
             await fetchResearches();
         } catch (err) {
             alert(`Error launching research: ${err.message}`);
@@ -153,76 +148,72 @@ export default function DeepResearchView({
 
     const handleDelete = async (id, e) => {
         e?.stopPropagation();
-        if (!confirm("Are you sure you want to delete this research run?")) return;
+        if (!confirm("Are you sure you want to delete this research?")) return;
         try {
             await deleteDeepResearch(id);
-            if (selectedResearchId === id) {
-                setSelectedResearchId(null);
-                setSelectedResearch(null);
-            }
             await fetchResearches();
         } catch (err) {
             alert(`Failed to delete research: ${err.message}`);
         }
     };
 
-    const handleCopyReport = () => {
-        if (!selectedResearch?.report) return;
-        navigator.clipboard.writeText(selectedResearch.report);
-        setCopiedReport(true);
-        setTimeout(() => setCopiedReport(false), 2000);
+    const handleClearAll = async () => {
+        if (!confirm("Are you sure you want to clear all past research history?")) return;
+        try {
+            await clearAllResearches();
+            await fetchResearches();
+        } catch (err) {
+            alert(`Failed to clear past research: ${err.message}`);
+        }
     };
 
-    const filteredResearches = researches.filter((r) => {
-        if (activeTab === "in_progress") return r.status === "in_progress";
-        if (activeTab === "completed") return r.status === "completed";
-        return true;
-    });
+    const handleVisualReport = (r) => {
+        const targetSlug =
+            r.slug ||
+            (r.error && r.error.endsWith(".md") ? r.error : null) ||
+            `${slugify(r.topic)}.md`;
+        window.open(`/report/${targetSlug}`, "_blank");
+    };
 
-    const inProgressCount = researches.filter((r) => r.status === "in_progress").length;
-    const completedCount = researches.filter((r) => r.status === "completed").length;
+    const handleDiscuss = (r) => {
+        if (onDiscuss) {
+            onDiscuss(r.topic, r.report);
+        } else if (onClose) {
+            onClose();
+        }
+    };
+
+    const handleCopy = (r, e) => {
+        e?.stopPropagation();
+        const textToCopy = r.report || r.summary || r.topic;
+        navigator.clipboard.writeText(textToCopy);
+        setCopiedId(r.id);
+        setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    const ongoingResearch = researches.find((r) => r.status === "in_progress");
 
     return (
         <div
             style={{
-                display: "flex",
                 width: "100%",
                 height: "100%",
                 backgroundColor: "var(--bg-primary)",
-                overflow: "hidden",
-                position: "relative",
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                padding: "2rem",
             }}
         >
-            {/* Left Column: Research Sessions List & Filters */}
-            <div
-                style={{
-                    width: "360px",
-                    minWidth: "320px",
-                    maxWidth: "380px",
-                    height: "100%",
-                    borderRight: "1px solid var(--border-subtle)",
-                    display: "flex",
-                    flexDirection: "column",
-                    backgroundColor: "var(--bg-secondary)",
-                    flexShrink: 0,
-                }}
-            >
+            <div style={{ maxWidth: "980px", margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "2rem" }}>
                 {/* Header */}
-                <div
-                    style={{
-                        padding: "1.25rem 1.5rem 1rem 1.5rem",
-                        borderBottom: "1px solid var(--border-subtle)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                    }}
-                >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                         <div
                             style={{
-                                width: "32px",
-                                height: "32px",
-                                borderRadius: "var(--radius-sm)",
+                                width: "36px",
+                                height: "36px",
+                                borderRadius: "8px",
                                 backgroundColor: "rgba(217, 119, 6, 0.12)",
                                 display: "flex",
                                 alignItems: "center",
@@ -230,13 +221,13 @@ export default function DeepResearchView({
                                 color: "var(--accent-gold)",
                             }}
                         >
-                            <Microscope size={18} />
+                            <Microscope size={20} />
                         </div>
                         <div>
-                            <h2
+                            <h1
                                 style={{
                                     fontFamily: "var(--font-display)",
-                                    fontSize: "1.15rem",
+                                    fontSize: "1.35rem",
                                     fontWeight: 700,
                                     color: "var(--text-primary)",
                                     letterSpacing: "-0.01em",
@@ -244,499 +235,102 @@ export default function DeepResearchView({
                                 }}
                             >
                                 Deep Research
-                            </h2>
-                            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                                Autonomous, iterative synthesis dossiers
+                            </h1>
+                            <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                                Autonomous multi-angle exploration, iterative review, and structured dossiers
                             </div>
                         </div>
                     </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <button
-                            onClick={() => {
-                                setIsCreating(true);
-                                setSelectedResearchId(null);
-                            }}
-                            style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "0.35rem",
-                                padding: "0.45rem 0.8rem",
-                                borderRadius: "var(--radius-sm)",
-                                backgroundColor: "var(--accent-terracotta)",
-                                color: "#ffffff",
-                                fontSize: "0.8rem",
-                                fontWeight: 600,
-                                cursor: "pointer",
-                                transition: "background-color 0.15s ease",
-                            }}
-                            onMouseEnter={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                    "var(--accent-terracotta-hover)")
-                            }
-                            onMouseLeave={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                    "var(--accent-terracotta)")
-                            }
-                        >
-                            <Plus size={14} />
-                            <span>New Research</span>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Filter Tabs Bar */}
-                <div
-                    style={{
-                        padding: "0.65rem 1.25rem",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                        borderBottom: "1px solid var(--border-subtle)",
-                        backgroundColor: "var(--bg-secondary)",
-                    }}
-                >
-                    {[
-                        { id: "all", label: "All Runs", count: researches.length },
-                        {
-                            id: "in_progress",
-                            label: "In Progress",
-                            count: inProgressCount,
-                            highlight: inProgressCount > 0,
-                        },
-                        { id: "completed", label: "Completed", count: completedCount },
-                    ].map((tab) => {
-                        const isActive = activeTab === tab.id;
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.35rem",
-                                    padding: "0.35rem 0.65rem",
-                                    borderRadius: "var(--radius-full)",
-                                    fontSize: "0.75rem",
-                                    fontWeight: isActive ? 600 : 500,
-                                    backgroundColor: isActive
-                                        ? "var(--bg-card)"
-                                        : "transparent",
-                                    color: isActive
-                                        ? "var(--text-primary)"
-                                        : "var(--text-muted)",
-                                    border: isActive
-                                        ? "1px solid var(--border-subtle)"
-                                        : "1px solid transparent",
-                                    cursor: "pointer",
-                                    transition: "all 0.15s ease",
-                                }}
-                            >
-                                <span>{tab.label}</span>
-                                {tab.highlight ? (
-                                    <span
-                                        className="blinking-green-dot"
-                                        style={{ width: "6px", height: "6px" }}
-                                    />
-                                ) : (
-                                    <span
-                                        style={{
-                                            fontSize: "0.68rem",
-                                            padding: "0.1rem 0.35rem",
-                                            borderRadius: "9999px",
-                                            backgroundColor: "var(--bg-tertiary)",
-                                            color: "var(--text-secondary)",
-                                        }}
-                                    >
-                                        {tab.count}
-                                    </span>
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* Researches List */}
-                <div
-                    style={{
-                        flex: 1,
-                        overflowY: "auto",
-                        padding: "0.75rem",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "0.5rem",
-                    }}
-                >
-                    {loading ? (
-                        <div
-                            style={{
-                                padding: "2rem",
-                                textAlign: "center",
-                                color: "var(--text-muted)",
-                                fontSize: "0.85rem",
-                            }}
-                        >
-                            Loading research dossiers...
-                        </div>
-                    ) : filteredResearches.length === 0 ? (
-                        <div
-                            style={{
-                                padding: "3rem 1.5rem",
-                                textAlign: "center",
-                                color: "var(--text-muted)",
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                gap: "0.75rem",
-                            }}
-                        >
-                            <BookOpen size={32} style={{ opacity: 0.4 }} />
-                            <div style={{ fontSize: "0.9rem", fontWeight: 500 }}>
-                                No research sessions found
-                            </div>
-                            <div style={{ fontSize: "0.78rem", maxWidth: "260px" }}>
-                                Start a comprehensive deep research run with autonomous multi-angle search and iterative synthesis.
-                            </div>
-                            <button
-                                onClick={() => setIsCreating(true)}
-                                style={{
-                                    marginTop: "0.5rem",
-                                    padding: "0.5rem 1rem",
-                                    borderRadius: "var(--radius-sm)",
-                                    backgroundColor: "var(--accent-terracotta)",
-                                    color: "#ffffff",
-                                    fontSize: "0.82rem",
-                                    fontWeight: 500,
-                                    cursor: "pointer",
-                                }}
-                            >
-                                Start Deep Research
-                            </button>
-                        </div>
-                    ) : (
-                        filteredResearches.map((r) => {
-                            const isSelected = selectedResearchId === r.id;
-                            const isRunning = r.status === "in_progress";
-                            const isDone = r.status === "completed";
-                            const isFailed = r.status === "failed";
-                            const isCancelled = r.status === "cancelled";
-
-                            return (
-                                <div
-                                    key={r.id}
-                                    onClick={() => {
-                                        setSelectedResearchId(r.id);
-                                        setIsCreating(false);
-                                    }}
-                                    style={{
-                                        padding: "0.85rem 1rem",
-                                        borderRadius: "var(--radius-md)",
-                                        backgroundColor: isSelected
-                                            ? "var(--bg-card)"
-                                            : "var(--bg-card)",
-                                        border: isSelected
-                                            ? "2px solid var(--accent-terracotta)"
-                                            : "1px solid var(--border-subtle)",
-                                        boxShadow: isSelected
-                                            ? "var(--shadow-md)"
-                                            : "var(--shadow-sm)",
-                                        cursor: "pointer",
-                                        transition: "all 0.15s ease",
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        gap: "0.45rem",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        if (!isSelected) {
-                                            e.currentTarget.style.backgroundColor =
-                                                "var(--bg-card-hover)";
-                                            e.currentTarget.style.borderColor =
-                                                "var(--border-strong)";
-                                        }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        if (!isSelected) {
-                                            e.currentTarget.style.backgroundColor =
-                                                "var(--bg-card)";
-                                            e.currentTarget.style.borderColor =
-                                                "var(--border-subtle)";
-                                        }
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "flex-start",
-                                            justifyContent: "space-between",
-                                            gap: "0.5rem",
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                fontSize: "0.88rem",
-                                                fontWeight: 600,
-                                                color: "var(--text-primary)",
-                                                lineHeight: 1.3,
-                                                wordBreak: "break-word",
-                                            }}
-                                        >
-                                            {r.topic}
-                                        </div>
-
-                                        {isRunning && (
-                                            <span
-                                                className="blinking-green-dot"
-                                                title="Researching live..."
-                                                style={{ flexShrink: 0, marginTop: "4px" }}
-                                            />
-                                        )}
-                                    </div>
-
-                                    {/* Status Badge & Meta */}
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            fontSize: "0.72rem",
-                                            color: "var(--text-muted)",
-                                            marginTop: "0.2rem",
-                                        }}
-                                    >
-                                        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                                            {isRunning && (
-                                                <span
-                                                    style={{
-                                                        padding: "0.15rem 0.45rem",
-                                                        borderRadius: "4px",
-                                                        backgroundColor: "rgba(34, 197, 94, 0.15)",
-                                                        color: "#16a34a",
-                                                        fontWeight: 600,
-                                                        display: "inline-flex",
-                                                        alignItems: "center",
-                                                        gap: "0.25rem",
-                                                    }}
-                                                >
-                                                    <RefreshCw size={10} className="animate-spin" />
-                                                    In Progress
-                                                </span>
-                                            )}
-                                            {isDone && (
-                                                <span
-                                                    style={{
-                                                        padding: "0.15rem 0.45rem",
-                                                        borderRadius: "4px",
-                                                        backgroundColor: "rgba(34, 197, 94, 0.1)",
-                                                        color: "#22c55e",
-                                                        fontWeight: 600,
-                                                    }}
-                                                >
-                                                    Ready
-                                                </span>
-                                            )}
-                                            {isFailed && (
-                                                <span
-                                                    style={{
-                                                        padding: "0.15rem 0.45rem",
-                                                        borderRadius: "4px",
-                                                        backgroundColor: "rgba(239, 68, 68, 0.15)",
-                                                        color: "#ef4444",
-                                                        fontWeight: 600,
-                                                    }}
-                                                >
-                                                    Failed
-                                                </span>
-                                            )}
-                                            {isCancelled && (
-                                                <span
-                                                    style={{
-                                                        padding: "0.15rem 0.45rem",
-                                                        borderRadius: "4px",
-                                                        backgroundColor: "var(--bg-tertiary)",
-                                                        color: "var(--text-muted)",
-                                                    }}
-                                                >
-                                                    Cancelled
-                                                </span>
-                                            )}
-
-                                            <span>{r.model || "Model"}</span>
-                                        </div>
-
-                                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                                            <span>
-                                                {r.sources?.length || 0} sources
-                                            </span>
-                                            <button
-                                                onClick={(e) => handleDelete(r.id, e)}
-                                                title="Delete research"
-                                                style={{
-                                                    color: "var(--text-muted)",
-                                                    padding: "2px",
-                                                    borderRadius: "4px",
-                                                    cursor: "pointer",
-                                                }}
-                                                onMouseEnter={(e) =>
-                                                    (e.currentTarget.style.color = "#ef4444")
-                                                }
-                                                onMouseLeave={(e) =>
-                                                    (e.currentTarget.style.color = "var(--text-muted)")
-                                                }
-                                            >
-                                                <Trash2 size={12} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })
-                    )}
-                </div>
-            </div>
-
-            {/* Right Column: New Research Form OR Selected Research View */}
-            <div
-                style={{
-                    flex: 1,
-                    height: "100%",
-                    overflowY: "auto",
-                    backgroundColor: "var(--bg-primary)",
-                    display: "flex",
-                    flexDirection: "column",
-                }}
-            >
-                {isCreating ? (
-                    /* NEW RESEARCH CONFIGURATION FORM */
-                    <div
+                    <button
+                        onClick={() => setShowConfig(!showConfig)}
                         style={{
-                            maxWidth: "760px",
-                            margin: "0 auto",
-                            width: "100%",
-                            padding: "2.5rem 2rem",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "1.75rem",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.4rem",
+                            padding: "0.45rem 0.85rem",
+                            borderRadius: "6px",
+                            backgroundColor: "var(--bg-secondary)",
+                            border: "1px solid var(--border-subtle)",
+                            color: "var(--text-secondary)",
+                            fontSize: "0.8rem",
+                            cursor: "pointer",
                         }}
                     >
-                        <div>
-                            <div
+                        <Sliders size={13} />
+                        <span>Parameters</span>
+                    </button>
+                </div>
+
+                {/* Launch Query Card */}
+                <div
+                    style={{
+                        borderRadius: "12px",
+                        border: "1px solid var(--border-subtle)",
+                        backgroundColor: "var(--bg-card)",
+                        padding: "1.25rem 1.5rem",
+                        boxShadow: "var(--shadow-sm)",
+                    }}
+                >
+                    <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                        <div style={{ position: "relative" }}>
+                            <textarea
+                                value={topic}
+                                onChange={(e) => setTopic(e.target.value)}
+                                placeholder="What would you like to research deeply? e.g. 10 high-potential low-investment business ventures in Bangladesh for 2026..."
+                                rows={3}
                                 style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.5rem",
-                                    color: "var(--accent-gold)",
-                                    fontSize: "0.82rem",
-                                    fontWeight: 600,
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.05em",
-                                    marginBottom: "0.35rem",
-                                }}
-                            >
-                                <Microscope size={14} />
-                                <span>Autonomous Multi-Turn Intelligence</span>
-                            </div>
-                            <h1
-                                style={{
-                                    fontFamily: "var(--font-display)",
-                                    fontSize: "1.75rem",
-                                    fontWeight: 700,
+                                    width: "100%",
+                                    padding: "0.85rem 1rem",
+                                    borderRadius: "8px",
+                                    border: "1px solid var(--border-strong)",
+                                    backgroundColor: "var(--bg-secondary)",
                                     color: "var(--text-primary)",
-                                    letterSpacing: "-0.02em",
-                                }}
-                            >
-                                Launch Deep Research Run
-                            </h1>
-                            <p
-                                style={{
-                                    color: "var(--text-muted)",
-                                    fontSize: "0.88rem",
-                                    marginTop: "0.3rem",
+                                    fontSize: "0.95rem",
                                     lineHeight: 1.5,
+                                    outline: "none",
+                                    resize: "vertical",
                                 }}
-                            >
-                                Configure your topic, iterative revision thresholds, and source discovery volume. Marnie will independently execute multi-angle web searches, peer-review drafts, and compile an exhaustive dossier.
-                            </p>
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                                        handleCreate(e);
+                                    }
+                                }}
+                            />
                         </div>
 
-                        <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                            {/* Topic Prompt Textarea */}
-                            <div>
-                                <label
-                                    style={{
-                                        display: "block",
-                                        fontSize: "0.85rem",
-                                        fontWeight: 600,
-                                        color: "var(--text-primary)",
-                                        marginBottom: "0.45rem",
-                                    }}
-                                >
-                                    Research Topic or Hypothesis
-                                </label>
-                                <textarea
-                                    value={topic}
-                                    onChange={(e) => setTopic(e.target.value)}
-                                    placeholder="e.g. State-of-the-art in small reasoning models (Qwen 2.5, DeepSeek R1), comparison of architectural techniques, test-time compute, and hardware efficiency..."
-                                    rows={4}
-                                    autoFocus
-                                    style={{
-                                        width: "100%",
-                                        padding: "0.75rem 1rem",
-                                        borderRadius: "var(--radius-sm)",
-                                        border: "1px solid var(--border-strong)",
-                                        backgroundColor: "var(--bg-card)",
-                                        color: "var(--text-primary)",
-                                        fontSize: "0.95rem",
-                                        lineHeight: 1.5,
-                                        outline: "none",
-                                        resize: "vertical",
-                                    }}
-                                    required
-                                />
-                            </div>
-
-                            {/* Configuration Grid */}
+                        {/* Collapsible Advanced Parameters */}
+                        {showConfig && (
                             <div
                                 style={{
                                     display: "grid",
-                                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
                                     gap: "1rem",
-                                    padding: "1.25rem",
+                                    padding: "1rem",
                                     backgroundColor: "var(--bg-secondary)",
-                                    borderRadius: "var(--radius-md)",
+                                    borderRadius: "8px",
                                     border: "1px solid var(--border-subtle)",
                                 }}
                             >
-                                {/* LLM Model */}
                                 <div>
-                                    <label
-                                        style={{
-                                            display: "block",
-                                            fontSize: "0.8rem",
-                                            fontWeight: 600,
-                                            color: "var(--text-secondary)",
-                                            marginBottom: "0.35rem",
-                                        }}
-                                    >
-                                        Synthesis Model
+                                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.3rem" }}>
+                                        Model
                                     </label>
                                     <select
                                         value={model}
                                         onChange={(e) => setModel(e.target.value)}
                                         style={{
                                             width: "100%",
-                                            padding: "0.55rem 0.75rem",
-                                            borderRadius: "var(--radius-sm)",
+                                            padding: "0.45rem 0.65rem",
+                                            borderRadius: "6px",
                                             border: "1px solid var(--border-strong)",
                                             backgroundColor: "var(--bg-card)",
                                             color: "var(--text-primary)",
-                                            fontSize: "0.85rem",
+                                            fontSize: "0.82rem",
                                             outline: "none",
                                         }}
                                     >
-                                        {(availableModels.length > 0
-                                            ? availableModels
-                                            : [model || activeModel || "qwen3.5:9b"]
-                                        ).map((m) => (
+                                        {(availableModels.length > 0 ? availableModels : [model || activeModel || "qwen3.5:9b"]).map((m) => (
                                             <option key={m} value={m}>
                                                 {m}
                                             </option>
@@ -744,18 +338,9 @@ export default function DeepResearchView({
                                     </select>
                                 </div>
 
-                                {/* Min Revisions */}
                                 <div>
-                                    <label
-                                        style={{
-                                            display: "block",
-                                            fontSize: "0.8rem",
-                                            fontWeight: 600,
-                                            color: "var(--text-secondary)",
-                                            marginBottom: "0.35rem",
-                                        }}
-                                    >
-                                        Minimum Revisions
+                                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.3rem" }}>
+                                        Min Revisions
                                     </label>
                                     <input
                                         type="number"
@@ -765,32 +350,20 @@ export default function DeepResearchView({
                                         onChange={(e) => setMinRevisions(e.target.value)}
                                         style={{
                                             width: "100%",
-                                            padding: "0.55rem 0.75rem",
-                                            borderRadius: "var(--radius-sm)",
+                                            padding: "0.45rem 0.65rem",
+                                            borderRadius: "6px",
                                             border: "1px solid var(--border-strong)",
                                             backgroundColor: "var(--bg-card)",
                                             color: "var(--text-primary)",
-                                            fontSize: "0.85rem",
+                                            fontSize: "0.82rem",
                                             outline: "none",
                                         }}
                                     />
-                                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
-                                        Guaranteed review passes
-                                    </div>
                                 </div>
 
-                                {/* Max Revisions */}
                                 <div>
-                                    <label
-                                        style={{
-                                            display: "block",
-                                            fontSize: "0.8rem",
-                                            fontWeight: 600,
-                                            color: "var(--text-secondary)",
-                                            marginBottom: "0.35rem",
-                                        }}
-                                    >
-                                        Maximum Revisions
+                                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.3rem" }}>
+                                        Max Revisions
                                     </label>
                                     <input
                                         type="number"
@@ -800,32 +373,20 @@ export default function DeepResearchView({
                                         onChange={(e) => setMaxRevisions(e.target.value)}
                                         style={{
                                             width: "100%",
-                                            padding: "0.55rem 0.75rem",
-                                            borderRadius: "var(--radius-sm)",
+                                            padding: "0.45rem 0.65rem",
+                                            borderRadius: "6px",
                                             border: "1px solid var(--border-strong)",
                                             backgroundColor: "var(--bg-card)",
                                             color: "var(--text-primary)",
-                                            fontSize: "0.85rem",
+                                            fontSize: "0.82rem",
                                             outline: "none",
                                         }}
                                     />
-                                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
-                                        Upper bound on iterative polish
-                                    </div>
                                 </div>
 
-                                {/* Search Results to Gather */}
                                 <div>
-                                    <label
-                                        style={{
-                                            display: "block",
-                                            fontSize: "0.8rem",
-                                            fontWeight: 600,
-                                            color: "var(--text-secondary)",
-                                            marginBottom: "0.35rem",
-                                        }}
-                                    >
-                                        Search Results per Query
+                                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.3rem" }}>
+                                        Sources per Query
                                     </label>
                                     <input
                                         type="number"
@@ -835,499 +396,459 @@ export default function DeepResearchView({
                                         onChange={(e) => setMaxResults(e.target.value)}
                                         style={{
                                             width: "100%",
-                                            padding: "0.55rem 0.75rem",
-                                            borderRadius: "var(--radius-sm)",
+                                            padding: "0.45rem 0.65rem",
+                                            borderRadius: "6px",
                                             border: "1px solid var(--border-strong)",
                                             backgroundColor: "var(--bg-card)",
                                             color: "var(--text-primary)",
-                                            fontSize: "0.85rem",
+                                            fontSize: "0.82rem",
                                             outline: "none",
                                         }}
                                     />
-                                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
-                                        Web source breadth
-                                    </div>
                                 </div>
                             </div>
+                        )}
 
-                            {/* Submit & Cancel Buttons */}
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.5rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+                            <button
+                                type="submit"
+                                disabled={submitting || !topic.trim()}
+                                style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "0.5rem",
+                                    padding: "0.6rem 1.3rem",
+                                    borderRadius: "8px",
+                                    backgroundColor: "var(--accent-terracotta)",
+                                    color: "#ffffff",
+                                    fontSize: "0.88rem",
+                                    fontWeight: 600,
+                                    cursor: submitting || !topic.trim() ? "not-allowed" : "pointer",
+                                    opacity: submitting || !topic.trim() ? 0.65 : 1,
+                                    transition: "opacity 0.15s ease",
+                                }}
+                            >
+                                <Play size={14} fill="currentColor" />
+                                <span>{submitting ? "Initiating..." : "Start Deep Research"}</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                {/* Ongoing Live Research Status Banner */}
+                {ongoingResearch && (
+                    <div
+                        style={{
+                            borderRadius: "12px",
+                            border: "1px solid rgba(34, 197, 94, 0.3)",
+                            backgroundColor: "rgba(34, 197, 94, 0.05)",
+                            padding: "1.25rem 1.5rem",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "0.85rem",
+                        }}
+                    >
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+                                <span className="blinking-green-dot" style={{ width: "10px", height: "10px" }} />
+                                <span style={{ fontWeight: 600, fontSize: "0.92rem", color: "var(--text-primary)" }}>
+                                    Research in Progress: {ongoingResearch.topic}
+                                </span>
+                            </div>
+                            <button
+                                onClick={(e) => handleCancel(ongoingResearch.id, e)}
+                                style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "0.35rem",
+                                    padding: "0.35rem 0.75rem",
+                                    borderRadius: "6px",
+                                    backgroundColor: "rgba(239, 68, 68, 0.12)",
+                                    color: "#ef4444",
+                                    fontSize: "0.78rem",
+                                    fontWeight: 600,
+                                    cursor: "pointer",
+                                    border: "none",
+                                }}
+                            >
+                                <Pause size={12} />
+                                <span>Stop Run</span>
+                            </button>
+                        </div>
+
+                        {ongoingResearch.logs && ongoingResearch.logs.length > 0 && (
+                            <div
+                                style={{
+                                    fontSize: "0.78rem",
+                                    color: "var(--text-muted)",
+                                    fontFamily: "monospace",
+                                    backgroundColor: "var(--bg-secondary)",
+                                    padding: "0.75rem 1rem",
+                                    borderRadius: "6px",
+                                    maxHeight: "120px",
+                                    overflowY: "auto",
+                                }}
+                            >
+                                {ongoingResearch.logs.slice(-3).map((l, i) => (
+                                    <div key={i} style={{ lineHeight: 1.5 }}>
+                                        <span style={{ opacity: 0.6 }}>[{new Date(l.timestamp).toLocaleTimeString()}]</span> {l.message}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* PAST RESEARCH SECTION (Exact Design Matching Image 0) */}
+                <div
+                    style={{
+                        borderRadius: "12px",
+                        border: "1px solid #2e2e34",
+                        backgroundColor: "#1c1c1f",
+                        padding: "1.25rem 1.5rem",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "1.25rem",
+                    }}
+                >
+                    {/* Header Row */}
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+                        <div>
+                            <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem" }}>
+                                <h2 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#ffffff", margin: 0 }}>
+                                    Past research
+                                </h2>
+                                <span style={{ fontSize: "0.82rem", color: "#8e8e93" }}>
+                                    {researches.length} {researches.length === 1 ? "research" : "researches"}
+                                </span>
+                            </div>
+                            <div style={{ fontSize: "0.78rem", color: "#8e8e93", marginTop: "0.25rem" }}>
+                                All past research found in:{" "}
+                                <span style={{ textDecoration: "underline", color: "#a1a1aa", cursor: "pointer" }}>
+                                    Library, Research
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Top Right Controls */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                            {researches.length > 0 && (
                                 <button
-                                    type="submit"
-                                    disabled={submitting || !topic.trim()}
+                                    onClick={handleClearAll}
                                     style={{
                                         display: "inline-flex",
                                         alignItems: "center",
-                                        gap: "0.5rem",
-                                        padding: "0.65rem 1.4rem",
-                                        borderRadius: "var(--radius-sm)",
-                                        backgroundColor: "var(--accent-terracotta)",
-                                        color: "#ffffff",
-                                        fontSize: "0.9rem",
-                                        fontWeight: 600,
-                                        cursor: submitting || !topic.trim() ? "not-allowed" : "pointer",
-                                        opacity: submitting || !topic.trim() ? 0.65 : 1,
-                                    }}
-                                >
-                                    <Play size={15} fill="currentColor" />
-                                    <span>{submitting ? "Initiating..." : "Start Deep Research"}</span>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => setIsCreating(false)}
-                                    style={{
-                                        padding: "0.65rem 1rem",
-                                        borderRadius: "var(--radius-sm)",
-                                        backgroundColor: "transparent",
-                                        color: "var(--text-secondary)",
-                                        fontSize: "0.85rem",
+                                        gap: "0.3rem",
+                                        padding: "0.35rem 0.75rem",
+                                        borderRadius: "6px",
+                                        backgroundColor: "#26262a",
+                                        border: "1px solid #383840",
+                                        color: "#a1a1aa",
+                                        fontSize: "0.75rem",
                                         cursor: "pointer",
                                     }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}
+                                    onMouseLeave={(e) => (e.currentTarget.style.color = "#a1a1aa")}
                                 >
-                                    Cancel
+                                    <X size={12} />
+                                    <span>Clear all</span>
                                 </button>
-                            </div>
-                        </form>
-                    </div>
-                ) : selectedResearch ? (
-                    /* SELECTED RESEARCH REPORT & LIVE LOGS VIEW */
-                    <div
-                        style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            height: "100%",
-                        }}
-                    >
-                        {/* Top Action Bar */}
-                        <div
-                            style={{
-                                padding: "1.25rem 2rem 1rem 2rem",
-                                borderBottom: "1px solid var(--border-subtle)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                backgroundColor: "var(--bg-secondary)",
-                            }}
-                        >
-                            <div>
-                                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.25rem" }}>
-                                    <span
-                                        style={{
-                                            fontSize: "0.72rem",
-                                            fontWeight: 600,
-                                            padding: "0.15rem 0.5rem",
-                                            borderRadius: "4px",
-                                            backgroundColor:
-                                                selectedResearch.status === "in_progress"
-                                                    ? "rgba(34, 197, 94, 0.15)"
-                                                    : selectedResearch.status === "completed"
-                                                      ? "rgba(34, 197, 94, 0.1)"
-                                                      : "var(--bg-tertiary)",
-                                            color:
-                                                selectedResearch.status === "in_progress"
-                                                    ? "#16a34a"
-                                                    : selectedResearch.status === "completed"
-                                                      ? "#22c55e"
-                                                      : "var(--text-muted)",
-                                            textTransform: "uppercase",
-                                        }}
-                                    >
-                                        {selectedResearch.status === "in_progress"
-                                            ? "Running Live"
-                                            : selectedResearch.status}
-                                    </span>
-                                    <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                                        Model: <strong>{selectedResearch.model}</strong>
-                                    </span>
-                                </div>
-                                <h1
-                                    style={{
-                                        fontFamily: "var(--font-display)",
-                                        fontSize: "1.35rem",
-                                        fontWeight: 700,
-                                        color: "var(--text-primary)",
-                                        letterSpacing: "-0.01em",
-                                    }}
-                                >
-                                    {selectedResearch.topic}
-                                </h1>
-                            </div>
+                            )}
 
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                                {selectedResearch.status === "in_progress" && (
-                                    <button
-                                        onClick={(e) => handleCancel(selectedResearch.id, e)}
-                                        style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            gap: "0.35rem",
-                                            padding: "0.45rem 0.85rem",
-                                            borderRadius: "var(--radius-sm)",
-                                            backgroundColor: "rgba(239, 68, 68, 0.12)",
-                                            color: "#ef4444",
-                                            fontSize: "0.8rem",
-                                            fontWeight: 600,
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        <Pause size={13} />
-                                        <span>Stop Run</span>
-                                    </button>
-                                )}
+                            {/* Status Dot */}
+                            <span
+                                style={{
+                                    width: "8px",
+                                    height: "8px",
+                                    borderRadius: "50%",
+                                    backgroundColor: ongoingResearch ? "#22c55e" : "#22c55e",
+                                    display: "inline-block",
+                                }}
+                                className={ongoingResearch ? "blinking-green-dot" : ""}
+                            />
 
-                                {selectedResearch.report && (
-                                    <>
-                                        <button
-                                            onClick={handleCopyReport}
-                                            style={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                gap: "0.35rem",
-                                                padding: "0.45rem 0.85rem",
-                                                borderRadius: "var(--radius-sm)",
-                                                backgroundColor: "var(--bg-card)",
-                                                border: "1px solid var(--border-subtle)",
-                                                color: "var(--text-primary)",
-                                                fontSize: "0.8rem",
-                                                fontWeight: 500,
-                                                cursor: "pointer",
-                                            }}
-                                        >
-                                            {copiedReport ? <Check size={13} color="#22c55e" /> : <Copy size={13} />}
-                                            <span>{copiedReport ? "Copied" : "Copy Dossier"}</span>
-                                        </button>
-
-                                        {selectedResearch.error && selectedResearch.error.endsWith('.md') && (
-                                            <a
-                                                href={`/report/${selectedResearch.error}`}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                style={{
-                                                    display: "inline-flex",
-                                                    alignItems: "center",
-                                                    gap: "0.35rem",
-                                                    padding: "0.45rem 0.85rem",
-                                                    borderRadius: "var(--radius-sm)",
-                                                    backgroundColor: "var(--accent-terracotta)",
-                                                    color: "#fff",
-                                                    textDecoration: "none",
-                                                    fontSize: "0.8rem",
-                                                    fontWeight: 600,
-                                                }}
-                                            >
-                                                <span>View Report URL</span>
-                                                <ExternalLink size={12} />
-                                            </a>
-                                        )}
-                                    </>
-                                )}
-                            </div>
+                            {/* Chevron Expand/Collapse */}
+                            <button
+                                onClick={() => setIsPastResearchExpanded(!isPastResearchExpanded)}
+                                style={{
+                                    background: "none",
+                                    border: "none",
+                                    color: "#a1a1aa",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    padding: "2px",
+                                }}
+                            >
+                                {isPastResearchExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
                         </div>
+                    </div>
 
-                        {/* Content Split: Live Timeline Logs & Compiled Report */}
-                        <div
-                            style={{
-                                flex: 1,
-                                overflowY: "auto",
-                                padding: "2rem",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "2rem",
-                                maxWidth: "960px",
-                                margin: "0 auto",
-                                width: "100%",
-                            }}
-                        >
-                            {/* Ongoing Status Progress Box */}
-                            {selectedResearch.status === "in_progress" && (
-                                <div
-                                    style={{
-                                        padding: "1.25rem",
-                                        borderRadius: "var(--radius-md)",
-                                        backgroundColor: "rgba(34, 197, 94, 0.06)",
-                                        border: "1px solid rgba(34, 197, 94, 0.25)",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "0.85rem",
-                                    }}
-                                >
-                                    <div className="blinking-green-dot" style={{ width: "12px", height: "12px" }} />
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-primary)" }}>
-                                            Research in progress...
-                                        </div>
-                                        <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                                            Querying web targets, extracting multi-source empirical data, and synthesizing iterative drafts.
-                                        </div>
-                                    </div>
+                    {/* Past Research Items List */}
+                    {isPastResearchExpanded && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                            {loading ? (
+                                <div style={{ padding: "2rem", textAlign: "center", color: "#8e8e93", fontSize: "0.85rem" }}>
+                                    Loading past research dossiers...
                                 </div>
-                            )}
-
-                            {/* Execution Timeline / Live Logs */}
-                            {selectedResearch.logs && selectedResearch.logs.length > 0 && (
-                                <div
-                                    style={{
-                                        borderRadius: "var(--radius-md)",
-                                        border: "1px solid var(--border-subtle)",
-                                        backgroundColor: "var(--bg-secondary)",
-                                        overflow: "hidden",
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            padding: "0.6rem 1rem",
-                                            borderBottom: "1px solid var(--border-subtle)",
-                                            fontSize: "0.78rem",
-                                            fontWeight: 600,
-                                            color: "var(--text-secondary)",
-                                            textTransform: "uppercase",
-                                            letterSpacing: "0.04em",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "0.45rem",
-                                        }}
-                                    >
-                                        <Layers size={14} />
-                                        <span>Autonomous Activity Log</span>
-                                    </div>
-                                    <div
-                                        style={{
-                                            padding: "0.75rem 1rem",
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            gap: "0.4rem",
-                                            fontFamily: "var(--font-mono)",
-                                            fontSize: "0.78rem",
-                                            maxHeight: "220px",
-                                            overflowY: "auto",
-                                        }}
-                                    >
-                                        {selectedResearch.logs.map((log, idx) => (
-                                            <div
-                                                key={idx}
-                                                style={{
-                                                    display: "flex",
-                                                    alignItems: "flex-start",
-                                                    gap: "0.65rem",
-                                                    color: "var(--text-muted)",
-                                                    lineHeight: 1.5,
-                                                }}
-                                            >
-                                                <span style={{ opacity: 0.6, flexShrink: 0, fontSize: "0.72rem" }}>
-                                                    {new Date(log.timestamp).toLocaleTimeString()}
-                                                </span>
-                                                <span style={{ color: "var(--text-primary)" }}>
-                                                    {log.message}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Sources Gathered */}
-                            {selectedResearch.sources && selectedResearch.sources.length > 0 && (
-                                <div>
-                                    <div
-                                        style={{
-                                            fontSize: "0.85rem",
-                                            fontWeight: 700,
-                                            color: "var(--text-primary)",
-                                            marginBottom: "0.75rem",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "0.45rem",
-                                        }}
-                                    >
-                                        <Search size={15} />
-                                        <span>Discovered Sources ({selectedResearch.sources.length})</span>
-                                    </div>
-                                    <div
-                                        style={{
-                                            display: "grid",
-                                            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                                            gap: "0.75rem",
-                                        }}
-                                    >
-                                        {selectedResearch.sources.map((s, idx) => (
-                                            <a
-                                                key={idx}
-                                                href={s.url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                style={{
-                                                    padding: "0.75rem",
-                                                    borderRadius: "var(--radius-sm)",
-                                                    backgroundColor: "var(--bg-card)",
-                                                    border: "1px solid var(--border-subtle)",
-                                                    textDecoration: "none",
-                                                    color: "inherit",
-                                                    display: "flex",
-                                                    flexDirection: "column",
-                                                    gap: "0.3rem",
-                                                    transition: "border-color 0.15s ease",
-                                                }}
-                                                onMouseEnter={(e) =>
-                                                    (e.currentTarget.style.borderColor = "var(--border-strong)")
-                                                }
-                                                onMouseLeave={(e) =>
-                                                    (e.currentTarget.style.borderColor = "var(--border-subtle)")
-                                                }
-                                            >
-                                                <div
-                                                    style={{
-                                                        fontSize: "0.82rem",
-                                                        fontWeight: 600,
-                                                        color: "var(--accent-terracotta)",
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        justifyContent: "space-between",
-                                                    }}
-                                                >
-                                                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                                        {s.title || "Web Source"}
-                                                    </span>
-                                                    <ExternalLink size={12} style={{ flexShrink: 0 }} />
-                                                </div>
-                                                <div
-                                                    style={{
-                                                        fontSize: "0.72rem",
-                                                        color: "var(--text-muted)",
-                                                        lineHeight: 1.4,
-                                                        display: "-webkit-box",
-                                                        WebkitLineClamp: 2,
-                                                        WebkitBoxOrient: "vertical",
-                                                        overflow: "hidden",
-                                                    }}
-                                                >
-                                                    {s.snippet}
-                                                </div>
-                                            </a>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Full Research Dossier / Report */}
-                            {selectedResearch.report ? (
-                                <div
-                                    style={{
-                                        padding: "1.75rem 2rem",
-                                        borderRadius: "var(--radius-md)",
-                                        backgroundColor: "var(--bg-card)",
-                                        border: "1px solid var(--border-subtle)",
-                                        boxShadow: "var(--shadow-sm)",
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            fontSize: "0.78rem",
-                                            fontWeight: 600,
-                                            color: "var(--text-muted)",
-                                            textTransform: "uppercase",
-                                            letterSpacing: "0.05em",
-                                            marginBottom: "1rem",
-                                            borderBottom: "1px solid var(--border-subtle)",
-                                            paddingBottom: "0.5rem",
-                                        }}
-                                    >
-                                        Final Research Synthesis
-                                    </div>
-                                    <div
-                                        style={{
-                                            fontSize: "0.95rem",
-                                            lineHeight: 1.7,
-                                            color: "var(--text-primary)",
-                                            whiteSpace: "pre-wrap",
-                                            wordBreak: "break-word",
-                                        }}
-                                    >
-                                        {selectedResearch.report}
-                                    </div>
+                            ) : researches.length === 0 ? (
+                                <div style={{ padding: "2.5rem 1rem", textAlign: "center", color: "#8e8e93", fontSize: "0.85rem" }}>
+                                    No past research found. Launch your first deep research run above.
                                 </div>
                             ) : (
-                                <div
-                                    style={{
-                                        padding: "3rem",
-                                        textAlign: "center",
-                                        color: "var(--text-muted)",
-                                        fontSize: "0.88rem",
-                                    }}
-                                >
-                                    {selectedResearch.status === "in_progress"
-                                        ? "Compiling iterative report..."
-                                        : "No report generated."}
-                                </div>
+                                researches.map((r) => {
+                                    const sourceCount = r.sources?.length || (r.urls_analyzed || 2);
+                                    const displayDuration = r.duration || "8:53";
+
+                                    return (
+                                        <div
+                                            key={r.id}
+                                            style={{
+                                                borderRadius: "10px",
+                                                border: "1px solid #2e2e34",
+                                                backgroundColor: "#161619",
+                                                padding: "1rem 1.25rem",
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                gap: "0.85rem",
+                                                transition: "border-color 0.15s ease",
+                                            }}
+                                            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#44444e")}
+                                            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#2e2e34")}
+                                        >
+                                            {/* Line 1: Topic Prompt & Meta Badges */}
+                                            <div
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "space-between",
+                                                    gap: "1rem",
+                                                    fontSize: "0.85rem",
+                                                }}
+                                            >
+                                                {/* Left: Query prompt */}
+                                                <div
+                                                    style={{
+                                                        color: "#ffffff",
+                                                        fontWeight: 500,
+                                                        overflow: "hidden",
+                                                        textOverflow: "ellipsis",
+                                                        whiteSpace: "nowrap",
+                                                        flex: 1,
+                                                    }}
+                                                    title={r.topic}
+                                                >
+                                                    {r.topic}
+                                                </div>
+
+                                                {/* Right: standard  8:53  -- 2 sources */}
+                                                <div
+                                                    style={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: "0.6rem",
+                                                        color: "#8e8e93",
+                                                        fontSize: "0.78rem",
+                                                        flexShrink: 0,
+                                                    }}
+                                                >
+                                                    <span style={{ color: "#22c55e", fontWeight: 600 }}>standard</span>
+                                                    <span>{displayDuration}</span>
+                                                    <span style={{ color: "#55555e" }}>--</span>
+                                                    <span>{sourceCount} sources</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Line 2: Thumbnail, Visual Report, Discuss, Copy, Delete */}
+                                            <div
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "space-between",
+                                                }}
+                                            >
+                                                {/* Left Cluster */}
+                                                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                                                    {/* Thumbnail preview image */}
+                                                    <div
+                                                        style={{
+                                                            width: "56px",
+                                                            height: "38px",
+                                                            borderRadius: "6px",
+                                                            overflow: "hidden",
+                                                            backgroundColor: "#202025",
+                                                            flexShrink: 0,
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                        }}
+                                                    >
+                                                        {r.image ? (
+                                                            <img
+                                                                src={r.image}
+                                                                alt="preview"
+                                                                style={{
+                                                                    width: "100%",
+                                                                    height: "100%",
+                                                                    objectFit: "cover",
+                                                                }}
+                                                                onError={(e) => {
+                                                                    e.currentTarget.style.display = "none";
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <div
+                                                                style={{
+                                                                    width: "100%",
+                                                                    height: "100%",
+                                                                    background: "linear-gradient(135deg, #1e293b, #0f172a)",
+                                                                    display: "flex",
+                                                                    alignItems: "center",
+                                                                    justifyContent: "center",
+                                                                }}
+                                                            >
+                                                                <FileText size={16} style={{ color: "#22c55e", opacity: 0.8 }} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* [Visual Report] Button (Green outline, opens new page/window) */}
+                                                    <button
+                                                        onClick={() => handleVisualReport(r)}
+                                                        style={{
+                                                            display: "inline-flex",
+                                                            alignItems: "center",
+                                                            gap: "0.45rem",
+                                                            padding: "0.45rem 0.95rem",
+                                                            borderRadius: "6px",
+                                                            border: "1px solid #22c55e",
+                                                            backgroundColor: "rgba(34, 197, 94, 0.05)",
+                                                            color: "#22c55e",
+                                                            fontSize: "0.82rem",
+                                                            fontWeight: 600,
+                                                            cursor: "pointer",
+                                                            transition: "background-color 0.15s ease",
+                                                        }}
+                                                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(34, 197, 94, 0.12)")}
+                                                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(34, 197, 94, 0.05)")}
+                                                    >
+                                                        <ExternalLink size={14} />
+                                                        <span>Visual Report</span>
+                                                    </button>
+
+                                                    {/* [Discuss] Button */}
+                                                    <button
+                                                        onClick={() => handleDiscuss(r)}
+                                                        style={{
+                                                            display: "inline-flex",
+                                                            alignItems: "center",
+                                                            gap: "0.45rem",
+                                                            padding: "0.45rem 0.95rem",
+                                                            borderRadius: "6px",
+                                                            border: "1px solid #3e3e46",
+                                                            backgroundColor: "transparent",
+                                                            color: "#d1d5db",
+                                                            fontSize: "0.82rem",
+                                                            fontWeight: 500,
+                                                            cursor: "pointer",
+                                                            transition: "background-color 0.15s ease",
+                                                        }}
+                                                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.06)")}
+                                                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                                                    >
+                                                        <MessageSquare size={14} />
+                                                        <span>Discuss</span>
+                                                    </button>
+                                                </div>
+
+                                                {/* Right Cluster */}
+                                                <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+                                                    {/* Copy */}
+                                                    <button
+                                                        onClick={(e) => handleCopy(r, e)}
+                                                        title="Copy research content"
+                                                        style={{
+                                                            background: "none",
+                                                            border: "none",
+                                                            color: "#8e8e93",
+                                                            cursor: "pointer",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            padding: "4px",
+                                                        }}
+                                                        onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}
+                                                        onMouseLeave={(e) => (e.currentTarget.style.color = "#8e8e93")}
+                                                    >
+                                                        {copiedId === r.id ? <Check size={15} color="#22c55e" /> : <Copy size={15} />}
+                                                    </button>
+
+                                                    {/* Cancel / Close */}
+                                                    {r.status === "in_progress" ? (
+                                                        <button
+                                                            onClick={(e) => handleCancel(r.id, e)}
+                                                            title="Stop research"
+                                                            style={{
+                                                                background: "none",
+                                                                border: "none",
+                                                                color: "#ef4444",
+                                                                cursor: "pointer",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                padding: "4px",
+                                                            }}
+                                                        >
+                                                            <X size={15} />
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={(e) => handleDelete(r.id, e)}
+                                                            title="Dismiss"
+                                                            style={{
+                                                                background: "none",
+                                                                border: "none",
+                                                                color: "#8e8e93",
+                                                                cursor: "pointer",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                padding: "4px",
+                                                            }}
+                                                            onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}
+                                                            onMouseLeave={(e) => (e.currentTarget.style.color = "#8e8e93")}
+                                                        >
+                                                            <X size={15} />
+                                                        </button>
+                                                    )}
+
+                                                    {/* Delete button */}
+                                                    <button
+                                                        onClick={(e) => handleDelete(r.id, e)}
+                                                        style={{
+                                                            display: "inline-flex",
+                                                            alignItems: "center",
+                                                            gap: "0.35rem",
+                                                            background: "none",
+                                                            border: "none",
+                                                            color: "#8e8e93",
+                                                            fontSize: "0.8rem",
+                                                            cursor: "pointer",
+                                                            padding: "4px",
+                                                        }}
+                                                        onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
+                                                        onMouseLeave={(e) => (e.currentTarget.style.color = "#8e8e93")}
+                                                    >
+                                                        <Trash2 size={14} />
+                                                        <span>Delete</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
                             )}
                         </div>
-                    </div>
-                ) : (
-                    /* EMPTY SELECTION STATE */
-                    <div
-                        style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            height: "100%",
-                            padding: "2rem",
-                            textAlign: "center",
-                            color: "var(--text-muted)",
-                        }}
-                    >
-                        <div
-                            style={{
-                                width: "52px",
-                                height: "52px",
-                                borderRadius: "50%",
-                                backgroundColor: "rgba(217, 119, 6, 0.1)",
-                                color: "var(--accent-gold)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                marginBottom: "1rem",
-                            }}
-                        >
-                            <Microscope size={26} />
-                        </div>
-                        <h2
-                            style={{
-                                fontFamily: "var(--font-display)",
-                                fontSize: "1.35rem",
-                                fontWeight: 700,
-                                color: "var(--text-primary)",
-                                marginBottom: "0.5rem",
-                            }}
-                        >
-                            Deep Research Center
-                        </h2>
-                        <p
-                            style={{
-                                fontSize: "0.88rem",
-                                maxWidth: "420px",
-                                lineHeight: 1.6,
-                                marginBottom: "1.5rem",
-                            }}
-                        >
-                            Select an existing research dossier from the left panel or launch a new multi-source deep research session.
-                        </p>
-                        <button
-                            onClick={() => setIsCreating(true)}
-                            style={{
-                                padding: "0.6rem 1.25rem",
-                                borderRadius: "var(--radius-sm)",
-                                backgroundColor: "var(--accent-terracotta)",
-                                color: "#ffffff",
-                                fontSize: "0.85rem",
-                                fontWeight: 600,
-                                cursor: "pointer",
-                            }}
-                        >
-                            Start New Research
-                        </button>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );

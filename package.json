@@ -1,7 +1,7 @@
 {
     "name": "marnie",
-    "version": "0.2.1",
-    "description": "A self-hosted AI workspace like Odysseus but made in nodejs with more (and in some cases less) features according to my own preference",
+    "version": "0.3.1",
+    "description": "A self-hosted AI workspace but made in nodejs with features according to my own preference",
     "main": "src/main.js",
     "scripts": {
         "start": "npm run build && node src/main.js",
@@ -33,5 +33,9 @@
     "license": "MIT",
     "allowScripts": {
         "better-sqlite3@11.10.0": true
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/moyshik7/marnie.git"
     }
 }

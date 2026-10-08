@@ -96,6 +96,27 @@ function serializeFrontmatter(metadata, body) {
     const src = Array.isArray(metadata.sources) ? metadata.sources : [String(metadata.sources)];
     lines.push(`sources: ${JSON.stringify(src)}`);
   }
+  if (metadata.image) {
+    lines.push(`image: ${JSON.stringify(metadata.image)}`);
+  }
+  if (metadata.duration) {
+    lines.push(`duration: ${JSON.stringify(metadata.duration)}`);
+  }
+  if (metadata.rounds !== undefined && metadata.rounds !== null) {
+    lines.push(`rounds: ${JSON.stringify(metadata.rounds)}`);
+  }
+  if (metadata.queries !== undefined && metadata.queries !== null) {
+    lines.push(`queries: ${JSON.stringify(metadata.queries)}`);
+  }
+  if (metadata.urls_analyzed !== undefined && metadata.urls_analyzed !== null) {
+    lines.push(`urls_analyzed: ${JSON.stringify(metadata.urls_analyzed)}`);
+  }
+  if (metadata.model) {
+    lines.push(`model: ${JSON.stringify(metadata.model)}`);
+  }
+  if (metadata.search_engine) {
+    lines.push(`search_engine: ${JSON.stringify(metadata.search_engine)}`);
+  }
   if (metadata.time) {
     lines.push(`time: ${JSON.stringify(metadata.time)}`);
   } else {
@@ -139,6 +160,13 @@ function readReport(slug) {
     keywords: Array.isArray(metadata.keywords) ? metadata.keywords : [],
     prompt: metadata.prompt || '',
     sources: Array.isArray(metadata.sources) ? metadata.sources : [],
+    image: metadata.image || null,
+    duration: metadata.duration || null,
+    rounds: metadata.rounds !== undefined ? metadata.rounds : null,
+    queries: metadata.queries !== undefined ? metadata.queries : null,
+    urls_analyzed: metadata.urls_analyzed !== undefined ? metadata.urls_analyzed : null,
+    model: metadata.model || null,
+    search_engine: metadata.search_engine || null,
     time: metadata.time || stat.mtime.toISOString(),
     content,
     raw,
@@ -165,6 +193,13 @@ function listReports() {
           keywords: rep.keywords,
           prompt: rep.prompt,
           sources: rep.sources,
+          image: rep.image,
+          duration: rep.duration,
+          rounds: rep.rounds,
+          queries: rep.queries,
+          urls_analyzed: rep.urls_analyzed,
+          model: rep.model,
+          search_engine: rep.search_engine,
           time: rep.time,
           summary: rep.content ? rep.content.slice(0, 300) + '...' : '',
         });

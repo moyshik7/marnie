@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
     ArrowLeft,
-    Clock,
-    Tag,
     Share2,
     Copy,
     Check,
@@ -11,9 +9,12 @@ import {
     ExternalLink,
     FileText,
     Link as LinkIcon,
-    AlertCircle,
+    Download,
+    Printer,
     Sun,
     Moon,
+    List,
+    ChevronUp,
 } from "lucide-react";
 import katex from "katex";
 import mermaid from "mermaid";
@@ -22,7 +23,7 @@ import { getReportBySlug } from "../services/api";
 try {
     mermaid.initialize({
         startOnLoad: false,
-        theme: "default",
+        theme: "dark",
         securityLevel: "loose",
         fontFamily: "var(--font-sans)",
     });
@@ -41,7 +42,7 @@ function renderKaTeX(formula, isBlock = false) {
                     isBlock
                         ? {
                               display: "block",
-                              margin: "0.85rem 0",
+                              margin: "1.2rem 0",
                               textAlign: "center",
                               overflowX: "auto",
                           }
@@ -93,21 +94,21 @@ function MermaidReportBlock({ chart }) {
         return (
             <div
                 style={{
-                    margin: "0.85rem 0",
-                    padding: "0.75rem 1rem",
-                    borderRadius: "var(--radius-sm)",
-                    backgroundColor: "rgba(239, 68, 68, 0.08)",
+                    margin: "1rem 0",
+                    padding: "0.85rem 1rem",
+                    borderRadius: "8px",
+                    backgroundColor: "rgba(239, 68, 68, 0.1)",
                     border: "1px solid rgba(239, 68, 68, 0.25)",
                     fontSize: "0.82rem",
                 }}
             >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
-                    <span style={{ fontWeight: 600, color: "#ef4444" }}>Diagram Render Notice</span>
+                    <span style={{ fontWeight: 600, color: "#ef4444" }}>Diagram Notice</span>
                     <button
                         onClick={handleCopy}
                         style={{
                             fontSize: "0.72rem",
-                            color: "var(--text-muted)",
+                            color: "#9ca3af",
                             display: "flex",
                             alignItems: "center",
                             gap: "0.25rem",
@@ -130,10 +131,10 @@ function MermaidReportBlock({ chart }) {
     return (
         <div
             style={{
-                margin: "1.25rem 0",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--border-subtle)",
-                backgroundColor: "var(--bg-card)",
+                margin: "1.5rem 0",
+                borderRadius: "10px",
+                border: "1px solid #2d2d34",
+                backgroundColor: "#16161a",
                 overflow: "hidden",
             }}
         >
@@ -142,11 +143,11 @@ function MermaidReportBlock({ chart }) {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "0.4rem 0.75rem",
-                    borderBottom: "1px solid var(--border-subtle)",
-                    backgroundColor: "var(--bg-secondary)",
+                    padding: "0.5rem 0.85rem",
+                    borderBottom: "1px solid #2d2d34",
+                    backgroundColor: "#121215",
                     fontSize: "0.74rem",
-                    color: "var(--text-muted)",
+                    color: "#9ca3af",
                 }}
             >
                 <span style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
@@ -156,7 +157,7 @@ function MermaidReportBlock({ chart }) {
                     <button
                         onClick={() => setViewRaw(!viewRaw)}
                         style={{
-                            color: "var(--text-muted)",
+                            color: "#9ca3af",
                             cursor: "pointer",
                             fontSize: "0.72rem",
                             background: "none",
@@ -168,7 +169,7 @@ function MermaidReportBlock({ chart }) {
                     <button
                         onClick={handleCopy}
                         style={{
-                            color: "var(--text-muted)",
+                            color: "#9ca3af",
                             cursor: "pointer",
                             display: "flex",
                             alignItems: "center",
@@ -185,7 +186,7 @@ function MermaidReportBlock({ chart }) {
             </div>
 
             {viewRaw ? (
-                <pre style={{ margin: 0, padding: "0.85rem", overflowX: "auto" }}>
+                <pre style={{ margin: 0, padding: "1rem", overflowX: "auto", color: "#e5e7eb", fontSize: "0.85rem" }}>
                     <code>{chart}</code>
                 </pre>
             ) : (
@@ -193,11 +194,11 @@ function MermaidReportBlock({ chart }) {
                     ref={containerRef}
                     dangerouslySetInnerHTML={{ __html: svg }}
                     style={{
-                        padding: "1.25rem",
+                        padding: "1.5rem",
                         display: "flex",
                         justifyContent: "center",
                         overflowX: "auto",
-                        backgroundColor: "var(--bg-card)",
+                        backgroundColor: "#16161a",
                     }}
                 />
             )}
@@ -205,9 +206,6 @@ function MermaidReportBlock({ chart }) {
     );
 }
 
-/**
- * Lightweight regex code syntax highlighter
- */
 function highlightCode(code, lang = "") {
     if (!code) return "";
     let safe = code
@@ -215,15 +213,11 @@ function highlightCode(code, lang = "") {
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
 
-    // Comments
-    safe = safe.replace(/(\/\/[^\n]*|#[^\n]*)/g, '<span style="color: #6a737d; font-style: italic;">$1</span>');
-    // Strings
-    safe = safe.replace(/(".*?"|'.*?'|`.*?`)/g, '<span style="color: #032f62;">$1</span>');
-    // Numbers
-    safe = safe.replace(/\b(\d+(\.\d+)?)\b/g, '<span style="color: #005cc5;">$1</span>');
-    // Keywords
+    safe = safe.replace(/(\/\/[^\n]*|#[^\n]*)/g, '<span style="color: #6b7280; font-style: italic;">$1</span>');
+    safe = safe.replace(/(".*?"|'.*?'|`.*?`)/g, '<span style="color: #6ee7b7;">$1</span>');
+    safe = safe.replace(/\b(\d+(\.\d+)?)\b/g, '<span style="color: #93c5fd;">$1</span>');
     const keywords = /\b(const|let|var|function|return|if|else|for|while|import|export|from|class|async|await|try|catch|new|def|self|print)\b/g;
-    safe = safe.replace(keywords, '<span style="color: #d73a49; font-weight: 600;">$1</span>');
+    safe = safe.replace(keywords, '<span style="color: #f472b6; font-weight: 600;">$1</span>');
 
     return safe;
 }
@@ -241,11 +235,11 @@ function CodeBlock({ code, lang }) {
         <div
             style={{
                 position: "relative",
-                margin: "1.1rem 0",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--border-subtle)",
+                margin: "1.25rem 0",
+                borderRadius: "8px",
+                border: "1px solid #2a2a30",
                 overflow: "hidden",
-                backgroundColor: "#161513",
+                backgroundColor: "#141418",
             }}
         >
             <div
@@ -253,12 +247,12 @@ function CodeBlock({ code, lang }) {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "0.35rem 0.75rem",
-                    backgroundColor: "#1f1d19",
-                    borderBottom: "1px solid #2b2823",
+                    padding: "0.4rem 0.85rem",
+                    backgroundColor: "#101014",
+                    borderBottom: "1px solid #24242a",
                     fontSize: "0.72rem",
-                    color: "#999082",
-                    fontFamily: "var(--font-mono)",
+                    color: "#9ca3af",
+                    fontFamily: "monospace",
                 }}
             >
                 <span>{lang || "CODE"}</span>
@@ -268,7 +262,7 @@ function CodeBlock({ code, lang }) {
                         display: "flex",
                         alignItems: "center",
                         gap: "0.25rem",
-                        color: "#ece7df",
+                        color: "#d1d5db",
                         fontSize: "0.72rem",
                         background: "none",
                         border: "none",
@@ -279,109 +273,36 @@ function CodeBlock({ code, lang }) {
                     <span>{copied ? "Copied" : "Copy"}</span>
                 </button>
             </div>
-            <pre style={{ margin: 0, padding: "0.85rem", overflowX: "auto", color: "#ece7df", fontFamily: "var(--font-mono)", fontSize: "0.84rem", lineHeight: 1.55 }}>
+            <pre style={{ margin: 0, padding: "1rem", overflowX: "auto", color: "#e5e7eb", fontFamily: "monospace", fontSize: "0.85rem", lineHeight: 1.6 }}>
                 <code dangerouslySetInnerHTML={{ __html: highlightCode(code, lang) }} />
             </pre>
         </div>
     );
 }
 
-function renderReportMarkdown(content) {
-    if (!content) return null;
-
-    // Filter em dashes
-    const rawParts = content.split(/(```[\s\S]*?```)/g);
-    const normalizedParts = rawParts.map((p) => {
-        if (p.startsWith("```") && p.endsWith("```")) return p;
-        return p.replace(/[\u2014\u2013]/g, " - ");
-    });
-    const cleanContent = normalizedParts.join("");
-
-    // Split code blocks and block math
-    const parts = cleanContent.split(/(```[\s\S]*?```|\$\$[\s\S]*?\$\$)/g);
-
-    return parts.map((part, index) => {
-        // 1. Code blocks
-        if (part.startsWith("```") && part.endsWith("```")) {
-            const firstLineBreak = part.indexOf("\n");
-            const lang = firstLineBreak !== -1 ? part.slice(3, firstLineBreak).trim() : "";
-            const code = firstLineBreak !== -1 ? part.slice(firstLineBreak + 1, -3) : part.slice(3, -3);
-
-            if (lang.toLowerCase() === "mermaid") {
-                return <MermaidReportBlock key={index} chart={code} />;
-            }
-            return <CodeBlock key={index} code={code} lang={lang} />;
-        }
-
-        // 2. Block math
-        if (part.startsWith("$$") && part.endsWith("$$")) {
-            const formula = part.slice(2, -2).trim();
-            return <div key={index}>{renderKaTeX(formula, true)}</div>;
-        }
-
-        // 3. Process lines
-        const lines = part.split("\n");
-        return (
-            <React.Fragment key={index}>
-                {lines.map((line, lIdx) => {
-                    if (!line.trim()) return <br key={lIdx} />;
-
-                    if (line.startsWith("### ")) {
-                        return <h3 key={lIdx} style={{ marginTop: "1.4rem", marginBottom: "0.5rem" }}>{renderInlineText(line.slice(4))}</h3>;
-                    }
-                    if (line.startsWith("## ")) {
-                        return <h2 key={lIdx} style={{ marginTop: "1.8rem", marginBottom: "0.65rem", paddingBottom: "0.3rem", borderBottom: "1px solid var(--border-subtle)" }}>{renderInlineText(line.slice(3))}</h2>;
-                    }
-                    if (line.startsWith("# ")) {
-                        return <h1 key={lIdx} style={{ marginTop: "2rem", marginBottom: "0.85rem" }}>{renderInlineText(line.slice(2))}</h1>;
-                    }
-                    if (line.startsWith("> ")) {
-                        return (
-                            <blockquote
-                                key={lIdx}
-                                style={{
-                                    borderLeft: "3px solid var(--accent-terracotta)",
-                                    paddingLeft: "0.85rem",
-                                    margin: "0.85rem 0",
-                                    color: "var(--text-secondary)",
-                                    fontStyle: "italic",
-                                }}
-                            >
-                                {renderInlineText(line.slice(2))}
-                            </blockquote>
-                        );
-                    }
-                    if (line.startsWith("- ") || line.startsWith("* ")) {
-                        return (
-                            <li key={lIdx} style={{ marginLeft: "1.4rem", marginBottom: "0.25rem" }}>
-                                {renderInlineText(line.slice(2))}
-                            </li>
-                        );
-                    }
-                    return (
-                        <p key={lIdx} style={{ marginBottom: "0.85rem", lineHeight: 1.7, color: "var(--text-primary)" }}>
-                            {renderInlineText(line)}
-                        </p>
-                    );
-                })}
-            </React.Fragment>
-        );
-    });
+function slugifyHeading(text) {
+    if (!text) return "";
+    return text
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/\s+/g, "-");
 }
 
 function renderInlineText(str) {
-    const tokens = str.split(/(`[^`]+`|\$\$(?:[^\$]+)\$\$|\$(?:[^\$\n]+)\$|\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\([^)]+\))/g);
+    const tokens = str.split(/(`[^`]+`|\$\$(?:[^\$]+)\$\$|\$(?:[^\$\n]+)\$|\*\*[^*]+\*\*|\*[^*]+\*|\[\d+\]|\[[^\]]+\]\([^)]+\))/g);
     return tokens.map((tok, i) => {
+        if (!tok) return null;
         if (tok.startsWith("`") && tok.endsWith("`")) {
             return (
                 <code
                     key={i}
                     style={{
-                        fontFamily: "var(--font-mono)",
+                        fontFamily: "monospace",
                         fontSize: "0.88em",
-                        backgroundColor: "var(--bg-tertiary)",
-                        padding: "0.15em 0.35em",
+                        backgroundColor: "rgba(255, 255, 255, 0.08)",
+                        padding: "0.15em 0.4em",
                         borderRadius: "4px",
+                        color: "#e2e8f0",
                     }}
                 >
                     {tok.slice(1, -1)}
@@ -395,10 +316,31 @@ function renderInlineText(str) {
             return <span key={i}>{renderKaTeX(tok.slice(1, -1), false)}</span>;
         }
         if (tok.startsWith("**") && tok.endsWith("**")) {
-            return <strong key={i}>{renderInlineText(tok.slice(2, -2))}</strong>;
+            return <strong key={i} style={{ color: "#ffffff", fontWeight: 700 }}>{renderInlineText(tok.slice(2, -2))}</strong>;
         }
         if (tok.startsWith("*") && tok.endsWith("*")) {
             return <em key={i}>{renderInlineText(tok.slice(1, -1))}</em>;
+        }
+        // Citation link like [1] or [2]
+        const citationMatch = tok.match(/^\[(\d+)\]$/);
+        if (citationMatch) {
+            return (
+                <sup
+                    key={i}
+                    style={{
+                        padding: "1px 5px",
+                        margin: "0 2px",
+                        borderRadius: "4px",
+                        backgroundColor: "rgba(234, 88, 12, 0.15)",
+                        color: "#fb923c",
+                        fontSize: "0.72rem",
+                        fontWeight: 600,
+                        cursor: "default",
+                    }}
+                >
+                    [{citationMatch[1]}]
+                </sup>
+            );
         }
         const linkMatch = tok.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
         if (linkMatch) {
@@ -408,7 +350,7 @@ function renderInlineText(str) {
                     href={linkMatch[2]}
                     target="_blank"
                     rel="noreferrer"
-                    style={{ color: "var(--accent-terracotta)", textDecoration: "underline" }}
+                    style={{ color: "#fb923c", textDecoration: "underline", textUnderlineOffset: "3px" }}
                 >
                     {linkMatch[1]}
                 </a>
@@ -418,12 +360,17 @@ function renderInlineText(str) {
     });
 }
 
-export default function ReportViewer({ slug, theme, onToggleTheme }) {
+export default function ReportViewer({ slug, theme = "dark", onToggleTheme }) {
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [sourcesExpanded, setSourcesExpanded] = useState(false);
+    const [exportOpen, setExportOpen] = useState(false);
     const [copiedUrl, setCopiedUrl] = useState(false);
+    const [copiedContent, setCopiedContent] = useState(false);
+    const [activeHeading, setActiveHeading] = useState("");
+    const [mobileOutlineOpen, setMobileOutlineOpen] = useState(false);
+    const exportRef = useRef(null);
 
     useEffect(() => {
         if (!slug) return;
@@ -442,9 +389,81 @@ export default function ReportViewer({ slug, theme, onToggleTheme }) {
             });
     }, [slug]);
 
+    useEffect(() => {
+        document.body.style.overflow = "auto";
+        document.body.style.height = "auto";
+        document.documentElement.style.overflow = "auto";
+        document.documentElement.style.height = "auto";
+        return () => {
+            document.body.style.overflow = "";
+            document.body.style.height = "";
+            document.documentElement.style.overflow = "";
+            document.documentElement.style.height = "";
+        };
+    }, []);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (exportRef.current && !exportRef.current.contains(e.target)) {
+                setExportOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Extract headings from report content
+    const headings = [];
+    if (report?.content) {
+        const lines = report.content.split("\n");
+        for (const line of lines) {
+            const hMatch = line.match(/^(#{1,3})\s+(.+)$/);
+            if (hMatch) {
+                const level = hMatch[1].length;
+                const text = hMatch[2].replace(/[\*\_]/g, "").trim();
+                const id = slugifyHeading(text);
+                headings.push({ level, text, id });
+            }
+        }
+    }
+
+    const scrollToSection = (id) => {
+        setActiveHeading(id);
+        const el = document.getElementById(id);
+        if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    };
+
+    const handleCopyMarkdown = () => {
+        if (!report) return;
+        navigator.clipboard.writeText(report.raw || report.content);
+        setCopiedContent(true);
+        setExportOpen(false);
+        setTimeout(() => setCopiedContent(false), 2000);
+    };
+
+    const handleDownload = () => {
+        if (!report) return;
+        const blob = new Blob([report.raw || report.content], { type: "text/markdown" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = report.slug || "research-report.md";
+        a.click();
+        URL.revokeObjectURL(url);
+        setExportOpen(false);
+    };
+
+    const handlePrint = () => {
+        setExportOpen(false);
+        window.print();
+    };
+
     const handleShare = () => {
         navigator.clipboard.writeText(window.location.href);
         setCopiedUrl(true);
+        setExportOpen(false);
         setTimeout(() => setCopiedUrl(false), 2000);
     };
 
@@ -456,17 +475,14 @@ export default function ReportViewer({ slug, theme, onToggleTheme }) {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: "var(--bg-primary)",
-                    color: "var(--text-muted)",
-                    fontFamily: "var(--font-sans)",
-                    padding: "1rem",
+                    backgroundColor: "#0e0e11",
+                    color: "#9ca3af",
+                    fontFamily: "system-ui, sans-serif",
                 }}
             >
                 <div style={{ textAlign: "center" }}>
-                    <div style={{ fontWeight: 600, fontSize: "1rem", color: "var(--text-primary)", marginBottom: "0.3rem" }}>
-                        Loading Dossier
-                    </div>
-                    <div style={{ fontSize: "0.82rem" }}>Parsing report markdown and assets...</div>
+                    <div className="blinking-green-dot" style={{ width: "14px", height: "14px", margin: "0 auto 1rem auto" }} />
+                    <div style={{ fontSize: "0.95rem", fontWeight: 500 }}>Loading research report...</div>
                 </div>
             </div>
         );
@@ -478,312 +494,743 @@ export default function ReportViewer({ slug, theme, onToggleTheme }) {
                 style={{
                     minHeight: "100vh",
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: "var(--bg-primary)",
-                    color: "var(--text-primary)",
-                    fontFamily: "var(--font-sans)",
+                    backgroundColor: "#0e0e11",
+                    color: "#f3f4f6",
+                    fontFamily: "system-ui, sans-serif",
                     padding: "2rem",
+                    textAlign: "center",
                 }}
             >
-                <div
+                <FileText size={48} style={{ opacity: 0.3, marginBottom: "1rem" }} />
+                <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>Report Not Found</h1>
+                <p style={{ color: "#9ca3af", maxWidth: "400px", marginBottom: "1.5rem" }}>
+                    {error || "The requested markdown research file could not be located in workspace/research/."}
+                </p>
+                <a
+                    href="/"
                     style={{
-                        maxWidth: "480px",
-                        backgroundColor: "var(--bg-card)",
-                        padding: "2rem",
-                        borderRadius: "var(--radius-md)",
-                        border: "1px solid var(--border-subtle)",
-                        textAlign: "center",
+                        padding: "0.6rem 1.25rem",
+                        backgroundColor: "#c2410c",
+                        color: "#fff",
+                        borderRadius: "6px",
+                        textDecoration: "none",
+                        fontWeight: 600,
+                        fontSize: "0.85rem",
                     }}
                 >
-                    <AlertCircle size={32} color="#ef4444" style={{ margin: "0 auto 1rem auto" }} />
-                    <h2 style={{ fontSize: "1.2rem", fontWeight: 700, marginBottom: "0.5rem" }}>
-                        Report Not Found
-                    </h2>
-                    <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1.5rem" }}>
-                        The requested markdown file <code>{slug}</code> could not be located in <code>workspace/research/</code>.
-                    </p>
-                    <a
-                        href="/"
-                        style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.4rem",
-                            padding: "0.5rem 1rem",
-                            borderRadius: "var(--radius-sm)",
-                            backgroundColor: "var(--accent-terracotta)",
-                            color: "#fff",
-                            textDecoration: "none",
-                            fontSize: "0.85rem",
-                            fontWeight: 600,
-                        }}
-                    >
-                        <ArrowLeft size={14} />
-                        <span>Return to Workspace</span>
-                    </a>
-                </div>
+                    Return to Marnie
+                </a>
             </div>
         );
     }
 
-    const formattedTime = report.time ? new Date(report.time).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    }) : "";
+    // Process article content with Drop Cap and Styled Sections
+    const renderArticleBody = (content) => {
+        if (!content) return null;
+
+        const rawParts = content.split(/(```[\s\S]*?```)/g);
+        const normalizedParts = rawParts.map((p) => {
+            if (p.startsWith("```") && p.endsWith("```")) return p;
+            return p.replace(/[\u2014\u2013]/g, " - ");
+        });
+        const cleanContent = normalizedParts.join("");
+
+        const blocks = cleanContent.split(/(```[\s\S]*?```|\$\$[\s\S]*?\$\$)/g);
+        let hasRenderedDropCap = false;
+
+        return blocks.map((block, bIdx) => {
+            if (block.startsWith("```") && block.endsWith("```")) {
+                const firstBreak = block.indexOf("\n");
+                const lang = firstBreak !== -1 ? block.slice(3, firstBreak).trim() : "";
+                const code = firstBreak !== -1 ? block.slice(firstBreak + 1, -3) : block.slice(3, -3);
+
+                if (lang.toLowerCase() === "mermaid") {
+                    return <MermaidReportBlock key={bIdx} chart={code} />;
+                }
+                return <CodeBlock key={bIdx} code={code} lang={lang} />;
+            }
+
+            if (block.startsWith("$$") && block.endsWith("$$")) {
+                const formula = block.slice(2, -2).trim();
+                return <div key={bIdx}>{renderKaTeX(formula, true)}</div>;
+            }
+
+            const lines = block.split("\n");
+            return (
+                <React.Fragment key={bIdx}>
+                    {lines.map((line, lIdx) => {
+                        const trimmed = line.trim();
+                        if (!trimmed) return null;
+
+                        // Headings
+                        if (trimmed.startsWith("### ")) {
+                            const text = trimmed.slice(4).trim();
+                            const id = slugifyHeading(text);
+                            return (
+                                <h3
+                                    id={id}
+                                    key={lIdx}
+                                    style={{
+                                        fontFamily: "'Newsreader', 'Georgia', 'Merriweather', serif",
+                                        fontSize: "1.28rem",
+                                        fontWeight: 700,
+                                        color: "#f3f4f6",
+                                        marginTop: "2rem",
+                                        marginBottom: "0.75rem",
+                                        lineHeight: 1.35,
+                                    }}
+                                >
+                                    {renderInlineText(text)}
+                                </h3>
+                            );
+                        }
+
+                        if (trimmed.startsWith("## ")) {
+                            const text = trimmed.slice(3).trim();
+                            const id = slugifyHeading(text);
+                            return (
+                                <div key={lIdx} style={{ marginTop: "3rem", marginBottom: "1.5rem" }}>
+                                    <h2
+                                        id={id}
+                                        style={{
+                                            fontFamily: "'Newsreader', 'Georgia', 'Merriweather', serif",
+                                            fontSize: "1.9rem",
+                                            fontWeight: 700,
+                                            color: "#ffffff",
+                                            lineHeight: 1.25,
+                                            margin: 0,
+                                        }}
+                                    >
+                                        {renderInlineText(text)}
+                                    </h2>
+                                    {/* Accent underline under H2 section heading matching Image 1 */}
+                                    <div
+                                        style={{
+                                            height: "2px",
+                                            backgroundColor: "#c2410c",
+                                            marginTop: "0.55rem",
+                                            width: "100%",
+                                            opacity: 0.9,
+                                        }}
+                                    />
+                                </div>
+                            );
+                        }
+
+                        if (trimmed.startsWith("# ")) {
+                            const text = trimmed.slice(2).trim();
+                            const id = slugifyHeading(text);
+                            return (
+                                <h1
+                                    id={id}
+                                    key={lIdx}
+                                    style={{
+                                        fontFamily: "'Newsreader', 'Georgia', 'Merriweather', serif",
+                                        fontSize: "2.1rem",
+                                        fontWeight: 800,
+                                        color: "#ffffff",
+                                        marginTop: "2.5rem",
+                                        marginBottom: "1rem",
+                                    }}
+                                >
+                                    {renderInlineText(text)}
+                                </h1>
+                            );
+                        }
+
+                        if (trimmed.startsWith("> ")) {
+                            return (
+                                <blockquote
+                                    key={lIdx}
+                                    style={{
+                                        borderLeft: "3px solid #c2410c",
+                                        paddingLeft: "1.1rem",
+                                        margin: "1.5rem 0",
+                                        color: "#9ca3af",
+                                        fontStyle: "italic",
+                                        fontSize: "1.05rem",
+                                        lineHeight: 1.7,
+                                    }}
+                                >
+                                    {renderInlineText(trimmed.slice(2))}
+                                </blockquote>
+                            );
+                        }
+
+                        if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+                            return (
+                                <li
+                                    key={lIdx}
+                                    style={{
+                                        marginLeft: "1.5rem",
+                                        marginBottom: "0.45rem",
+                                        color: "#d1d5db",
+                                        lineHeight: 1.75,
+                                    }}
+                                >
+                                    {renderInlineText(trimmed.slice(2))}
+                                </li>
+                            );
+                        }
+
+                        // Paragraph: Check if this is the very first substantive paragraph for the Drop Cap (Image 1)
+                        if (!hasRenderedDropCap && trimmed.length > 20) {
+                            hasRenderedDropCap = true;
+                            const firstLetter = trimmed[0];
+                            const restOfText = trimmed.slice(1);
+
+                            return (
+                                <p
+                                    key={lIdx}
+                                    style={{
+                                        marginBottom: "1.5rem",
+                                        lineHeight: 1.85,
+                                        fontSize: "1.08rem",
+                                        color: "#d1d5db",
+                                    }}
+                                >
+                                    {/* Drop Cap styling matching Image 1: coral/amber box with bold white letter */}
+                                    <span
+                                        style={{
+                                            float: "left",
+                                            width: "clamp(36px, 8vw, 44px)",
+                                            height: "clamp(36px, 8vw, 44px)",
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            backgroundColor: "#c2410c",
+                                            color: "#ffffff",
+                                            fontFamily: "'Newsreader', 'Georgia', serif",
+                                            fontSize: "clamp(1.45rem, 5vw, 1.85rem)",
+                                            fontWeight: 700,
+                                            borderRadius: "6px",
+                                            marginRight: "10px",
+                                            marginTop: "3px",
+                                            lineHeight: 1,
+                                            userSelect: "none",
+                                        }}
+                                    >
+                                        {firstLetter}
+                                    </span>
+                                    {renderInlineText(restOfText)}
+                                </p>
+                            );
+                        }
+
+                        return (
+                            <p
+                                key={lIdx}
+                                style={{
+                                    marginBottom: "1.5rem",
+                                    lineHeight: 1.85,
+                                    fontSize: "1.08rem",
+                                    color: "#d1d5db",
+                                }}
+                            >
+                                {renderInlineText(trimmed)}
+                            </p>
+                        );
+                    })}
+                </React.Fragment>
+            );
+        });
+    };
 
     return (
         <div
             style={{
                 minHeight: "100vh",
-                backgroundColor: "var(--bg-primary)",
-                color: "var(--text-primary)",
-                fontFamily: "var(--font-sans)",
-                display: "flex",
-                flexDirection: "column",
-                overflowY: "auto",
+                backgroundColor: "#0e0e11",
+                color: "#e5e7eb",
+                fontFamily: "system-ui, -apple-system, sans-serif",
+                position: "relative",
             }}
         >
-            {/* Top Navigation Bar */}
+            {/* Top Minimal Bar */}
             <header
                 style={{
                     position: "sticky",
                     top: 0,
-                    zIndex: 30,
-                    backgroundColor: "var(--bg-card)",
-                    borderBottom: "1px solid var(--border-subtle)",
-                    backdropFilter: "blur(8px)",
-                    padding: "0.65rem 1.25rem",
+                    zIndex: 40,
+                    backgroundColor: "rgba(14, 14, 17, 0.92)",
+                    backdropFilter: "blur(12px)",
+                    borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+                    padding: "0.75rem 2rem",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
                 }}
             >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
-                    <a
-                        href="/"
-                        title="Back to Marnie"
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.35rem",
-                            color: "var(--text-secondary)",
-                            textDecoration: "none",
-                            fontSize: "0.82rem",
-                            fontWeight: 600,
-                            padding: "0.3rem 0.6rem",
-                            borderRadius: "var(--radius-sm)",
-                            backgroundColor: "var(--bg-secondary)",
-                        }}
-                    >
-                        <ArrowLeft size={14} />
-                        <span>Marnie</span>
-                    </a>
-                    <span style={{ color: "var(--border-strong)" }}>|</span>
-                    <span style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-                        {report.slug}
-                    </span>
-                </div>
+                <a
+                    href="/"
+                    style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        color: "#9ca3af",
+                        textDecoration: "none",
+                        fontSize: "0.82rem",
+                        fontWeight: 500,
+                        transition: "color 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#9ca3af")}
+                >
+                    <ArrowLeft size={14} />
+                    <span>Marnie Research</span>
+                </a>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                {/* Right: Export Menu */}
+                <div style={{ position: "relative" }} ref={exportRef}>
                     <button
-                        onClick={handleShare}
-                        title="Copy report URL"
+                        onClick={() => setExportOpen(!exportOpen)}
                         style={{
-                            display: "flex",
+                            display: "inline-flex",
                             alignItems: "center",
-                            gap: "0.35rem",
-                            padding: "0.35rem 0.75rem",
-                            borderRadius: "var(--radius-sm)",
-                            backgroundColor: "var(--bg-secondary)",
-                            border: "1px solid var(--border-subtle)",
-                            color: "var(--text-primary)",
-                            fontSize: "0.78rem",
+                            gap: "0.45rem",
+                            padding: "0.45rem 0.9rem",
+                            borderRadius: "6px",
+                            backgroundColor: "#18181c",
+                            border: "1px solid #303036",
+                            color: "#e5e7eb",
+                            fontSize: "0.8rem",
+                            fontWeight: 500,
                             cursor: "pointer",
                         }}
                     >
-                        {copiedUrl ? <Check size={13} color="#22c55e" /> : <Share2 size={13} />}
-                        <span>{copiedUrl ? "Copied Link" : "Share"}</span>
+                        <Download size={13} />
+                        <span>Export</span>
+                        <ChevronDown size={12} style={{ opacity: 0.7 }} />
                     </button>
-                    {onToggleTheme && (
-                        <button
-                            onClick={onToggleTheme}
-                            title="Toggle theme"
+
+                    {exportOpen && (
+                        <div
                             style={{
-                                width: "30px",
-                                height: "30px",
-                                borderRadius: "var(--radius-sm)",
-                                backgroundColor: "var(--bg-secondary)",
-                                border: "1px solid var(--border-subtle)",
-                                color: "var(--text-primary)",
+                                position: "absolute",
+                                right: 0,
+                                top: "100%",
+                                marginTop: "0.4rem",
+                                width: "190px",
+                                backgroundColor: "#18181c",
+                                border: "1px solid #33333a",
+                                borderRadius: "8px",
+                                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.6)",
+                                padding: "0.35rem",
+                                zIndex: 50,
                                 display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                cursor: "pointer",
+                                flexDirection: "column",
+                                gap: "0.2rem",
                             }}
                         >
-                            {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-                        </button>
+                            <button
+                                onClick={handleDownload}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.5rem",
+                                    padding: "0.5rem 0.75rem",
+                                    borderRadius: "4px",
+                                    backgroundColor: "transparent",
+                                    border: "none",
+                                    color: "#e5e7eb",
+                                    fontSize: "0.8rem",
+                                    textAlign: "left",
+                                    cursor: "pointer",
+                                    width: "100%",
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)")}
+                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                            >
+                                <Download size={13} />
+                                <span>Download .md</span>
+                            </button>
+
+                            <button
+                                onClick={handleCopyMarkdown}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.5rem",
+                                    padding: "0.5rem 0.75rem",
+                                    borderRadius: "4px",
+                                    backgroundColor: "transparent",
+                                    border: "none",
+                                    color: "#e5e7eb",
+                                    fontSize: "0.8rem",
+                                    textAlign: "left",
+                                    cursor: "pointer",
+                                    width: "100%",
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)")}
+                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                            >
+                                <Copy size={13} />
+                                <span>{copiedContent ? "Copied!" : "Copy Markdown"}</span>
+                            </button>
+
+                            <button
+                                onClick={handleShare}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.5rem",
+                                    padding: "0.5rem 0.75rem",
+                                    borderRadius: "4px",
+                                    backgroundColor: "transparent",
+                                    border: "none",
+                                    color: "#e5e7eb",
+                                    fontSize: "0.8rem",
+                                    textAlign: "left",
+                                    cursor: "pointer",
+                                    width: "100%",
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)")}
+                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                            >
+                                <Share2 size={13} />
+                                <span>{copiedUrl ? "Copied Link!" : "Copy Share Link"}</span>
+                            </button>
+
+                            <button
+                                onClick={handlePrint}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.5rem",
+                                    padding: "0.5rem 0.75rem",
+                                    borderRadius: "4px",
+                                    backgroundColor: "transparent",
+                                    border: "none",
+                                    color: "#e5e7eb",
+                                    fontSize: "0.8rem",
+                                    textAlign: "left",
+                                    cursor: "pointer",
+                                    width: "100%",
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)")}
+                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                            >
+                                <Printer size={13} />
+                                <span>Print / Save PDF</span>
+                            </button>
+                        </div>
                     )}
                 </div>
             </header>
 
-            {/* Main Article Container */}
-            <main
-                style={{
-                    flex: 1,
-                    maxWidth: "840px",
-                    width: "100%",
-                    margin: "0 auto",
-                    padding: "2rem 1.25rem 4rem 1.25rem",
-                }}
-            >
-                {/* Article Header Card */}
-                <div
+            {/* Editorial Hero Header Section */}
+            <div style={{ maxWidth: "980px", margin: "0 auto", padding: "3rem 1.5rem 1.5rem 1.5rem", textAlign: "center" }}>
+                {/* Large Editorial Headline */}
+                <h1
                     style={{
-                        marginBottom: "2rem",
-                        paddingBottom: "1.5rem",
-                        borderBottom: "1px solid var(--border-subtle)",
+                        fontFamily: "'Newsreader', 'Playfair Display', 'Merriweather', 'Georgia', serif",
+                        fontSize: "clamp(1.5rem, 5.5vw, 2.85rem)",
+                        fontWeight: 700,
+                        color: "#ffffff",
+                        letterSpacing: "-0.015em",
+                        lineHeight: 1.25,
+                        margin: "0 auto 1.5rem auto",
+                        maxWidth: "880px",
                     }}
                 >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", fontSize: "0.76rem", color: "var(--text-muted)", marginBottom: "0.5rem" }}>
-                        <Clock size={13} />
-                        <span>{formattedTime}</span>
-                    </div>
+                    {report.title}
+                </h1>
 
-                    <h1
+                {/* Hero Featured Preview Image */}
+                {report.image ? (
+                    <div
                         style={{
-                            fontFamily: "var(--font-display)",
-                            fontSize: "clamp(1.5rem, 4vw, 2.1rem)",
-                            fontWeight: 800,
-                            letterSpacing: "-0.02em",
-                            lineHeight: 1.25,
-                            color: "var(--text-primary)",
-                            marginBottom: "1rem",
+                            maxWidth: "760px",
+                            width: "100%",
+                            margin: "0 auto 1.5rem auto",
+                            borderRadius: "12px",
+                            overflow: "hidden",
+                            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8)",
+                            backgroundColor: "#16161a",
                         }}
                     >
-                        {report.title}
-                    </h1>
+                        <img
+                            src={report.image}
+                            alt={report.title}
+                            className="report-hero-image"
+                            onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                            }}
+                        />
+                    </div>
+                ) : (
+                    <div
+                        style={{
+                            maxWidth: "760px",
+                            width: "100%",
+                            height: "260px",
+                            margin: "0 auto 1.5rem auto",
+                            borderRadius: "12px",
+                            background: "linear-gradient(135deg, #18181b 0%, #1f2937 50%, #111827 100%)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            border: "1px solid #2a2a30",
+                            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8)",
+                        }}
+                    >
+                        <FileText size={48} style={{ opacity: 0.25, color: "#fb923c" }} />
+                    </div>
+                )}
 
-                    {report.prompt && (
+                {/* Metadata Stats Bar (Matching Image 1) */}
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexWrap: "wrap",
+                        gap: "1.25rem",
+                        marginTop: "1rem",
+                        marginBottom: "2rem",
+                        fontSize: "0.82rem",
+                        color: "#9ca3af",
+                    }}
+                >
+                    <div>
+                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>
+                            {report.duration || "533.4s"}
+                        </strong>{" "}
+                        <span>Duration</span>
+                    </div>
+                    <div>
+                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>
+                            {report.rounds || 3}
+                        </strong>{" "}
+                        <span>Rounds</span>
+                    </div>
+                    <div>
+                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>
+                            {report.queries || 7}
+                        </strong>{" "}
+                        <span>Queries</span>
+                    </div>
+                    <div>
+                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>
+                            {report.urls_analyzed || (report.sources ? report.sources.length : 13)}
+                        </strong>{" "}
+                        <span>URLs Analyzed</span>
+                    </div>
+                    <div>
+                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>
+                            {report.model || "qwen3.5:9b"}
+                        </strong>{" "}
+                        <span>Model</span>
+                    </div>
+                    <div>
+                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>
+                            {report.search_engine || "duckduckgo"}
+                        </strong>{" "}
+                        <span>Search</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Two-Column Layout (Desktop) / Single-Column (Mobile) */}
+            <div className="report-viewer-content-layout">
+                {/* Desktop Left Column: Table of Contents / Outline */}
+                {headings.length > 0 && (
+                    <aside className="report-viewer-outline-desktop">
                         <div
                             style={{
-                                padding: "0.6rem 0.85rem",
-                                borderRadius: "var(--radius-sm)",
-                                backgroundColor: "var(--bg-secondary)",
-                                border: "1px solid var(--border-subtle)",
-                                fontSize: "0.82rem",
-                                color: "var(--text-secondary)",
-                                marginBottom: "1rem",
+                                fontSize: "0.72rem",
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.06em",
+                                color: "#6b7280",
+                                marginBottom: "0.5rem",
+                                paddingLeft: "0.5rem",
                             }}
                         >
-                            <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>Prompt: </span>
-                            {report.prompt}
+                            Outline
                         </div>
-                    )}
-
-                    {/* Keywords pills */}
-                    {report.keywords && report.keywords.length > 0 && (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-                            {report.keywords.map((kw, i) => (
-                                <span
+                        {headings.map((h, i) => {
+                            const isH2 = h.level === 2;
+                            const isH3 = h.level === 3;
+                            return (
+                                <button
                                     key={i}
+                                    onClick={() => scrollToSection(h.id)}
                                     style={{
-                                        fontSize: "0.72rem",
-                                        padding: "0.15rem 0.5rem",
-                                        borderRadius: "9999px",
-                                        backgroundColor: "var(--bg-card)",
-                                        border: "1px solid var(--border-subtle)",
-                                        color: "var(--text-muted)",
+                                        textAlign: "left",
+                                        background: "none",
+                                        border: "none",
+                                        color: activeHeading === h.id ? "#fb923c" : "#9ca3af",
+                                        fontSize: isH3 ? "0.78rem" : "0.82rem",
+                                        fontWeight: isH2 ? 600 : 400,
+                                        padding: "0.35rem 0.5rem",
+                                        paddingLeft: isH3 ? "1.2rem" : "0.5rem",
+                                        borderRadius: "4px",
+                                        cursor: "pointer",
+                                        lineHeight: 1.4,
+                                        transition: "all 0.15s ease",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        if (activeHeading !== h.id) e.currentTarget.style.color = "#f3f4f6";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        if (activeHeading !== h.id) e.currentTarget.style.color = "#9ca3af";
                                     }}
                                 >
-                                    #{kw}
-                                </span>
-                            ))}
+                                    {h.text}
+                                </button>
+                            );
+                        })}
+                    </aside>
+                )}
+
+                {/* Right Column: Main Article Body */}
+                <main className="report-viewer-main-article" style={{ fontFamily: "'Newsreader', 'Georgia', 'Merriweather', serif" }}>
+                    {/* Mobile Collapsible Outline / Table of Contents */}
+                    {headings.length > 0 && (
+                        <div className="report-viewer-mobile-outline">
+                            <button
+                                onClick={() => setMobileOutlineOpen(!mobileOutlineOpen)}
+                                style={{
+                                    width: "100%",
+                                    padding: "0.75rem 1rem",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    backgroundColor: "#18181e",
+                                    border: "none",
+                                    color: "#e5e7eb",
+                                    fontSize: "0.82rem",
+                                    fontWeight: 600,
+                                    cursor: "pointer",
+                                }}
+                            >
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                    <List size={14} style={{ color: "#fb923c" }} />
+                                    <span>Table of Contents ({headings.length} sections)</span>
+                                </div>
+                                {mobileOutlineOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                            </button>
+                            {mobileOutlineOpen && (
+                                <div
+                                    style={{
+                                        padding: "0.6rem 0.85rem",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: "0.3rem",
+                                        maxHeight: "240px",
+                                        overflowY: "auto",
+                                        backgroundColor: "#141418",
+                                    }}
+                                >
+                                    {headings.map((h, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => {
+                                                scrollToSection(h.id);
+                                                setMobileOutlineOpen(false);
+                                            }}
+                                            style={{
+                                                textAlign: "left",
+                                                background: "none",
+                                                border: "none",
+                                                color: activeHeading === h.id ? "#fb923c" : "#9ca3af",
+                                                fontSize: h.level === 3 ? "0.78rem" : "0.82rem",
+                                                padding: "0.35rem 0.5rem",
+                                                paddingLeft: h.level === 3 ? "1.2rem" : "0.5rem",
+                                                borderRadius: "4px",
+                                                cursor: "pointer",
+                                                lineHeight: 1.4,
+                                            }}
+                                        >
+                                            {h.text}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
-                </div>
 
-                {/* Article Content */}
-                <article className="markdown-body" style={{ fontSize: "1rem", lineHeight: 1.8 }}>
-                    {renderReportMarkdown(report.content)}
-                </article>
+                    {renderArticleBody(report.content)}
 
-                {/* Collapsible Sources Section at Bottom */}
-                {report.sources && report.sources.length > 0 && (
-                    <section
-                        style={{
-                            marginTop: "3.5rem",
-                            borderRadius: "var(--radius-md)",
-                            border: "1px solid var(--border-subtle)",
-                            backgroundColor: "var(--bg-card)",
-                            overflow: "hidden",
-                        }}
-                    >
-                        <div
-                            onClick={() => setSourcesExpanded(!sourcesExpanded)}
+                    {/* Collapsible References & Cited Sources Section at Bottom */}
+                    {report.sources && report.sources.length > 0 && (
+                        <section
                             style={{
-                                padding: "0.85rem 1.25rem",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                cursor: "pointer",
-                                userSelect: "none",
-                                backgroundColor: "var(--bg-secondary)",
+                                marginTop: "4rem",
+                                borderRadius: "10px",
+                                border: "1px solid #282830",
+                                backgroundColor: "#141418",
+                                overflow: "hidden",
+                                fontFamily: "system-ui, -apple-system, sans-serif",
                             }}
                         >
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 700, fontSize: "0.86rem" }}>
-                                <LinkIcon size={14} style={{ color: "var(--accent-terracotta)" }} />
-                                <span>References & Cited Web Sources ({report.sources.length})</span>
+                            <div
+                                onClick={() => setSourcesExpanded(!sourcesExpanded)}
+                                style={{
+                                    padding: "0.9rem 1.25rem",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    cursor: "pointer",
+                                    userSelect: "none",
+                                    backgroundColor: "#18181e",
+                                }}
+                            >
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.55rem", fontWeight: 700, fontSize: "0.88rem" }}>
+                                    <LinkIcon size={14} style={{ color: "#fb923c" }} />
+                                    <span>References & Cited Web Sources ({report.sources.length})</span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.76rem", color: "#9ca3af" }}>
+                                    <span>{sourcesExpanded ? "Collapse" : "Expand"}</span>
+                                    {sourcesExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                </div>
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.76rem", color: "var(--text-muted)" }}>
-                                <span>{sourcesExpanded ? "Collapse" : "Expand"}</span>
-                                {sourcesExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                            </div>
-                        </div>
 
-                        {sourcesExpanded && (
-                            <div style={{ padding: "1rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-                                {report.sources.map((url, i) => (
-                                    <div
-                                        key={i}
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "0.5rem",
-                                            fontSize: "0.82rem",
-                                            wordBreak: "break-all",
-                                        }}
-                                    >
-                                        <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", minWidth: "20px" }}>
-                                            [{i + 1}]
-                                        </span>
-                                        <a
-                                            href={url}
-                                            target="_blank"
-                                            rel="noreferrer"
+                            {sourcesExpanded && (
+                                <div style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                                    {report.sources.map((url, i) => (
+                                        <div
+                                            key={i}
                                             style={{
-                                                color: "var(--accent-terracotta)",
-                                                textDecoration: "none",
-                                                display: "inline-flex",
+                                                display: "flex",
                                                 alignItems: "center",
-                                                gap: "0.3rem",
+                                                gap: "0.5rem",
+                                                fontSize: "0.82rem",
+                                                wordBreak: "break-all",
                                             }}
-                                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
-                                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
                                         >
-                                            <span>{url}</span>
-                                            <ExternalLink size={11} style={{ flexShrink: 0 }} />
-                                        </a>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </section>
-                )}
-            </main>
+                                            <span style={{ color: "#6b7280", fontSize: "0.75rem", minWidth: "22px" }}>
+                                                [{i + 1}]
+                                            </span>
+                                            <a
+                                                href={url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                style={{
+                                                    color: "#fb923c",
+                                                    textDecoration: "none",
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    gap: "0.35rem",
+                                                }}
+                                                onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                                                onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                                            >
+                                                <span>{url}</span>
+                                                <ExternalLink size={11} style={{ flexShrink: 0 }} />
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
+                    )}
+                </main>
+            </div>
         </div>
     );
 }

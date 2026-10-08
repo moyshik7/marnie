@@ -4,6 +4,7 @@ const db = require('../../db/index');
 const ollama = require('../providers/ollama/interact');
 const { searchWeb } = require('./webSearch');
 const reportStorage = require('./reportStorage');
+const { findFirstSourceImage } = require('./metaImageFetcher');
 
 // In-memory set of running research worker cancel tokens
 const runningControllers = new Map();
@@ -28,7 +29,20 @@ function listResearches() {
 }
 
 function updateResearch(id, fields) {
-  const allowed = ['status', 'summary', 'report', 'logs', 'sources', 'error'];
+  const allowed = [
+    'status',
+    'summary',
+    'report',
+    'logs',
+    'sources',
+    'error',
+    'image',
+    'duration',
+    'rounds',
+    'queries',
+    'urls_analyzed',
+    'slug',
+  ];
   const sets = [];
   const vals = { id };
 
@@ -72,6 +86,8 @@ async function startResearchPipeline(researchId) {
 
   const controller = new AbortController();
   runningControllers.set(researchId, controller);
+  const startTime = Date.now();
+  let previewImage = null;
 
   try {
     appendLog(researchId, `Initiating Deep Research on topic: "${research.topic}"`, 'start');
@@ -157,6 +173,18 @@ Output strictly valid JSON with an array of string queries:
       .run(JSON.stringify(gatheredSources), researchId);
 
     appendLog(researchId, `Gathered ${gatheredSources.length} verified web sources.`, 'sources_ready');
+
+    // Extract meta image from sources
+    try {
+      appendLog(researchId, 'Checking source websites for preview banner image...', 'meta_image');
+      previewImage = await findFirstSourceImage(gatheredSources);
+      if (previewImage) {
+        updateResearch(researchId, { image: previewImage });
+        appendLog(researchId, `Retrieved source preview image.`, 'image_found');
+      }
+    } catch (imgErr) {
+      appendLog(researchId, `Source image check note: ${imgErr.message}`, 'notice');
+    }
 
     if (controller.signal.aborted) return;
 
@@ -286,6 +314,7 @@ Do not include any commentary or extra text. Output strictly JSON.`;
     }
 
     // 5. Save as individual markdown file under workspace/research/slug.md
+    const durationSeconds = ((Date.now() - startTime) / 1000).toFixed(1) + 's';
     const baseSlug = reportStorage.slugify(metaTitle || research.topic);
     const slug = `${baseSlug}.md`;
 
@@ -294,12 +323,25 @@ Do not include any commentary or extra text. Output strictly JSON.`;
       keywords: metaKeywords,
       prompt: research.topic,
       sources: metaSources,
+      image: previewImage || '',
+      duration: durationSeconds,
+      rounds: maxRev,
+      queries: subQueries.length,
+      urls_analyzed: gatheredSources.length,
+      model: research.model,
+      search_engine: 'duckduckgo',
       time: new Date().toISOString(),
     }, currentDraft);
 
     updateResearch(researchId, {
       summary: currentDraft.slice(0, 350) + '...',
       error: savedFile, // store saved file name for reference
+      slug: savedFile,
+      image: previewImage || null,
+      duration: durationSeconds,
+      rounds: maxRev,
+      queries: subQueries.length,
+      urls_analyzed: gatheredSources.length,
     });
 
     appendLog(researchId, `Deep Research published to workspace/research/${savedFile} (URL: /report/${savedFile})`, 'finished');

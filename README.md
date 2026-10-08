@@ -2,6 +2,14 @@
 
 A self-hosted AI workspace made in nodejs with features according to my own preference.
 
+![GitHub CI](https://img.shields.io/github/actions/workflow/status/moyshik7/marnie/deploy.yml?branch=main&label=GitHub%20CI)
+![GitHub CI](https://github.com/moyshik7/marnie/actions/workflows/deploy.yml/badge.svg)
+![Google Gemini](https://img.shields.io/badge/google%20gemini-%238E75B2.svg?style=for-the-badge&logo=google%20gemini&logoColor=white)
+![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white)
+![NodeJS](https://img.shields.io/badge/node.js-%236DA55F.svg?style=for-the-badge&logo=node.js&logoColor=white)
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![Ollama](https://img.shields.io/badge/ollama-%23000000.svg?style=for-the-badge&logo=ollama&logoColor=white)
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/screenshot-browser.png" alt="Marnie Ui (In browser)"/>
 </p>
