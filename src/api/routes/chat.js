@@ -21,37 +21,45 @@ function getEffectiveSystemPrompt(customSystem = '') {
 async function runToolCallsAndFormat(toolCalls) {
   let output = '';
   for (const call of toolCalls) {
+    let callOutput = '';
     try {
       const res = await executeTool(call.name, call.arguments);
-      output += `\n\n> **Executed Tool:** \`${call.name}\`\n`;
+      callOutput += `\n> **Executed Tool:** \`${call.name}\`\n`;
       if (res && typeof res === 'object') {
         if (call.name === 'send_alert' || call.name === 'discord_alert' || (res.sent === true && Object.keys(res).length === 1)) {
-          output += `\nSuccessful\n`;
+          callOutput += `\nSuccessful\n`;
         } else if ((call.name === 'set_timer' || call.name === 'timer') && res.status) {
-          output += `\n${res.status}\n`;
+          callOutput += `\n${res.status}\n`;
         } else if ((call.name === 'web_search' || call.name === 'duckduckgo_search' || call.name === 'searxng_search') && Array.isArray(res.results)) {
           if (res.results.length === 0) {
-            output += `\n*No results found for "${res.query || ''}".*\n`;
+            callOutput += `\n*No results found for "${res.query || ''}".*\n`;
           } else {
-            output += `\n**Web Search Results (${res.provider || 'web'}):**\n\n`;
+            callOutput += `\n**Web Search Results (${res.provider || 'web'}):**\n\n`;
             for (let i = 0; i < res.results.length; i++) {
               const r = res.results[i];
-              output += `${i + 1}. [${r.title || 'Untitled'}](${r.url})\n   ${r.snippet || ''}\n\n`;
+              callOutput += `${i + 1}. [${r.title || 'Untitled'}](${r.url})\n   ${r.snippet || ''}\n`;
+              if (r.content) {
+                callOutput += `   > **Page Content Excerpt:** ${r.content.replace(/\n+/g, ' ')}\n`;
+              }
+              callOutput += '\n';
             }
           }
+        } else if ((call.name === 'fetch_webpage' || call.name === 'scrape_webpage') && res.url) {
+          callOutput += `\n**Scraped Webpage Content (${res.url}):**\n\n${res.content}\n\n`;
         } else if (res.stdout !== undefined || res.stderr !== undefined) {
-          if (res.stdout) output += `\`\`\`\n${res.stdout.trimEnd()}\n\`\`\`\n`;
-          if (res.stderr) output += `\`\`\`stderr\n${res.stderr.trimEnd()}\n\`\`\`\n`;
-          if (!res.stdout && !res.stderr) output += `*(Process finished with exit code ${res.exitCode})*\n`;
+          if (res.stdout) callOutput += `\`\`\`\n${res.stdout.trimEnd()}\n\`\`\`\n`;
+          if (res.stderr) callOutput += `\`\`\`stderr\n${res.stderr.trimEnd()}\n\`\`\`\n`;
+          if (!res.stdout && !res.stderr) callOutput += `*(Process finished with exit code ${res.exitCode})*\n`;
         } else {
-          output += `\`\`\`json\n${JSON.stringify(res, null, 2)}\n\`\`\`\n`;
+          callOutput += `\`\`\`json\n${JSON.stringify(res, null, 2)}\n\`\`\`\n`;
         }
       } else {
-        output += `\`\`\`\n${String(res)}\n\`\`\`\n`;
+        callOutput += `\`\`\`\n${String(res)}\n\`\`\`\n`;
       }
     } catch (err) {
-      output += `\n\n> **Tool Failed (\`${call.name}\`):** ${err.message}\n`;
+      callOutput += `\n> **Tool Failed (\`${call.name}\`):** ${err.message}\n`;
     }
+    output += `\n\n<!-- tool-output:${call.name} -->${callOutput}<!-- /tool-output -->\n`;
   }
   return output;
 }
@@ -197,13 +205,14 @@ function sanitizeHistoryForLLM(rawMessages) {
       // 1. Strip internal <think>...</think> blocks from previous turns so they don't pollute subsequent generation
       content = content.replace(/<think>[\s\S]*?<\/think>\s*/gi, '').trim();
 
-      // 2. Strip fake/displayed tool execution markdown (> **Executed Tool:** ... or > 🛠️ **Executed Tool:** ...)
-      const hadToolExec = />\s*(?:🛠️)?\s*\*{0,2}Executed Tool:\*{0,2}\s*`?(\w+)`?/gi.test(content);
-      if (hadToolExec) {
-        content = content
-          .replace(/>\s*(?:🛠️)?\s*\*{0,2}Executed Tool:\*{0,2}\s*`?(\w+)`?[\s\S]*?(?:Successful|```(?:json)?[\s\S]*?```|$)/gi, '[Action: Tool "$1" executed successfully]')
-          .trim();
-      }
+      // 2. Strip comment-delimited tool outputs while preserving subsequent assistant answers
+      content = content.replace(/<!-- tool-output:?(\w*) -->[\s\S]*?<!-- \/tool-output -->/gi, (_m, name) => {
+        return `\n[Action: Tool "${name || 'tool'}" executed successfully]\n`;
+      });
+
+      // 3. Strip legacy tool execution markdown without wiping out subsequent response text
+      const legacyToolRegex = />\s*(?:🛠️)?\s*\*{0,2}Executed Tool:\*{0,2}\s*`?(\w+)`?[\s\S]*?(?:Successful|\*No results found[^\n]*\*|(?:\*\*Web Search Results[^\n]*\*\*[\s\S]*?(?=\n\n(?!\d+\.)[^\n]|\n\n\n|$))|```(?:json|stderr)?[\s\S]*?```)/gi;
+      content = content.replace(legacyToolRegex, '[Action: Tool "$1" executed successfully]').trim();
 
       if (!content || content.startsWith('[Action: Tool')) {
         content = content || '[System: Tool execution completed successfully.]';
@@ -256,78 +265,46 @@ router.post('/conversations/:id/complete', async (req, res) => {
 
       let fullContent = '';
       let fullThinking = '';
-      const nativeToolCalls = [];
+      let currentMessages = [...messages];
+      const maxTurns = 5;
+      let turn = 0;
 
-      await ollama.chatStream({
-        model: model || conv.model,
-        messages,
-        options,
-        tools: OLLAMA_TOOLS,
-        onChunk: (chunk) => {
-          const token = chunk.message?.content || '';
-          const thinking = chunk.message?.thinking || '';
-          if (thinking) {
-            fullThinking += thinking;
-          }
-          if (token) {
-            fullContent += token;
-          }
-          if (token || thinking) {
-            res.write(`data: ${JSON.stringify({ token, thinking, done: chunk.done })}\n\n`);
-          }
-          if (chunk.message?.tool_calls && chunk.message.tool_calls.length > 0) {
-            nativeToolCalls.push(...chunk.message.tool_calls);
-          }
-        },
-        onDone: async () => {
-          // Combine native tool calls and parsed text tool calls
-          const allToolCalls = [];
-          for (const tc of nativeToolCalls) {
-            if (tc.function) {
-              const args = typeof tc.function.arguments === 'string'
-                ? JSON.parse(tc.function.arguments || '{}')
-                : (tc.function.arguments || {});
-              allToolCalls.push({ name: tc.function.name, arguments: args });
+      while (turn < maxTurns) {
+        turn++;
+        if (res.writableEnded || res.destroyed) break;
+
+        let turnContent = '';
+        let turnThinking = '';
+        const nativeToolCalls = [];
+
+        await ollama.chatStream({
+          model: model || conv.model,
+          messages: currentMessages,
+          options,
+          tools: OLLAMA_TOOLS,
+          onChunk: (chunk) => {
+            const token = chunk.message?.content || '';
+            const thinking = chunk.message?.thinking || '';
+            if (thinking) {
+              turnThinking += thinking;
+              fullThinking += thinking;
             }
-          }
-
-          const parsedCalls = parseToolCalls(fullContent);
-          for (const pc of parsedCalls) {
-            if (!allToolCalls.some((t) => t.name === pc.name)) {
-              allToolCalls.push(pc);
+            if (token) {
+              turnContent += token;
+              fullContent += token;
             }
-          }
+            if (token || thinking) {
+              res.write(`data: ${JSON.stringify({ token, thinking, done: false })}\n\n`);
+            }
+            if (chunk.message?.tool_calls && chunk.message.tool_calls.length > 0) {
+              nativeToolCalls.push(...chunk.message.tool_calls);
+            }
+          },
+        });
 
-          if (allToolCalls.length > 0) {
-            const toolOutput = await runToolCallsAndFormat(allToolCalls);
-            fullContent += toolOutput;
-            res.write(`data: ${JSON.stringify({ token: toolOutput, done: false })}\n\n`);
-          }
-
-          // Persist assistant message in SQLite, preserving thinking if present
-          const persistedContent = fullThinking
-            ? `<think>\n${fullThinking.trim()}\n</think>\n\n${fullContent.trim()}`
-            : fullContent;
-          insertMsg(conv.id, 'assistant', persistedContent);
-          res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-          res.end();
-        },
-      });
-    } else {
-      // ── Non-streaming ──────────────────────────────────────────────────
-      const response = await ollama.chat({
-        model: model || conv.model,
-        messages,
-        options,
-        tools: OLLAMA_TOOLS,
-      });
-
-      let assistantContent = response.message?.content || '';
-      const thinkingContent = response.message?.thinking || '';
-      const allToolCalls = [];
-
-      if (response.message?.tool_calls && response.message.tool_calls.length > 0) {
-        for (const tc of response.message.tool_calls) {
+        // Combine native tool calls and parsed text tool calls
+        const allToolCalls = [];
+        for (const tc of nativeToolCalls) {
           if (tc.function) {
             const args = typeof tc.function.arguments === 'string'
               ? JSON.parse(tc.function.arguments || '{}')
@@ -335,32 +312,149 @@ router.post('/conversations/:id/complete', async (req, res) => {
             allToolCalls.push({ name: tc.function.name, arguments: args });
           }
         }
-      }
 
-      const parsedCalls = parseToolCalls(assistantContent);
-      for (const pc of parsedCalls) {
-        if (!allToolCalls.some((t) => t.name === pc.name)) {
-          allToolCalls.push(pc);
+        const parsedCalls = parseToolCalls(turnContent);
+        for (const pc of parsedCalls) {
+          if (!allToolCalls.some((t) => t.name === pc.name)) {
+            allToolCalls.push(pc);
+          }
+        }
+
+        // If no tool calls in this turn, the assistant completed its generation
+        if (allToolCalls.length === 0) {
+          break;
+        }
+
+        // Run tool calls and stream output to client
+        const toolOutput = await runToolCallsAndFormat(allToolCalls);
+        fullContent += toolOutput;
+        res.write(`data: ${JSON.stringify({ token: toolOutput, done: false })}\n\n`);
+
+        // Prepare context for next turn to let LLM formulate final answer using search results
+        if (nativeToolCalls.length > 0) {
+          currentMessages.push({
+            role: 'assistant',
+            content: turnContent,
+            tool_calls: nativeToolCalls,
+          });
+          currentMessages.push({
+            role: 'tool',
+            content: toolOutput,
+          });
+        } else {
+          currentMessages.push({
+            role: 'assistant',
+            content: turnContent,
+          });
+          currentMessages.push({
+            role: 'user',
+            content: `[Tool Execution Result]:\n${toolOutput}\n\nPlease use the above tool results to synthesize and complete your response for the user.`,
+          });
         }
       }
 
-      if (allToolCalls.length > 0) {
+      // Persist assistant message in SQLite, preserving thinking if present
+      const persistedContent = fullThinking
+        ? `<think>\n${fullThinking.trim()}\n</think>\n\n${fullContent.trim()}`
+        : fullContent.trim();
+      insertMsg(conv.id, 'assistant', persistedContent);
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      res.end();
+    } else {
+      // ── Non-streaming ──────────────────────────────────────────────────
+      let assistantContent = '';
+      let thinkingContent = '';
+      let currentMessages = [...messages];
+      let lastUsage = undefined;
+      const maxTurns = 5;
+      let turn = 0;
+
+      while (turn < maxTurns) {
+        turn++;
+        const response = await ollama.chat({
+          model: model || conv.model,
+          messages: currentMessages,
+          options,
+          tools: OLLAMA_TOOLS,
+        });
+
+        if (response.eval_count) {
+          lastUsage = { eval_count: response.eval_count, prompt_eval_count: response.prompt_eval_count };
+        }
+
+        const turnContent = response.message?.content || '';
+        const turnThinking = response.message?.thinking || '';
+        if (turnThinking) thinkingContent += (thinkingContent ? '\n' : '') + turnThinking;
+        assistantContent += turnContent;
+
+        const nativeToolCalls = [];
+        if (response.message?.tool_calls && response.message.tool_calls.length > 0) {
+          nativeToolCalls.push(...response.message.tool_calls);
+        }
+
+        const allToolCalls = [];
+        for (const tc of nativeToolCalls) {
+          if (tc.function) {
+            const args = typeof tc.function.arguments === 'string'
+              ? JSON.parse(tc.function.arguments || '{}')
+              : (tc.function.arguments || {});
+            allToolCalls.push({ name: tc.function.name, arguments: args });
+          }
+        }
+
+        const parsedCalls = parseToolCalls(turnContent);
+        for (const pc of parsedCalls) {
+          if (!allToolCalls.some((t) => t.name === pc.name)) {
+            allToolCalls.push(pc);
+          }
+        }
+
+        if (allToolCalls.length === 0) {
+          break;
+        }
+
         const toolOutput = await runToolCallsAndFormat(allToolCalls);
         assistantContent += toolOutput;
+
+        if (nativeToolCalls.length > 0) {
+          currentMessages.push({
+            role: 'assistant',
+            content: turnContent,
+            tool_calls: nativeToolCalls,
+          });
+          currentMessages.push({
+            role: 'tool',
+            content: toolOutput,
+          });
+        } else {
+          currentMessages.push({
+            role: 'assistant',
+            content: turnContent,
+          });
+          currentMessages.push({
+            role: 'user',
+            content: `[Tool Execution Result]:\n${toolOutput}\n\nPlease use the above tool results to synthesize and complete your response for the user.`,
+          });
+        }
       }
 
       const persistedContent = thinkingContent
         ? `<think>\n${thinkingContent.trim()}\n</think>\n\n${assistantContent.trim()}`
-        : assistantContent;
+        : assistantContent.trim();
       const saved = insertMsg(conv.id, 'assistant', persistedContent);
       res.json({
         message: parseMsg(saved),
-        usage: response.eval_count ? { eval_count: response.eval_count, prompt_eval_count: response.prompt_eval_count } : undefined,
+        usage: lastUsage,
       });
     }
   } catch (err) {
     console.error('[chat] LLM error:', err.message);
-    res.status(502).json({ error: 'LLM provider error', detail: err.message });
+    if (!res.headersSent) {
+      res.status(502).json({ error: 'LLM provider error', detail: err.message });
+    } else {
+      res.write(`data: ${JSON.stringify({ token: `\n\n⚠️ Provider Error: ${err.message}`, done: true })}\n\n`);
+      res.end();
+    }
   }
 });
 
@@ -390,70 +484,45 @@ router.post('/complete', async (req, res) => {
 
       let fullContent = '';
       let fullThinking = '';
-      const nativeToolCalls = [];
+      let currentMessages = [...messages];
+      const maxTurns = 5;
+      let turn = 0;
 
-      await ollama.chatStream({
-        model,
-        messages,
-        options,
-        tools: OLLAMA_TOOLS,
-        onChunk: (chunk) => {
-          const token = chunk.message?.content || '';
-          const thinking = chunk.message?.thinking || '';
-          if (thinking) {
-            fullThinking += thinking;
-          }
-          if (token) {
-            fullContent += token;
-          }
-          if (token || thinking) {
-            res.write(`data: ${JSON.stringify({ token, thinking, done: chunk.done })}\n\n`);
-          }
-          if (chunk.message?.tool_calls && chunk.message.tool_calls.length > 0) {
-            nativeToolCalls.push(...chunk.message.tool_calls);
-          }
-        },
-        onDone: async () => {
-          const allToolCalls = [];
-          for (const tc of nativeToolCalls) {
-            if (tc.function) {
-              const args = typeof tc.function.arguments === 'string'
-                ? JSON.parse(tc.function.arguments || '{}')
-                : (tc.function.arguments || {});
-              allToolCalls.push({ name: tc.function.name, arguments: args });
+      while (turn < maxTurns) {
+        turn++;
+        if (res.writableEnded || res.destroyed) break;
+
+        let turnContent = '';
+        let turnThinking = '';
+        const nativeToolCalls = [];
+
+        await ollama.chatStream({
+          model,
+          messages: currentMessages,
+          options,
+          tools: OLLAMA_TOOLS,
+          onChunk: (chunk) => {
+            const token = chunk.message?.content || '';
+            const thinking = chunk.message?.thinking || '';
+            if (thinking) {
+              turnThinking += thinking;
+              fullThinking += thinking;
             }
-          }
-
-          const parsedCalls = parseToolCalls(fullContent);
-          for (const pc of parsedCalls) {
-            if (!allToolCalls.some((t) => t.name === pc.name)) {
-              allToolCalls.push(pc);
+            if (token) {
+              turnContent += token;
+              fullContent += token;
             }
-          }
+            if (token || thinking) {
+              res.write(`data: ${JSON.stringify({ token, thinking, done: false })}\n\n`);
+            }
+            if (chunk.message?.tool_calls && chunk.message.tool_calls.length > 0) {
+              nativeToolCalls.push(...chunk.message.tool_calls);
+            }
+          },
+        });
 
-          if (allToolCalls.length > 0) {
-            const toolOutput = await runToolCallsAndFormat(allToolCalls);
-            fullContent += toolOutput;
-            res.write(`data: ${JSON.stringify({ token: toolOutput, done: false })}\n\n`);
-          }
-          res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-          res.end();
-        },
-      });
-    } else {
-      const response = await ollama.chat({
-        model,
-        messages,
-        options,
-        tools: OLLAMA_TOOLS,
-      });
-
-      let assistantContent = response.message?.content || '';
-      const thinkingContent = response.message?.thinking || '';
-      const allToolCalls = [];
-
-      if (response.message?.tool_calls && response.message.tool_calls.length > 0) {
-        for (const tc of response.message.tool_calls) {
+        const allToolCalls = [];
+        for (const tc of nativeToolCalls) {
           if (tc.function) {
             const args = typeof tc.function.arguments === 'string'
               ? JSON.parse(tc.function.arguments || '{}')
@@ -461,27 +530,135 @@ router.post('/complete', async (req, res) => {
             allToolCalls.push({ name: tc.function.name, arguments: args });
           }
         }
-      }
 
-      const parsedCalls = parseToolCalls(assistantContent);
-      for (const pc of parsedCalls) {
-        if (!allToolCalls.some((t) => t.name === pc.name)) {
-          allToolCalls.push(pc);
+        const parsedCalls = parseToolCalls(turnContent);
+        for (const pc of parsedCalls) {
+          if (!allToolCalls.some((t) => t.name === pc.name)) {
+            allToolCalls.push(pc);
+          }
+        }
+
+        if (allToolCalls.length === 0) {
+          break;
+        }
+
+        const toolOutput = await runToolCallsAndFormat(allToolCalls);
+        fullContent += toolOutput;
+        res.write(`data: ${JSON.stringify({ token: toolOutput, done: false })}\n\n`);
+
+        if (nativeToolCalls.length > 0) {
+          currentMessages.push({
+            role: 'assistant',
+            content: turnContent,
+            tool_calls: nativeToolCalls,
+          });
+          currentMessages.push({
+            role: 'tool',
+            content: toolOutput,
+          });
+        } else {
+          currentMessages.push({
+            role: 'assistant',
+            content: turnContent,
+          });
+          currentMessages.push({
+            role: 'user',
+            content: `[Tool Execution Result]:\n${toolOutput}\n\nPlease use the above tool results to synthesize and complete your response for the user.`,
+          });
         }
       }
 
-      if (allToolCalls.length > 0) {
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      res.end();
+    } else {
+      let assistantContent = '';
+      let thinkingContent = '';
+      let currentMessages = [...messages];
+      let lastUsage = undefined;
+      const maxTurns = 5;
+      let turn = 0;
+
+      while (turn < maxTurns) {
+        turn++;
+        const response = await ollama.chat({
+          model,
+          messages: currentMessages,
+          options,
+          tools: OLLAMA_TOOLS,
+        });
+
+        if (response.eval_count) {
+          lastUsage = response;
+        }
+
+        const turnContent = response.message?.content || '';
+        const turnThinking = response.message?.thinking || '';
+        if (turnThinking) thinkingContent += (thinkingContent ? '\n' : '') + turnThinking;
+        assistantContent += turnContent;
+
+        const nativeToolCalls = [];
+        if (response.message?.tool_calls && response.message.tool_calls.length > 0) {
+          nativeToolCalls.push(...response.message.tool_calls);
+        }
+
+        const allToolCalls = [];
+        for (const tc of nativeToolCalls) {
+          if (tc.function) {
+            const args = typeof tc.function.arguments === 'string'
+              ? JSON.parse(tc.function.arguments || '{}')
+              : (tc.function.arguments || {});
+            allToolCalls.push({ name: tc.function.name, arguments: args });
+          }
+        }
+
+        const parsedCalls = parseToolCalls(turnContent);
+        for (const pc of parsedCalls) {
+          if (!allToolCalls.some((t) => t.name === pc.name)) {
+            allToolCalls.push(pc);
+          }
+        }
+
+        if (allToolCalls.length === 0) {
+          break;
+        }
+
         const toolOutput = await runToolCallsAndFormat(allToolCalls);
         assistantContent += toolOutput;
+
+        if (nativeToolCalls.length > 0) {
+          currentMessages.push({
+            role: 'assistant',
+            content: turnContent,
+            tool_calls: nativeToolCalls,
+          });
+          currentMessages.push({
+            role: 'tool',
+            content: toolOutput,
+          });
+        } else {
+          currentMessages.push({
+            role: 'assistant',
+            content: turnContent,
+          });
+          currentMessages.push({
+            role: 'user',
+            content: `[Tool Execution Result]:\n${toolOutput}\n\nPlease use the above tool results to synthesize and complete your response for the user.`,
+          });
+        }
       }
 
       const finalContent = thinkingContent
         ? `<think>\n${thinkingContent.trim()}\n</think>\n\n${assistantContent.trim()}`
-        : assistantContent;
-      res.json({ message: { role: 'assistant', content: filterEmDashes(finalContent) }, usage: response });
+        : assistantContent.trim();
+      res.json({ message: { role: 'assistant', content: filterEmDashes(finalContent) }, usage: lastUsage });
     }
   } catch (err) {
-    res.status(502).json({ error: 'LLM provider error', detail: err.message });
+    if (!res.headersSent) {
+      res.status(502).json({ error: 'LLM provider error', detail: err.message });
+    } else {
+      res.write(`data: ${JSON.stringify({ token: `\n\n⚠️ Provider Error: ${err.message}`, done: true })}\n\n`);
+      res.end();
+    }
   }
 });
 

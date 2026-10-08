@@ -81,6 +81,7 @@ async function startResearchPipeline(researchId) {
     let subQueries = [research.topic];
     try {
       const planPrompt = `You are a Principal Research Scientist. Break down this research query into 2 to 4 distinct, highly targeted web search queries that cover background, current state, key challenges, and technical nuances.
+CRITICAL SEARCH INSTRUCTION: Each search query MUST be short, concise keywords strictly 2 to 5 words long (e.g. "small reasoning models architecture", "qwen test time compute", "deepseek r1 efficiency"). Never write long sentences, questions, or conversational phrases. Short queries ensure optimal search engine results.
 Topic: "${research.topic}"
 Output strictly valid JSON with an array of string queries:
 {"queries": ["query 1", "query 2"]}`;
@@ -101,6 +102,22 @@ Output strictly valid JSON with an array of string queries:
       }
     } catch (err) {
       appendLog(researchId, `Sub-query planner fallback: ${err.message}`, 'warning');
+    }
+
+    // Clean and ensure queries are kept short (strictly 2 to 5 words)
+    subQueries = subQueries
+      .map((sq) => {
+        if (!sq || typeof sq !== 'string') return '';
+        let clean = sq.trim().replace(/^["'`]+|["'`]+$/g, '').trim();
+        const words = clean.split(/\s+/);
+        if (words.length > 5) {
+          clean = words.slice(0, 5).join(' ');
+        }
+        return clean;
+      })
+      .filter(Boolean);
+    if (subQueries.length === 0) {
+      subQueries = [research.topic.split(/\s+/).slice(0, 5).join(' ')];
     }
 
     if (controller.signal.aborted) return;
@@ -124,6 +141,7 @@ Output strictly valid JSON with an array of string queries:
                 title: item.title,
                 url: item.url,
                 snippet: item.snippet,
+                content: item.content || '',
               });
             }
           }
@@ -149,7 +167,13 @@ Output strictly valid JSON with an array of string queries:
     // Initial Draft Formulation
     appendLog(researchId, `Formulating Initial Research Thesis (Revision 1 of ${maxRev})...`, 'drafting');
     
-    const sourcesSummary = gatheredSources.map((s, idx) => `[Source ${idx + 1}] ${s.title}\nURL: ${s.url}\nExcerpt: ${s.snippet}`).join('\n\n');
+    const sourcesSummary = gatheredSources.map((s, idx) => {
+      let entry = `[Source ${idx + 1}] ${s.title}\nURL: ${s.url}\nExcerpt: ${s.snippet}`;
+      if (s.content) {
+        entry += `\nPage Content: ${s.content}`;
+      }
+      return entry;
+    }).join('\n\n');
 
     const draftPrompt = `You are a Senior Research Fellow producing an exhaustive, structured Deep Research Dossier.
 Topic: "${research.topic}"

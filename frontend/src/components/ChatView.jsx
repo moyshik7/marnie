@@ -548,11 +548,11 @@ export default function ChatView({
         if (webSearchActive) {
             const providerLabel = searchProvider === "searxng" ? "SearXNG" : "DuckDuckGo";
             augmentedSystem +=
-                `\n[Mode: ${providerLabel} Web Search enabled for verified web answers]`;
+                `\n[Mode: ${providerLabel} Web Search enabled for verified web answers. Keep search terms short and concise (strictly 2 to 5 words). After running the search, you MUST use the search results to formulate a complete and detailed answer to the user's question.]`;
         }
         if (agentModeActive) {
             augmentedSystem +=
-                "\n[Mode: Agent Mode enabled - identify goals, break down sub-tasks, and prepare tool executions]";
+                "\n[Mode: Agent Mode enabled - identify goals, break down sub-tasks, execute tools, and formulate complete answers. For web searches, keep queries short (2 to 5 words), and always synthesize search results to answer the user.]";
         }
 
         const abortController = new AbortController();

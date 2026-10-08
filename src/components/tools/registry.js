@@ -112,13 +112,27 @@ const TOOLS = {
     execute: async ({ seconds, duration, message, title }) => timer.setTimer({ seconds, duration, message, title }),
   },
   web_search: {
-    description: 'Search the live web for up-to-date information, documentation, news, or answers using DuckDuckGo or SearXNG.',
+    description: 'Search the live web for up-to-date information, documentation, news, or answers using DuckDuckGo or SearXNG. Keep search queries short and focused (2 to 5 words, e.g. "latest nodejs release" or "deepseek r1 architecture") for best results.',
     parameters: {
-      query: { type: 'string', description: 'The search keywords or query to look up', required: true },
+      query: { type: 'string', description: 'The search keywords to look up. Keep search terms short and concise (strictly 2 to 5 words). Do NOT use long sentences, questions, or conversational queries.', required: true },
       max_results: { type: 'number', description: 'Maximum number of results to return (default 5)' },
       provider: { type: 'string', description: "Search provider override ('duckduckgo' or 'searxng')" },
     },
     execute: async ({ query, max_results, provider }) => webSearch.search({ query, maxResults: max_results, provider }),
+  },
+  fetch_webpage: {
+    description: 'Fetch and extract the core textual content of a specific webpage using a lightweight scraper (Cheerio). Useful when you have a specific URL and want its body text.',
+    parameters: {
+      url: { type: 'string', description: 'The absolute HTTP/HTTPS URL of the webpage to scrape', required: true },
+      max_length: { type: 'number', description: 'Maximum characters of text to extract (default 2000)' },
+    },
+    execute: async ({ url, max_length }) => {
+      const content = await webSearch.fetchPageContent(url, max_length || 2000);
+      return {
+        url,
+        content: content || 'Could not extract content from the specified URL.',
+      };
+    },
   },
 };
 
@@ -154,6 +168,10 @@ async function executeTool(name, args = {}) {
     searxng: 'web_search',
     searxng_search: 'web_search',
     google: 'web_search',
+    scrape_webpage: 'fetch_webpage',
+    scrape_url: 'fetch_webpage',
+    fetch_url: 'fetch_webpage',
+    scrape: 'fetch_webpage',
   };
 
   const toolName = aliasMap[name] || name;
@@ -207,7 +225,19 @@ AVAILABLE TOOLS:
 ${toolsDescription}
 
 TOOL USAGE GUIDELINES:
-- For searching the live internet for recent facts, news, documentation, or answers, call \`web_search\`.
+- WEB SEARCH INSTRUCTIONS: For searching the live internet for recent facts, news, documentation, or answers, call \`web_search\`. CRITICAL: Keep search terms short and concise (strictly 2 to 5 words, e.g. "latest nodejs release" or "qwen 2.5 benchmarks"). Do NOT use long sentences, questions, or conversational queries, as short keywords produce significantly better results.
+- SYNTHESIZING SEARCH RESULTS: After \`web_search\` is executed and results are retrieved, you MUST synthesize the retrieved information and provide a comprehensive, direct, and well-structured answer to the user's question citing the relevant facts or links. Never stop after the tool execution.
+- For sending Discord alerts, notifications, or messages right now, call \`send_alert\`.
+- For setting countdown timers that trigger a Discord alert after a given time, call \`set_timer\`.
+- For scheduling timers, reminders, or background jobs, call \`create_cron\`.
+- For running JavaScript or Node.js code snippets, call \`run_javascript\`.
+- For shell commands (e.g., git, package managers, system status), call \`run_bash\`.
+- For reading files before making edits, call \`read_file\` first, then \`write_file\`.
+- For saving user tasks and to-dos, call \`create_task\`.
+- MERMAID & DIAGRAMS INSTRUCTION: Whenever illustrating workflows, systems, architectures, timelines, state diagrams, or schemas, ALWAYS provide clear, valid Mermaid diagrams enclosed in \`\`\`mermaid code blocks. The workspace has built-in live preview for Mermaid diagrams.
+- LATEX MATH INSTRUCTION: For mathematical equations, proofs, and formulas, ALWAYS use LaTeX notation ($$...$$ for display block equations, $...$ for inline math). The workspace renders LaTeX with KaTeX.
+- NO EM DASHES INSTRUCTION: NEVER use em dashes (—). Always use standard hyphens or dashes (-) in your text.
+- When you emit a tool call, the system will execute it and deliver the real stdout/stderr back to the workspace.
 - For sending Discord alerts, notifications, or messages right now, call \`send_alert\`.
 - For setting countdown timers that trigger a Discord alert after a given time, call \`set_timer\`.
 - For scheduling timers, reminders, or background jobs, call \`create_cron\`.
