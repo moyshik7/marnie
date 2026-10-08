@@ -126,6 +126,58 @@ The app is accessible at [http://localhost:3000](http://localhost:3000)
 > If port 3000 is in use, it will use 3001 then 3002, 3003 ....
 
 
+## Setup (Docker)
+
+You can run Marnie using Docker Compose or standalone Docker.
+
+#### Option 1: Docker Compose (Recommended)
+
+1. Clone the repository:
+```bash
+git clone https://github.com/moyshik7/marnie.git
+cd marnie
+```
+
+2. (Optional) Copy and customize environment variables:
+```bash
+cp .env.example .env
+```
+
+3. Build and start the container:
+```bash
+docker compose up -d --build
+```
+
+> The container automatically maps host ports and points `OLLAMA_BASE_URL` to `http://host.docker.internal:11434` so it can communicate with Ollama running on your host machine.
+
+> Persistent database data and workspace files are mounted to `./data` and `./workspace`.
+
+To view logs or stop the service:
+```bash
+docker compose logs -f
+docker compose down
+```
+
+#### Option 2: Docker CLI
+
+1. Build the Docker image:
+```bash
+docker build -t marnie .
+```
+
+2. Run the container:
+```bash
+docker run -d \
+  --name marnie \
+  -p 3000:3000 \
+  --add-host=host.docker.internal:host-gateway \
+  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/workspace:/app/workspace \
+  marnie
+```
+
+
 ## Environment Variables
 
 | Variable              | Default                  | Description                                |

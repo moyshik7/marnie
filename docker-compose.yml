@@ -1,0 +1,21 @@
+services:
+  marnie:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: marnie
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - DEFAULT_MODEL=qwen3.5:9B
+      - DISCORD_WEBHOOK_URL=
+      - WORKSPACE_DIR=/app/workspace
+      - DB_PATH=/app/data/marnie.db
+    volumes:
+      - ./data:/app/data
+      - ./workspace:/app/workspace
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

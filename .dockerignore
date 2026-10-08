@@ -1,0 +1,44 @@
+# ==========================================
+# Marnie - Docker Ignore Configuration
+# ==========================================
+
+node_modules
+frontend/node_modules
+dist
+build
+frontend/dist
+
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/*.sqlite
+data/*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+workspace/*
+!workspace/.gitkeep
+
+logs
+*.log
+
+.env
+.env.local
+.env.*.local
+frontend/.env
+frontend/.env.local
+
+.git
+.github
+.gitignore
+.dockerignore
+Dockerfile
+docker-compose.yml
+docker-compose.yaml
+
+.agents
+.cursor
+.gemini
+.vscode
+.idea
+*.md
