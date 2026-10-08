@@ -187,15 +187,130 @@ function MermaidBlock({ chart }) {
 
 function parseMessageContent(rawContent) {
     if (!rawContent || typeof rawContent !== "string")
-        return { thinking: "", answer: "" };
-    const thinkMatch = rawContent.match(/^<think>([\s\S]*?)<\/think>\s*/i);
+        return { thinking: "", answer: "", toolOutputs: [] };
+
+    let content = rawContent;
+    let thinking = "";
+
+    const thinkMatch = content.match(/^<think>([\s\S]*?)<\/think>\s*/i);
     if (thinkMatch) {
-        return {
-            thinking: thinkMatch[1].trim(),
-            answer: rawContent.slice(thinkMatch[0].length).trim(),
-        };
+        thinking = thinkMatch[1].trim();
+        content = content.slice(thinkMatch[0].length);
     }
-    return { thinking: "", answer: rawContent };
+
+    const toolOutputs = [];
+    const toolOutputRegex = /<!-- tool-output:?(\w*) -->([\s\S]*?)<!-- \/tool-output -->/gi;
+    let match;
+    while ((match = toolOutputRegex.exec(content)) !== null) {
+        toolOutputs.push({
+            toolName: match[1] || "tool",
+            output: match[2].trim(),
+        });
+    }
+
+    const cleanAnswer = content
+        .replace(/<!-- tool-output:?(\w*) -->[\s\S]*?<!-- \/tool-output -->/gi, "")
+        .trim();
+
+    return {
+        thinking,
+        answer: cleanAnswer,
+        toolOutputs,
+    };
+}
+
+function CollapsibleToolOutput({ toolName, output, defaultExpanded = false }) {
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+
+    if (!output) return null;
+
+    const isSearch = toolName === "web_search" || toolName === "duckduckgo_search" || toolName === "searxng_search";
+    const label = isSearch ? "Web Search Results" : `Tool: ${toolName}`;
+
+    return (
+        <div
+            className="tool-output-box"
+            style={{
+                borderRadius: "var(--radius-sm)",
+                backgroundColor: "var(--bg-secondary)",
+                border: "1px solid var(--border-subtle)",
+                marginBottom: "0.85rem",
+                overflow: "hidden",
+                transition: "all 0.15s ease",
+            }}
+        >
+            <div
+                onClick={() => setIsExpanded((prev) => !prev)}
+                title={isExpanded ? "Collapse tool details" : "Expand tool details"}
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: isExpanded
+                        ? "0.45rem 0.75rem 0.35rem 0.75rem"
+                        : "0.45rem 0.75rem",
+                    cursor: "pointer",
+                    userSelect: "none",
+                    fontWeight: 600,
+                    fontSize: "0.74rem",
+                    letterSpacing: "0.03em",
+                    color: "var(--text-muted)",
+                    transition: "color 0.15s ease, background-color 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                    e.currentTarget.style.color = "var(--text-primary)";
+                    e.currentTarget.style.backgroundColor = "var(--bg-card-hover)";
+                }}
+                onMouseLeave={(e) => {
+                    e.currentTarget.style.color = "var(--text-muted)";
+                    e.currentTarget.style.backgroundColor = "transparent";
+                }}
+            >
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.45rem",
+                    }}
+                >
+                    <Wrench size={13} style={{ color: "var(--text-secondary)" }} />
+                    <span style={{ textTransform: "uppercase" }}>{label}</span>
+                </div>
+
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.3rem",
+                        fontSize: "0.72rem",
+                    }}
+                >
+                    <span style={{ opacity: 0.8 }}>
+                        {isExpanded ? "Hide raw results" : "Show raw results"}
+                    </span>
+                    {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                </div>
+            </div>
+
+            {isExpanded && (
+                <div
+                    style={{
+                        padding: "0.6rem 0.75rem",
+                        borderTop: "1px dashed var(--border-subtle)",
+                        fontSize: "0.78rem",
+                        lineHeight: 1.6,
+                        color: "var(--text-secondary)",
+                        maxHeight: "360px",
+                        overflowY: "auto",
+                    }}
+                >
+                    <div className="markdown-body">
+                        {formatMarkdown(output)}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
 
 function ThinkingBox({ thinking, isStreaming = false, defaultExpanded = true }) {
@@ -638,7 +753,10 @@ export default function ChatView({
     };
 
     const handleCopy = (text, idx) => {
-        navigator.clipboard.writeText(text);
+        const cleaned = typeof text === "string"
+            ? text.replace(/<think>[\s\S]*?<\/think>\s*/gi, "").replace(/<!-- tool-output:?(\w*) -->[\s\S]*?<!-- \/tool-output -->/gi, "").trim()
+            : text;
+        navigator.clipboard.writeText(cleaned);
         setCopiedIndex(idx);
         setTimeout(() => setCopiedIndex(null), 2000);
     };
@@ -960,6 +1078,7 @@ export default function ChatView({
                                                         const {
                                                             thinking,
                                                             answer,
+                                                            toolOutputs,
                                                         } = parseMessageContent(
                                                             msg.content,
                                                         );
@@ -971,10 +1090,22 @@ export default function ChatView({
                                                                         defaultExpanded={true}
                                                                     />
                                                                 )}
+                                                                {toolOutputs && toolOutputs.length > 0 && (
+                                                                    <div style={{ marginBottom: "0.5rem" }}>
+                                                                        {toolOutputs.map((to, tIdx) => (
+                                                                            <CollapsibleToolOutput
+                                                                                key={tIdx}
+                                                                                toolName={to.toolName}
+                                                                                output={to.output}
+                                                                                defaultExpanded={false}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                )}
                                                                 <div className="markdown-body">
                                                                     {formatMarkdown(
                                                                         answer ||
-                                                                            (!thinking
+                                                                            (!thinking && (!toolOutputs || toolOutputs.length === 0)
                                                                                 ? msg.content
                                                                                 : ""),
                                                                     )}
@@ -1081,25 +1212,46 @@ export default function ChatView({
                                                 defaultExpanded={true}
                                             />
                                         )}
-                                        {streamingContent && (
-                                            <div className="markdown-body">
-                                                {formatMarkdown(
-                                                    streamingContent,
-                                                )}
-                                                <span
-                                                    style={{
-                                                        display: "inline-block",
-                                                        width: "7px",
-                                                        height: "14px",
-                                                        backgroundColor:
-                                                            "var(--accent-terracotta)",
-                                                        marginLeft: "3px",
-                                                        verticalAlign: "middle",
-                                                    }}
-                                                    className="typing-dot"
-                                                />
-                                            </div>
-                                        )}
+                                        {(() => {
+                                            if (!streamingContent) return null;
+                                            const {
+                                                answer,
+                                                toolOutputs,
+                                            } = parseMessageContent(streamingContent);
+                                            return (
+                                                <>
+                                                    {toolOutputs && toolOutputs.length > 0 && (
+                                                        <div style={{ marginBottom: "0.5rem" }}>
+                                                            {toolOutputs.map((to, tIdx) => (
+                                                                <CollapsibleToolOutput
+                                                                    key={tIdx}
+                                                                    toolName={to.toolName}
+                                                                    output={to.output}
+                                                                    defaultExpanded={false}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    <div className="markdown-body">
+                                                        {formatMarkdown(
+                                                            answer || (!toolOutputs || toolOutputs.length === 0 ? streamingContent : "")
+                                                        )}
+                                                        <span
+                                                            style={{
+                                                                display: "inline-block",
+                                                                width: "7px",
+                                                                height: "14px",
+                                                                backgroundColor:
+                                                                    "var(--accent-terracotta)",
+                                                                marginLeft: "3px",
+                                                                verticalAlign: "middle",
+                                                            }}
+                                                            className="typing-dot"
+                                                        />
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             )}
