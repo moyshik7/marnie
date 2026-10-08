@@ -417,7 +417,7 @@ export default function ReportViewer({ slug, theme = "dark", onToggleTheme }) {
     if (report?.content) {
         const lines = report.content.split("\n");
         for (const line of lines) {
-            const hMatch = line.match(/^(#{1,3})\s+(.+)$/);
+            const hMatch = line.match(/^(#{1,4})\s+(.+)$/);
             if (hMatch) {
                 const level = hMatch[1].length;
                 const text = hMatch[2].replace(/[\*\_]/g, "").trim();
@@ -565,79 +565,138 @@ export default function ReportViewer({ slug, theme = "dark", onToggleTheme }) {
                         const trimmed = line.trim();
                         if (!trimmed) return null;
 
-                        // Headings
-                        if (trimmed.startsWith("### ")) {
-                            const text = trimmed.slice(4).trim();
-                            const id = slugifyHeading(text);
-                            return (
-                                <h3
-                                    id={id}
-                                    key={lIdx}
-                                    style={{
-                                        fontFamily: "'Newsreader', 'Georgia', 'Merriweather', serif",
-                                        fontSize: "1.28rem",
-                                        fontWeight: 700,
-                                        color: "#f3f4f6",
-                                        marginTop: "2rem",
-                                        marginBottom: "0.75rem",
-                                        lineHeight: 1.35,
-                                    }}
-                                >
-                                    {renderInlineText(text)}
-                                </h3>
-                            );
-                        }
+                        // Headings (H1 to H6)
+                        const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/);
+                        if (headingMatch) {
+                            const level = headingMatch[1].length;
+                            const text = headingMatch[2].trim();
+                            const id = slugifyHeading(text.replace(/[\*\_]/g, ""));
 
-                        if (trimmed.startsWith("## ")) {
-                            const text = trimmed.slice(3).trim();
-                            const id = slugifyHeading(text);
-                            return (
-                                <div key={lIdx} style={{ marginTop: "3rem", marginBottom: "1.5rem" }}>
-                                    <h2
+                            if (level === 1) {
+                                return (
+                                    <h1
                                         id={id}
+                                        key={lIdx}
                                         style={{
                                             fontFamily: "'Newsreader', 'Georgia', 'Merriweather', serif",
-                                            fontSize: "1.9rem",
-                                            fontWeight: 700,
+                                            fontSize: "2.1rem",
+                                            fontWeight: 800,
                                             color: "#ffffff",
-                                            lineHeight: 1.25,
-                                            margin: 0,
+                                            marginTop: "2.5rem",
+                                            marginBottom: "1rem",
                                         }}
                                     >
                                         {renderInlineText(text)}
-                                    </h2>
-                                    {/* Accent underline under H2 section heading matching Image 1 */}
-                                    <div
-                                        style={{
-                                            height: "2px",
-                                            backgroundColor: "#c2410c",
-                                            marginTop: "0.55rem",
-                                            width: "100%",
-                                            opacity: 0.9,
-                                        }}
-                                    />
-                                </div>
-                            );
-                        }
+                                    </h1>
+                                );
+                            }
 
-                        if (trimmed.startsWith("# ")) {
-                            const text = trimmed.slice(2).trim();
-                            const id = slugifyHeading(text);
+                            if (level === 2) {
+                                return (
+                                    <div key={lIdx} style={{ marginTop: "3rem", marginBottom: "1.5rem" }}>
+                                        <h2
+                                            id={id}
+                                            style={{
+                                                fontFamily: "'Newsreader', 'Georgia', 'Merriweather', serif",
+                                                fontSize: "1.9rem",
+                                                fontWeight: 700,
+                                                color: "#ffffff",
+                                                lineHeight: 1.25,
+                                                margin: 0,
+                                            }}
+                                        >
+                                            {renderInlineText(text)}
+                                        </h2>
+                                        {/* Accent underline under H2 section heading matching Image 1 */}
+                                        <div
+                                            style={{
+                                                height: "2px",
+                                                backgroundColor: "#c2410c",
+                                                marginTop: "0.55rem",
+                                                width: "100%",
+                                                opacity: 0.9,
+                                            }}
+                                        />
+                                    </div>
+                                );
+                            }
+
+                            if (level === 3) {
+                                return (
+                                    <h3
+                                        id={id}
+                                        key={lIdx}
+                                        style={{
+                                            fontFamily: "'Newsreader', 'Georgia', 'Merriweather', serif",
+                                            fontSize: "1.28rem",
+                                            fontWeight: 700,
+                                            color: "#f3f4f6",
+                                            marginTop: "2rem",
+                                            marginBottom: "0.75rem",
+                                            lineHeight: 1.35,
+                                        }}
+                                    >
+                                        {renderInlineText(text)}
+                                    </h3>
+                                );
+                            }
+
+                            if (level === 4) {
+                                return (
+                                    <h4
+                                        id={id}
+                                        key={lIdx}
+                                        style={{
+                                            fontFamily: "'Newsreader', 'Georgia', 'Merriweather', serif",
+                                            fontSize: "1.12rem",
+                                            fontWeight: 600,
+                                            color: "#e5e7eb",
+                                            marginTop: "1.5rem",
+                                            marginBottom: "0.6rem",
+                                            lineHeight: 1.4,
+                                        }}
+                                    >
+                                        {renderInlineText(text)}
+                                    </h4>
+                                );
+                            }
+
+                            if (level === 5) {
+                                return (
+                                    <h5
+                                        id={id}
+                                        key={lIdx}
+                                        style={{
+                                            fontFamily: "'Newsreader', 'Georgia', 'Merriweather', serif",
+                                            fontSize: "1.02rem",
+                                            fontWeight: 600,
+                                            color: "#d1d5db",
+                                            marginTop: "1.25rem",
+                                            marginBottom: "0.5rem",
+                                            lineHeight: 1.4,
+                                        }}
+                                    >
+                                        {renderInlineText(text)}
+                                    </h5>
+                                );
+                            }
+
                             return (
-                                <h1
+                                <h6
                                     id={id}
                                     key={lIdx}
                                     style={{
                                         fontFamily: "'Newsreader', 'Georgia', 'Merriweather', serif",
-                                        fontSize: "2.1rem",
-                                        fontWeight: 800,
-                                        color: "#ffffff",
-                                        marginTop: "2.5rem",
-                                        marginBottom: "1rem",
+                                        fontSize: "0.95rem",
+                                        fontWeight: 600,
+                                        color: "#9ca3af",
+                                        marginTop: "1rem",
+                                        marginBottom: "0.5rem",
+                                        lineHeight: 1.4,
                                     }}
                                 >
                                     {renderInlineText(text)}
-                                </h1>
+                                </h6>
                             );
                         }
 
@@ -1055,6 +1114,9 @@ export default function ReportViewer({ slug, theme = "dark", onToggleTheme }) {
                         {headings.map((h, i) => {
                             const isH2 = h.level === 2;
                             const isH3 = h.level === 3;
+                            const isH4 = h.level === 4;
+                            const paddingLeft = isH4 ? "1.8rem" : isH3 ? "1.2rem" : "0.5rem";
+                            const fontSize = isH4 ? "0.74rem" : isH3 ? "0.78rem" : "0.82rem";
                             return (
                                 <button
                                     key={i}
@@ -1064,10 +1126,10 @@ export default function ReportViewer({ slug, theme = "dark", onToggleTheme }) {
                                         background: "none",
                                         border: "none",
                                         color: activeHeading === h.id ? "#fb923c" : "#9ca3af",
-                                        fontSize: isH3 ? "0.78rem" : "0.82rem",
+                                        fontSize: fontSize,
                                         fontWeight: isH2 ? 600 : 400,
                                         padding: "0.35rem 0.5rem",
-                                        paddingLeft: isH3 ? "1.2rem" : "0.5rem",
+                                        paddingLeft: paddingLeft,
                                         borderRadius: "4px",
                                         cursor: "pointer",
                                         lineHeight: 1.4,
@@ -1126,29 +1188,35 @@ export default function ReportViewer({ slug, theme = "dark", onToggleTheme }) {
                                         backgroundColor: "#141418",
                                     }}
                                 >
-                                    {headings.map((h, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => {
-                                                scrollToSection(h.id);
-                                                setMobileOutlineOpen(false);
-                                            }}
-                                            style={{
-                                                textAlign: "left",
-                                                background: "none",
-                                                border: "none",
-                                                color: activeHeading === h.id ? "#fb923c" : "#9ca3af",
-                                                fontSize: h.level === 3 ? "0.78rem" : "0.82rem",
-                                                padding: "0.35rem 0.5rem",
-                                                paddingLeft: h.level === 3 ? "1.2rem" : "0.5rem",
-                                                borderRadius: "4px",
-                                                cursor: "pointer",
-                                                lineHeight: 1.4,
-                                            }}
-                                        >
-                                            {h.text}
-                                        </button>
-                                    ))}
+                                    {headings.map((h, i) => {
+                                        const isH3 = h.level === 3;
+                                        const isH4 = h.level === 4;
+                                        const paddingLeft = isH4 ? "1.8rem" : isH3 ? "1.2rem" : "0.5rem";
+                                        const fontSize = isH4 ? "0.74rem" : isH3 ? "0.78rem" : "0.82rem";
+                                        return (
+                                            <button
+                                                key={i}
+                                                onClick={() => {
+                                                    scrollToSection(h.id);
+                                                    setMobileOutlineOpen(false);
+                                                }}
+                                                style={{
+                                                    textAlign: "left",
+                                                    background: "none",
+                                                    border: "none",
+                                                    color: activeHeading === h.id ? "#fb923c" : "#9ca3af",
+                                                    fontSize: fontSize,
+                                                    padding: "0.35rem 0.5rem",
+                                                    paddingLeft: paddingLeft,
+                                                    borderRadius: "4px",
+                                                    cursor: "pointer",
+                                                    lineHeight: 1.4,
+                                                }}
+                                            >
+                                                {h.text}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
