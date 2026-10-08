@@ -1,4 +1,5 @@
-# Marnie
+<h1 align="center">Marnie</h1>
+
 A self-hosted AI workspace made in nodejs with features according to my own preference.
 
 <p align="center">
@@ -14,23 +15,46 @@ A self-hosted AI workspace made in nodejs with features according to my own pref
 </p>
 
 
-## Tools
-- [x] Web search
-- [x] Terminal access
-- [x] Filesystem search
+## Tools & Skills
+- [x] Web search (DuckDuckGo, SearXNG)
+- [x] Web scraper (Cheerio and Axios site extractor)
+- [x] Terminal access (Bash / Shell commands)
+- [x] Filesystem search (Recursive regex / pattern search)
 - [x] Get current datetime
 - [ ] Get current weather
-- [ ] Send api requests
-    - [ ] GET
-    - [ ] POST
+- [x] Send api requests
+    - [x] GET
+    - [x] POST
+    - [x] PUT, PATCH, DELETE
 - [ ] Code run
     - [ ] Python
-    - [x] Javascript (Nodejs)
+    - [x] Javascript (Node.js isolated runner)
 - [x] Local File Create
 - [x] Local File Read
-- [x] Local File Write (Needs to read first to write to specific lines or edit the lines)
-- [x] Create Tasks
-- [x] Create ~~cronjobs~~ scheduled tasks
+- [x] Local File Write (Targeted line range edits and replacements)
+- [x] Create Tasks (SQLite task tracking)
+- [x] Create scheduled tasks (Cron scheduler)
+- [x] Discord Webhook alerts
+- [x] Countdown timer with alert notifications
+
+### Skills Reference
+
+All skills are documented with specifications under [`.agents/skills/`](.agents/skills/).
+
+| Skill                | Description                                                                                                                  |
+|----------------------|------------------------------------------------------------------------------------------------------------------------------|
+| `api-caller`         | Make raw HTTP/REST API calls (GET, POST, PUT, PATCH, DELETE) with custom headers, query params, and body data using Axios    |
+| `cron-scheduler`     | Schedule and manage recurring background cron jobs stored persistently in SQLite with command, Discord, or webhook triggers  |
+| `deep-research`      | Autonomous multi-turn web research and iterative synthesis engine producing comprehensive markdown dossiers with citations   |
+| `discord-alerts`     | Dispatch rich embed alert notifications to configured Discord webhook channels                                               |
+| `file-operations`    | Read, create, write, and patch local files on disk with precise line range replacements                                      |
+| `filesystem-search`  | Recursively search files and directories matching a pattern, substring, or regular expression                                |
+| `run-bash`           | Execute terminal and shell commands (bash/sh) directly on the host system                                                    |
+| `run-javascript`     | Execute JavaScript/Node.js code snippets safely in an isolated child process                                                 |
+| `task-manager`       | Create, list, update, and manage persistent task checklists stored in SQLite                                                 |
+| `timer`              | Set countdown timers that send notifications to Discord when expired                                                         |
+| `web-scraper`        | Lightweight webpage text extraction and scraping tool using Cheerio and Axios to extract readable text                       |
+| `web-search`         | Live web search via DuckDuckGo or SearXNG with automatic link content scraping                                               |
 
 
 ## Integrations:
@@ -70,7 +94,6 @@ git clone https://github.com/moyshik7/marnie.git
 cd marnie
 ```
 
-
 #### Install Dependencies
 
 ```bash
@@ -90,13 +113,7 @@ npm run dev
 ```
 
 The app is accessible at [http://localhost:3000](http://localhost:3000)
-
-
-
-> Development: Run Vite frontend in hot-reload dev mode
-> `npm run frontend:dev   # http://localhost:5173 (proxied to :3000)`
-
-
+> If port 3000 is in use, it will use 3001 then 3002, 3003 ....
 
 
 ## Environment Variables
@@ -106,7 +123,7 @@ The app is accessible at [http://localhost:3000](http://localhost:3000)
 | `PORT`                | `3000`                   | HTTP port                                  |
 | `OLLAMA_BASE_URL`     | `http://localhost:11434` | Ollama server URL                          |
 | `DEFAULT_MODEL`       | `qwen3.5:9B`             | Default model name                         |
-| `DISCORD_WEBHOOK_URL` | —                        | Discord webhook for alerts                 |
+| `DISCORD_WEBHOOK_URL` | -                        | Discord webhook for alerts                 |
 | `WORKSPACE_DIR`       | `./workspace`            | Root directory for file operations         |
 | `DB_PATH`             | `./data/marnie.db`       | SQLite database path                       |
 
