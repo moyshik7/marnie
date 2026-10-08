@@ -1,3 +1,6 @@
+<p align="center">
+  	<img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/logo-wide.png" alt="Marnie Logo (Wide)"/>
+</p>
 <h1 align="center">
 	Marnie
 </h1>
