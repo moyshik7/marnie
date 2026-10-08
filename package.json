@@ -1,10 +1,11 @@
 {
     "name": "marnie",
-    "version": "0.1.3",
+    "version": "0.2.1",
     "description": "A self-hosted AI workspace like Odysseus but made in nodejs with more (and in some cases less) features according to my own preference",
     "main": "src/main.js",
     "scripts": {
         "start": "npm run build && node src/main.js",
+        "nobuild": "node src/main.js",
         "dev": "nodemon src/main.js",
         "frontend:dev": "cd frontend && npm run dev",
         "frontend:build": "cd frontend && npm run build",
