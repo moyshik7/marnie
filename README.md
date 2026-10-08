@@ -8,7 +8,7 @@
 <br />
 
 <p align="center">
-  	A self-hosted AI workspace made in nodejs with features according to my own preference.
+  	A powerful, self-hosted AI workspace for chatting, research, automation, and more—built to adapt to the way you work.
 </p>
 
 <br />
