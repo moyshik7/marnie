@@ -102,17 +102,27 @@ cd frontend && npm install && npm run build && cd ..
 ```
 
 #### Copy and edit environment config
+
 ```bash
 cp .env.example .env
 ```
 
-#### Start the server (Backend and Frontend together)
+#### Start the server (First time)
+
 ```bash
 npm start
-npm run dev
 ```
 
+#### Start the server (Later without rebuilding the entire app)
+
+```bash
+npm run nobuild
+```
+
+> If you encounter any UI glitch try rebuilding the app.
+
 The app is accessible at [http://localhost:3000](http://localhost:3000)
+
 > If port 3000 is in use, it will use 3001 then 3002, 3003 ....
 
 
