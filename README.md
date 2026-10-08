@@ -1,18 +1,48 @@
-<h1 align="center">Marnie</h1>
+<p align="center">
+  	<img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/logo-wide.png" alt="Marnie Logo (Wide)"/>
+</p>
+<h1 align="center">
+	Marnie
+</h1>
 
-A self-hosted AI workspace made in nodejs with features according to my own preference.
+<br />
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/screenshot-browser.png" alt="Marnie Ui (In browser)"/>
+  	A self-hosted AI workspace made in nodejs with features according to my own preference.
 </p>
 
+<br />
+
+<div align="center">
+  	<img src="https://img.shields.io/github/actions/workflow/status/moyshik7/marnie/deploy.yml?branch=main&label=GitHub%20CI" />
+  	<img src="https://github.com/moyshik7/marnie/actions/workflows/deploy.yml/badge.svg" />
+  	<img src="https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white" />
+  	<img src="https://img.shields.io/badge/node.js-%236DA55F.svg?style=for-the-badge&logo=node.js&logoColor=white" />
+  	<img src="https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB" />
+  	<img src="https://img.shields.io/badge/ollama-%23000000.svg?style=for-the-badge&logo=ollama&logoColor=white" />
+</div>
+
+<br />
+
+<p align="center">
+  	<img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/screenshot-browser.png" alt="Marnie Ui (In browser)"/>
+</p>
+
+<br />
+<br />
 <br />
 
 ### Name taken from 2014 anime "When Marnie Was There"
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/when-marnie-was-there-original-poster.png" alt="When Marnie was here original poster"/>
+  	<img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/when-marnie-was-there-original-poster.png" alt="When Marnie was here original poster"/>
 </p>
+
+
+## Quick Links:
+- [Installation (Manually)](#installation-manually)
+- [Installation (Docker)](#installation-docker)
+- [Skills](#skills-reference)
 
 
 ## Tools & Skills
@@ -84,9 +114,9 @@ All skills are documented with specifications under [`.agents/skills/`](.agents/
 - [x] Mermaid Preview
 - [x] Latex Math Preview
 
+---
 
-
-## Setup (NodeJS)
+## Installation (Manually)
 
 #### Clone this repo
 ```bash
@@ -126,7 +156,7 @@ The app is accessible at [http://localhost:3000](http://localhost:3000)
 > If port 3000 is in use, it will use 3001 then 3002, 3003 ....
 
 
-## Setup (Docker)
+## Installation (Docker)
 
 You can run Marnie using Docker Compose or standalone Docker.
 
@@ -176,7 +206,7 @@ docker run -d \
   -v $(pwd)/workspace:/app/workspace \
   marnie
 ```
-
+---
 
 ## Environment Variables
 

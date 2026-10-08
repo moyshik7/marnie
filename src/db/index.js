@@ -86,6 +86,13 @@ db.exec(`
   );
 `);
 
+try { db.exec("ALTER TABLE deep_researches ADD COLUMN image TEXT;"); } catch (_) {}
+try { db.exec("ALTER TABLE deep_researches ADD COLUMN duration TEXT;"); } catch (_) {}
+try { db.exec("ALTER TABLE deep_researches ADD COLUMN rounds INTEGER;"); } catch (_) {}
+try { db.exec("ALTER TABLE deep_researches ADD COLUMN queries INTEGER;"); } catch (_) {}
+try { db.exec("ALTER TABLE deep_researches ADD COLUMN urls_analyzed INTEGER;"); } catch (_) {}
+try { db.exec("ALTER TABLE deep_researches ADD COLUMN slug TEXT;"); } catch (_) {}
+
 // Seed default settings if not exists
 const seedStmt = db.prepare(`
   INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)

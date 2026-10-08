@@ -320,3 +320,20 @@ export async function deleteDeepResearch(id) {
   return request(`/research/${id}`, { method: 'DELETE' });
 }
 
+export async function clearAllResearches() {
+  return request('/research', { method: 'DELETE' });
+}
+
+// ── Markdown Research Reports ────────────────────────────────
+export async function listMarkdownReports() {
+  return request('/research/reports');
+}
+
+export async function getReportBySlug(slug) {
+  return request(`/research/reports/${encodeURIComponent(slug)}`);
+}
+
+export async function deleteMarkdownReport(slug) {
+  return request(`/research/reports/${encodeURIComponent(slug)}`, { method: 'DELETE' });
+}
+

@@ -77,9 +77,8 @@ body {
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow: hidden;
-    height: 100vh;
-    width: 100vw;
+    min-height: 100vh;
+    width: 100%;
     transition:
         background-color 0.2s ease,
         color 0.2s ease;
@@ -322,5 +321,78 @@ textarea {
     background-color: #22c55e;
     display: inline-block;
     animation: blinkingDot 1.4s infinite ease-in-out;
+}
+
+/* Report Viewer Responsive Layout */
+.report-viewer-content-layout {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 1.5rem 5rem 1.5rem;
+    display: flex;
+    gap: 3.5rem;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.report-viewer-outline-desktop {
+    width: 250px;
+    min-width: 220px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 5rem;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.report-viewer-main-article {
+    flex: 1;
+    min-width: 0;
+    max-width: 800px;
+    width: 100%;
+}
+
+.report-viewer-mobile-outline {
+    display: none;
+    margin-bottom: 2rem;
+    border-radius: 8px;
+    border: 1px solid #2a2a30;
+    background-color: #141418;
+    overflow: hidden;
+}
+
+.report-hero-image {
+    width: 100%;
+    max-height: 420px;
+    object-fit: cover;
+    display: block;
+}
+
+@media (max-width: 900px) {
+    .report-viewer-content-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 0 1rem 4rem 1rem;
+    }
+
+    .report-viewer-outline-desktop {
+        display: none !important;
+    }
+
+    .report-viewer-mobile-outline {
+        display: block;
+    }
+
+    .report-viewer-main-article {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
+    .report-hero-image {
+        max-height: 240px !important;
+    }
 }
 

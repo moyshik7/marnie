@@ -4,6 +4,7 @@ import ChatView from "./components/ChatView";
 import DeepResearchView from "./components/DeepResearchView";
 import SettingsModal from "./components/SettingsModal";
 import ToolsPanel from "./components/ToolsPanel";
+import ReportViewer from "./components/ReportViewer";
 import {
     listConversations,
     createConversation,
@@ -18,10 +19,32 @@ import {
 } from "./services/api";
 
 export default function App() {
+    // Check if directly visiting /report/:slug
+    const [reportSlug, setReportSlug] = useState(() => {
+        const path = window.location.pathname;
+        if (path.startsWith("/report/")) {
+            return path.replace(/^\/report\//, "");
+        }
+        return null;
+    });
+
     // Theme state
     const [theme, setTheme] = useState(() => {
         return localStorage.getItem("marnie_theme") || "light";
     });
+
+    useEffect(() => {
+        const onPopState = () => {
+            const path = window.location.pathname;
+            if (path.startsWith("/report/")) {
+                setReportSlug(path.replace(/^\/report\//, ""));
+            } else {
+                setReportSlug(null);
+            }
+        };
+        window.addEventListener("popstate", onPopState);
+        return () => window.removeEventListener("popstate", onPopState);
+    }, []);
 
     // Conversations state
     const [conversations, setConversations] = useState([]);
@@ -236,6 +259,23 @@ export default function App() {
         }
     };
 
+    const handleDiscussResearch = async (topic) => {
+        try {
+            const modelToUse =
+                activeModel ||
+                (availableModels.length > 0 ? availableModels[0] : "llama3.2");
+            const newConv = await createConversation(
+                `Discuss: ${topic.slice(0, 32)}`,
+                modelToUse,
+            );
+            await refreshConversations(modelToUse);
+            selectConversation(newConv.id, newConv);
+            setActiveSection("chat");
+        } catch (err) {
+            setActiveSection("chat");
+        }
+    };
+
     const handleDeleteConversation = async (id) => {
         try {
             await deleteConversation(id);
@@ -267,6 +307,16 @@ export default function App() {
         setActiveSection("chat");
         await handleNewConversation();
     };
+
+    if (reportSlug) {
+        return (
+            <ReportViewer
+                slug={reportSlug}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+            />
+        );
+    }
 
     return (
         <div
@@ -306,6 +356,7 @@ export default function App() {
                         activeModel={activeModel}
                         availableModels={availableModels}
                         onClose={() => setActiveSection("chat")}
+                        onDiscuss={handleDiscussResearch}
                         onResearchCountChange={(hasOngoing) => setIsResearchOngoing(hasOngoing)}
                     />
                 ) : (
