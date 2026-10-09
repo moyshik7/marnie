@@ -7,15 +7,30 @@ const db = require('../../db/index');
 const ollama = require('../../components/providers/ollama/interact');
 const { executeTool, buildSystemPrompt, parseToolCalls, OLLAMA_TOOLS } = require('../../components/tools/registry');
 const { filterEmDashes } = require('../../components/tools/emDashFilter');
+const brain = require('../../components/tools/brainMemory');
 
-function getEffectiveSystemPrompt(customSystem = '') {
+function getEffectiveSystemPrompt(customSystem = '', options = {}) {
   let dbSystemPrompt = '';
   try {
     const row = db.prepare("SELECT value FROM settings WHERE key = 'system_prompt'").get();
     if (row && row.value) dbSystemPrompt = row.value;
   } catch {}
 
-  const merged = [dbSystemPrompt, customSystem].filter(Boolean).join('\n\n');
+  // Brain persistent memory context (workspace/BRAIN.md) injected by default unless explicitly disabled
+  let brainContext = '';
+  if (!options.skipBrain && !options.noBrain) {
+    try {
+      const enabledRow = db.prepare("SELECT value FROM settings WHERE key = 'brain_enabled'").get();
+      const isBrainEnabled = !enabledRow || enabledRow.value !== 'false';
+      if (isBrainEnabled) {
+        brainContext = brain.formatBrainForSystemPrompt();
+      }
+    } catch (err) {
+      console.warn('[brain] Failed to load brain context:', err.message);
+    }
+  }
+
+  const merged = [dbSystemPrompt, customSystem, brainContext].filter(Boolean).join('\n\n');
   return buildSystemPrompt(merged);
 }
 
@@ -61,6 +76,11 @@ async function runToolCallsAndFormat(toolCalls) {
             const truncated = dataStr.length > 3500 ? dataStr.slice(0, 3500) + '\n... (truncated)' : dataStr;
             callOutput += `\`\`\`json\n${truncated}\n\`\`\`\n`;
           }
+        } else if (call.name === 'read_brain_memory' || call.name === 'read_brain' || call.name === 'read_memory') {
+          callOutput += `\n**Persistent Brain Memory (workspace/BRAIN.md):**\n\n${res.content || '(Empty)'}\n`;
+        } else if (call.name === 'update_brain_memory' || call.name === 'update_brain' || call.name === 'save_brain') {
+          callOutput += `\n<!-- file-artifact:{"path":"BRAIN.md","name":"BRAIN.md","action":"edited"} -->\n`;
+          callOutput += `\n**Persistent Memory Updated:** \`workspace/BRAIN.md\`\n`;
         } else if (res.stdout !== undefined || res.stderr !== undefined) {
           if (res.stdout) callOutput += `\`\`\`\n${res.stdout.trimEnd()}\n\`\`\`\n`;
           if (res.stderr) callOutput += `\`\`\`stderr\n${res.stderr.trimEnd()}\n\`\`\`\n`;
@@ -269,7 +289,7 @@ router.post('/conversations/:id/complete', async (req, res) => {
   const history = sanitizeHistoryForLLM(rawHistory);
 
   // Prepend comprehensive workspace system prompt
-  const effectiveSystem = getEffectiveSystemPrompt(system);
+  const effectiveSystem = getEffectiveSystemPrompt(system, options);
   const messages = [{ role: 'system', content: effectiveSystem }, ...history];
 
   try {
@@ -374,6 +394,19 @@ router.post('/conversations/:id/complete', async (req, res) => {
         ? `<think>\n${fullThinking.trim()}\n</think>\n\n${fullContent.trim()}`
         : fullContent.trim();
       insertMsg(conv.id, 'assistant', persistedContent);
+
+      // Background auto-consolidation of BRAIN.md memory if 5-message trigger reached
+      try {
+        const trigger = brain.checkMemoryTrigger(conv.id);
+        if (trigger.shouldConsolidate) {
+          brain.consolidateMemory({ conversationId: conv.id, model: conv.model }).catch((err) => {
+            console.warn('[brain] Background consolidation error:', err.message);
+          });
+        }
+      } catch (err) {
+        console.warn('[brain] Memory trigger check error:', err.message);
+      }
+
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();
     } else {
@@ -458,6 +491,19 @@ router.post('/conversations/:id/complete', async (req, res) => {
         ? `<think>\n${thinkingContent.trim()}\n</think>\n\n${assistantContent.trim()}`
         : assistantContent.trim();
       const saved = insertMsg(conv.id, 'assistant', persistedContent);
+
+      // Background auto-consolidation of BRAIN.md memory if 5-message trigger reached
+      try {
+        const trigger = brain.checkMemoryTrigger(conv.id);
+        if (trigger.shouldConsolidate) {
+          brain.consolidateMemory({ conversationId: conv.id, model: conv.model }).catch((err) => {
+            console.warn('[brain] Background consolidation error:', err.message);
+          });
+        }
+      } catch (err) {
+        console.warn('[brain] Memory trigger check error:', err.message);
+      }
+
       res.json({
         message: parseMsg(saved),
         usage: lastUsage,
@@ -490,7 +536,7 @@ router.post('/complete', async (req, res) => {
   const cleanMessages = sanitizeHistoryForLLM(rawMessages);
   const messages = hasSystem
     ? cleanMessages
-    : [{ role: 'system', content: getEffectiveSystemPrompt() }, ...cleanMessages];
+    : [{ role: 'system', content: getEffectiveSystemPrompt('', options) }, ...cleanMessages];
 
   try {
     if (stream) {

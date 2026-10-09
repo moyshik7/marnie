@@ -12,6 +12,7 @@ const discord = require('./discord');
 const timer = require('./timer');
 const webSearch = require('./webSearch');
 const apiCall = require('./apiCall');
+const brainMemory = require('./brainMemory');
 
 const TOOLS = {
   run_javascript: {
@@ -147,6 +148,24 @@ const TOOLS = {
     },
     execute: async (args) => apiCall.callApi(args),
   },
+  read_brain_memory: {
+    description: 'Read the persistent user memory file from workspace/BRAIN.md.',
+    parameters: {},
+    execute: async () => {
+      const content = brainMemory.getBrainContent();
+      return { filePath: 'workspace/BRAIN.md', content };
+    },
+  },
+  update_brain_memory: {
+    description: 'Update or append new facts, preferences, or context about the user to persistent workspace/BRAIN.md memory.',
+    parameters: {
+      content: { type: 'string', description: 'The updated markdown memory to save in workspace/BRAIN.md', required: true },
+    },
+    execute: async ({ content }) => {
+      const ok = brainMemory.saveBrainContent(content);
+      return { success: ok, filePath: 'workspace/BRAIN.md', message: 'Persistent memory updated successfully.' };
+    },
+  },
 };
 
 /**
@@ -191,6 +210,16 @@ async function executeTool(name, args = {}) {
     http: 'api_call',
     fetch: 'api_call',
     request: 'api_call',
+    read_brain_memory: 'read_brain_memory',
+    read_brain: 'read_brain_memory',
+    read_memory: 'read_brain_memory',
+    get_brain: 'read_brain_memory',
+    get_memory: 'read_brain_memory',
+    update_brain_memory: 'update_brain_memory',
+    update_brain: 'update_brain_memory',
+    save_brain: 'update_brain_memory',
+    save_memory: 'update_brain_memory',
+    write_brain: 'update_brain_memory',
   };
 
   const toolName = aliasMap[name] || name;
@@ -255,6 +284,7 @@ TOOL USAGE GUIDELINES:
 - For shell commands (e.g., git, package managers, system status), call \`run_bash\`.
 - For reading files before making edits, call \`read_file\` first, then \`write_file\`.
 - For saving user tasks and to-dos, call \`create_task\`.
+- PERSISTENT BRAIN MEMORY: You have a persistent memory in \`workspace/BRAIN.md\` which stores user context, preferences, and projects. It is injected into your prompt and auto-consolidated after every 5 conversation messages. You can also explicitly inspect or update it using \`read_brain_memory\` or \`update_brain_memory\` if the user instructs you to remember something specific.
 - MERMAID & DIAGRAMS INSTRUCTION: Whenever illustrating workflows, systems, architectures, timelines, state diagrams, or schemas, ALWAYS provide clear, valid Mermaid diagrams enclosed in \`\`\`mermaid code blocks. The workspace has built-in live preview for Mermaid diagrams.
 - LATEX MATH INSTRUCTION: For mathematical equations, proofs, and formulas, ALWAYS use LaTeX notation ($$...$$ for display block equations, $...$ for inline math). The workspace renders LaTeX with KaTeX.
 - NO EM DASHES INSTRUCTION: NEVER use em dashes (—). Always use standard hyphens or dashes (-) in your text.
@@ -317,7 +347,9 @@ function parseToolCalls(text) {
           'create_task', 'list_tasks', 'create_cron', 'send_alert', 'set_timer', 'timer',
           'web_search', 'search', 'javascript', 'bash', 'terminal', 'js',
           'fetch_webpage', 'scrape_webpage', 'scrape_url', 'fetch_url', 'scrape',
-          'api_call', 'api', 'http_request', 'curl', 'http', 'fetch', 'request'
+          'api_call', 'api', 'http_request', 'curl', 'http', 'fetch', 'request',
+          'read_brain_memory', 'read_brain', 'update_brain_memory', 'update_brain',
+          'read_memory', 'save_memory', 'write_brain', 'save_brain'
         ];
         if (knownTools.includes(toolName.toLowerCase()) && !calls.some(c => c.raw === match[0])) {
           calls.push({

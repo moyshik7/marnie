@@ -1,13 +1,10 @@
 <p align="center">
   	<img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/logo-wide.png" alt="Marnie Logo (Wide)"/>
 </p>
-<h1 align="center">
-	Marnie
-</h1>
+
+<br />
 
 > **The local AI workspace with built-in tools.** Run deep research, scrape websites, interact with local files, and trigger webhooks with zero extra microservices required.
-
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 <br />
 
@@ -18,12 +15,24 @@
 <br />
 <br />
 
-
 ## Quick Links:
 - [Installation (Manually)](#installation-manually)
 - [Installation (Docker)](#installation-docker)
 - [Skills](#skills-reference)
 
+## Features
+
+> **Brain (memory)**
+> Persistent brain memory is established in a designated file. A background process consolidates recent conversation messages (up to five) with existing memory using a large language model. This consolidated memory is then automatica...
+
+> **Task scheduling and repeating tasks**
+
+> **Multi-Step Deep Research**
+
+> **A buttload of built in tools and skills**
+
+> **Math and flowchart generation and preiew**
+> Using latex for math equation preview and mermaid for flowchart preview.
 
 ### Skills Reference
 
@@ -73,6 +82,9 @@ Run this in a terminal
 bash <(curl -fsSL https://raw.githubusercontent.com/moyshik7/marnie/main/install.sh)
 ```
 
+<br />
+<br />
+
 ### Windows
 Run this in **powershell** (NOT COMMAND PROMPT)
 
@@ -86,12 +98,15 @@ irm https://raw.githubusercontent.com/moyshik7/marnie/main/install.ps1 | iex
 npm run nobuild
 ```
 
-> If you encounter any UI glitch try rebuilding the app.
+> If you encounter any UI glitch try rebuilding the app with `npm run build`
 
 The app is accessible at [http://localhost:3000](http://localhost:3000)
 
 > If port 3000 is in use, it will use 3001 then 3002, 3003 ....
 
+<br />
+<br />
+<br />
 
 ## Installation (Docker)
 

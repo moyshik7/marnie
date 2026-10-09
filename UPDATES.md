@@ -1,7 +1,8 @@
 ## Updates on 0.4.x
 - Added a text editor with markdown, latex, mermaid preview and edit mode.
 - Edited / Created files can be viewed and edited in the browser
-- Bug fix: File editor edits the source code of the app and renders the app corrupted. Fixed: Now the file edit and create can only edit / create files inside the workspace directory.
+- Bug fix: File editor edits the source code of the app and renders the app corrupted. Fixed: Now the file edit and create can only edit / create files inside the workspace directory
+- Adding BRAIN.md for persistant context about the user.
 
 ## Updates on 0.3.x
 - Updated research report page

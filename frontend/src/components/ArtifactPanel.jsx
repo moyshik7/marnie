@@ -82,7 +82,14 @@ export default function ArtifactPanel({
             const data = await listWorkspaceFiles();
             if (data && Array.isArray(data.files)) {
                 // Keep only files
-                setWorkspaceFiles(data.files.filter((f) => !f.isDirectory));
+                const filesOnly = data.files.filter((f) => !f.isDirectory);
+                setWorkspaceFiles(filesOnly);
+                if (!currentPath && filesOnly.length > 0) {
+                    const brainFile = filesOnly.find((f) => f.name === "BRAIN.md" || f.path === "BRAIN.md");
+                    const target = brainFile ? brainFile.path : filesOnly[0].path;
+                    setCurrentPath(target);
+                    loadFile(target);
+                }
             }
         } catch (err) {
             console.warn("Failed to list workspace files:", err);

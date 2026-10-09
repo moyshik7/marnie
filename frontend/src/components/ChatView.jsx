@@ -1096,6 +1096,54 @@ export default function ChatView({
                         <span>Workspace Files</span>
                     </button>
 
+                    {/* Brain Memory (workspace/BRAIN.md) button */}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (artifactOpen && currentArtifactPath === "BRAIN.md") {
+                                handleCloseArtifact();
+                            } else {
+                                handleOpenArtifact("BRAIN.md");
+                            }
+                        }}
+                        title="Brain Memory (workspace/BRAIN.md)"
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.35rem",
+                            padding: "0.35rem 0.65rem",
+                            borderRadius: "6px",
+                            border: "1px solid var(--border-subtle)",
+                            backgroundColor:
+                                artifactOpen && currentArtifactPath === "BRAIN.md"
+                                    ? "var(--bg-secondary)"
+                                    : "transparent",
+                            color:
+                                artifactOpen && currentArtifactPath === "BRAIN.md"
+                                    ? "var(--accent-terracotta)"
+                                    : "var(--text-secondary)",
+                            fontSize: "0.78rem",
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!artifactOpen || currentArtifactPath !== "BRAIN.md") {
+                                e.currentTarget.style.color = "var(--text-primary)";
+                                e.currentTarget.style.borderColor = "var(--border-strong)";
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!artifactOpen || currentArtifactPath !== "BRAIN.md") {
+                                e.currentTarget.style.color = "var(--text-secondary)";
+                                e.currentTarget.style.borderColor = "var(--border-subtle)";
+                            }
+                        }}
+                    >
+                        <Brain size={14} />
+                        <span>Brain Memory</span>
+                    </button>
+
                     {/* Top Light/Dark Theme Switcher Toggle */}
                     <ThemeToggle theme={theme} onToggle={onToggleTheme} />
                 </div>

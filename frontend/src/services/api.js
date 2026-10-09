@@ -372,3 +372,29 @@ export function getWorkspaceRawUrl(filePath) {
   return `${base}/workspace/raw/${cleanPath}`;
 }
 
+// ── Brain Memory (Persistent Memory in workspace/BRAIN.md) ──────
+export async function getBrainMemory() {
+  return request('/brain');
+}
+
+export async function saveBrainMemory(content) {
+  return request('/brain', {
+    method: 'PUT',
+    body: JSON.stringify({ content }),
+  });
+}
+
+export async function consolidateBrainMemory(conversationId, model) {
+  return request('/brain/consolidate', {
+    method: 'POST',
+    body: JSON.stringify({ conversationId, model }),
+  });
+}
+
+export async function updateBrainSettings(enabled) {
+  return request('/brain/settings', {
+    method: 'PATCH',
+    body: JSON.stringify({ enabled }),
+  });
+}
+

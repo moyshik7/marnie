@@ -50,6 +50,7 @@ app.use('/api/alerts',    require('./api/routes/alerts'));
 app.use('/api/settings',  require('./api/routes/settings'));
 app.use('/api/research',  require('./api/routes/research'));
 app.use('/api/workspace', require('./api/routes/workspace'));
+app.use('/api/brain',     require('./api/routes/brain'));
 
 
 app.get('/health', (_req, res) => {
