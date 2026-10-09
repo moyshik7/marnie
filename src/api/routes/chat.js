@@ -529,9 +529,9 @@ router.post('/conversations/:id/complete', async (req, res) => {
       }
 
       // Persist assistant message in SQLite, preserving thinking if present
-      const persistedContent = fullThinking
-        ? `<think>\n${fullThinking.trim()}\n</think>\n\n${fullContent.trim()}`
-        : fullContent.trim();
+      const persistedContent = fullContent.trim()
+        ? (fullThinking.trim() ? `<think>\n${fullThinking.trim()}\n</think>\n\n${fullContent.trim()}` : fullContent.trim())
+        : (fullThinking.trim() || '');
       insertMsg(conv.id, 'assistant', persistedContent);
 
       // Background auto-consolidation of BRAIN.md memory if 5-message trigger reached
@@ -626,9 +626,9 @@ router.post('/conversations/:id/complete', async (req, res) => {
         }
       }
 
-      const persistedContent = thinkingContent
-        ? `<think>\n${thinkingContent.trim()}\n</think>\n\n${assistantContent.trim()}`
-        : assistantContent.trim();
+      const persistedContent = assistantContent.trim()
+        ? (thinkingContent.trim() ? `<think>\n${thinkingContent.trim()}\n</think>\n\n${assistantContent.trim()}` : assistantContent.trim())
+        : (thinkingContent.trim() || '');
       const saved = insertMsg(conv.id, 'assistant', persistedContent);
 
       // Background auto-consolidation of BRAIN.md memory if 5-message trigger reached
@@ -848,9 +848,9 @@ router.post('/complete', async (req, res) => {
         }
       }
 
-      const finalContent = thinkingContent
-        ? `<think>\n${thinkingContent.trim()}\n</think>\n\n${assistantContent.trim()}`
-        : assistantContent.trim();
+      const finalContent = assistantContent.trim()
+        ? (thinkingContent.trim() ? `<think>\n${thinkingContent.trim()}\n</think>\n\n${assistantContent.trim()}` : assistantContent.trim())
+        : (thinkingContent.trim() || '');
       res.json({ message: { role: 'assistant', content: normalizeAssistantText(finalContent) }, usage: lastUsage });
     }
   } catch (err) {

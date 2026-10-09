@@ -215,13 +215,21 @@ function parseMessageContent(rawContent) {
     let content = rawContent;
     let thinking = "";
 
-    const thinkMatch = content.match(/^<think>([\s\S]*?)<\/think>\s*/i);
+    // 1. Match closed <think>...</think> anywhere in content
+    const thinkMatch = content.match(/<think>([\s\S]*?)<\/think>\s*/i);
     if (thinkMatch) {
         thinking = thinkMatch[1].trim();
-        content = content.slice(thinkMatch[0].length);
+        content = content.replace(thinkMatch[0], "").trim();
+    } else {
+        // Handle unclosed <think> tag (e.g. during live streaming)
+        const unclosedMatch = content.match(/<think>([\s\S]*)$/i);
+        if (unclosedMatch) {
+            thinking = unclosedMatch[1].trim();
+            content = content.replace(unclosedMatch[0], "").trim();
+        }
     }
 
-    // Parse file artifact markers
+    // 2. Parse file artifact markers
     const artifacts = [];
     const artifactRegex = /<!-- file-artifact:([\s\S]*?) -->/gi;
     let aMatch;
@@ -235,6 +243,7 @@ function parseMessageContent(rawContent) {
     }
     content = content.replace(/<!-- file-artifact:[\s\S]*? -->/gi, "");
 
+    // 3. Parse tool outputs
     const toolOutputs = [];
     const toolOutputRegex = /<!-- tool-output:?(\w*) -->([\s\S]*?)<!-- \/tool-output -->/gi;
     let match;
@@ -246,9 +255,17 @@ function parseMessageContent(rawContent) {
         });
     }
 
-    const cleanAnswer = content
+    let cleanAnswer = content
         .replace(/<!-- tool-output:?(\w*) -->[\s\S]*?<!-- \/tool-output -->/gi, "")
         .trim();
+
+    // 4. CRITICAL RECOVERY: If cleanAnswer is completely empty but thinking has content,
+    // the model generated its response inside the thinking tokens (or finished during deliberation).
+    // Promote thinking to be the cleanAnswer so the response is NEVER left blank!
+    if (!cleanAnswer && thinking) {
+        cleanAnswer = thinking;
+        thinking = "";
+    }
 
     return {
         thinking,
@@ -519,7 +536,7 @@ function CollapsibleToolOutput({ toolName, output, defaultExpanded = false }) {
     );
 }
 
-function ThinkingBox({ thinking, isStreaming = false, defaultExpanded = true }) {
+function ThinkingBox({ thinking, isStreaming = false, defaultExpanded = false }) {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
     if (!thinking) return null;
@@ -1130,9 +1147,9 @@ export default function ChatView({
                     setIsStreaming(false);
                     setStreamingContent("");
                     setStreamingThinking("");
-                    const combined = finalThinking
-                        ? `<think>\n${finalThinking.trim()}\n</think>\n\n${finalContent.trim()}`
-                        : finalContent;
+                    const combined = finalContent?.trim()
+                        ? (finalThinking?.trim() ? `<think>\n${finalThinking.trim()}\n</think>\n\n${finalContent.trim()}` : finalContent.trim())
+                        : (finalThinking?.trim() || "");
                     setMessages((prev) => [
                         ...prev,
                         {
@@ -1221,9 +1238,9 @@ export default function ChatView({
                     setIsStreaming(false);
                     setStreamingContent("");
                     setStreamingThinking("");
-                    const combined = finalThinking
-                        ? `<think>\n${finalThinking.trim()}\n</think>\n\n${finalContent.trim()}`
-                        : finalContent;
+                    const combined = finalContent?.trim()
+                        ? (finalThinking?.trim() ? `<think>\n${finalThinking.trim()}\n</think>\n\n${finalContent.trim()}` : finalContent.trim())
+                        : (finalThinking?.trim() || "");
                     setMessages((prev) => [
                         ...prev,
                         {
@@ -1354,18 +1371,25 @@ export default function ChatView({
             abortControllerRef.current.abort();
             setIsStreaming(false);
             if (streamingContent || streamingThinking) {
-                const combined = streamingThinking
-                    ? `<think>\n${streamingThinking.trim()}\n</think>\n\n${streamingContent.trim()} *(Generation stopped)*`
-                    : streamingContent + " *(Generation stopped)*";
-                setMessages((prev) => [
-                    ...prev,
-                    {
-                        id: `msg-stopped-${Date.now()}`,
-                        role: "assistant",
-                        content: combined,
-                        created_at: Math.floor(Date.now() / 1000),
-                    },
-                ]);
+                let combined = "";
+                if (streamingContent.trim() && streamingThinking.trim()) {
+                    combined = `<think>\n${streamingThinking.trim()}\n</think>\n\n${streamingContent.trim()} *(Generation stopped)*`;
+                } else if (streamingContent.trim()) {
+                    combined = `${streamingContent.trim()} *(Generation stopped)*`;
+                } else if (streamingThinking.trim()) {
+                    combined = `${streamingThinking.trim()} *(Generation stopped)*`;
+                }
+                if (combined) {
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            id: `msg-stopped-${Date.now()}`,
+                            role: "assistant",
+                            content: combined,
+                            created_at: Math.floor(Date.now() / 1000),
+                        },
+                    ]);
+                }
             }
             setStreamingContent("");
             setStreamingThinking("");
@@ -1912,7 +1936,7 @@ export default function ChatView({
                                                                 {thinking && (
                                                                     <ThinkingBox
                                                                         thinking={thinking}
-                                                                        defaultExpanded={true}
+                                                                        defaultExpanded={false}
                                                                     />
                                                                 )}
                                                                 {toolOutputs && toolOutputs.length > 0 && (
@@ -1940,10 +1964,7 @@ export default function ChatView({
                                                                 )}
                                                                 <div className="markdown-body">
                                                                     {formatMarkdown(
-                                                                        answer ||
-                                                                            (!thinking && (!toolOutputs || toolOutputs.length === 0)
-                                                                                ? msg.content
-                                                                                : ""),
+                                                                        answer || thinking || (!toolOutputs || toolOutputs.length === 0 ? msg.content : "")
                                                                     )}
                                                                 </div>
                                                             </>
@@ -2045,11 +2066,40 @@ export default function ChatView({
                                             <ThinkingBox
                                                 thinking={streamingThinking}
                                                 isStreaming={true}
-                                                defaultExpanded={true}
+                                                defaultExpanded={false}
                                             />
                                         )}
                                         {(() => {
-                                            if (!streamingContent) return null;
+                                            if (!streamingContent) {
+                                                return (
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "0.5rem",
+                                                            color: "var(--text-muted)",
+                                                            fontSize: "0.82rem",
+                                                            padding: "0.35rem 0",
+                                                        }}
+                                                    >
+                                                        <span
+                                                            className="typing-dot"
+                                                            style={{
+                                                                width: "6px",
+                                                                height: "6px",
+                                                                backgroundColor: "var(--accent-terracotta)",
+                                                                borderRadius: "50%",
+                                                                display: "inline-block",
+                                                            }}
+                                                        />
+                                                        <span>
+                                                            {streamingThinking
+                                                                ? "Deliberating and formulating response..."
+                                                                : "Marnie is thinking..."}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            }
                                             const {
                                                 answer,
                                                 toolOutputs,
@@ -2080,23 +2130,46 @@ export default function ChatView({
                                                             ))}
                                                         </div>
                                                     )}
-                                                    <div className="markdown-body">
-                                                        {formatMarkdown(
-                                                            answer || (!toolOutputs || toolOutputs.length === 0 ? streamingContent : "")
-                                                        )}
-                                                        <span
+                                                    {answer ? (
+                                                        <div className="markdown-body">
+                                                            {formatMarkdown(answer)}
+                                                            <span
+                                                                style={{
+                                                                    display: "inline-block",
+                                                                    width: "7px",
+                                                                    height: "14px",
+                                                                    backgroundColor:
+                                                                        "var(--accent-terracotta)",
+                                                                    marginLeft: "3px",
+                                                                    verticalAlign: "middle",
+                                                                }}
+                                                                className="typing-dot"
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div
                                                             style={{
-                                                                display: "inline-block",
-                                                                width: "7px",
-                                                                height: "14px",
-                                                                backgroundColor:
-                                                                    "var(--accent-terracotta)",
-                                                                marginLeft: "3px",
-                                                                verticalAlign: "middle",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                gap: "0.5rem",
+                                                                color: "var(--text-muted)",
+                                                                fontSize: "0.82rem",
+                                                                padding: "0.35rem 0",
                                                             }}
-                                                            className="typing-dot"
-                                                        />
-                                                    </div>
+                                                        >
+                                                            <span
+                                                                className="typing-dot"
+                                                                style={{
+                                                                    width: "6px",
+                                                                    height: "6px",
+                                                                    backgroundColor: "var(--accent-terracotta)",
+                                                                    borderRadius: "50%",
+                                                                    display: "inline-block",
+                                                                }}
+                                                            />
+                                                            <span>Deliberating and formulating response...</span>
+                                                        </div>
+                                                    )}
                                                 </>
                                             );
                                         })()}
