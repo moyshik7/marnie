@@ -51,6 +51,7 @@ app.use('/api/settings',  require('./api/routes/settings'));
 app.use('/api/research',  require('./api/routes/research'));
 app.use('/api/workspace', require('./api/routes/workspace'));
 app.use('/api/brain',     require('./api/routes/brain'));
+app.use('/api/notes',     require('./api/routes/notes'));
 
 
 app.get('/health', (_req, res) => {

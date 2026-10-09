@@ -3,6 +3,10 @@
 - Edited / Created files can be viewed and edited in the browser
 - Bug fix: File editor edits the source code of the app and renders the app corrupted. Fixed: Now the file edit and create can only edit / create files inside the workspace directory
 - Adding BRAIN.md for persistant context about the user.
+- Added a notes feature.
+- Notes can now be viewed and edited by the user.
+- Added fetch notes skill
+- Note viewer UI Bug fixed
 
 ## Updates on 0.3.x
 - Updated research report page

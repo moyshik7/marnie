@@ -13,6 +13,7 @@ const timer = require('./timer');
 const webSearch = require('./webSearch');
 const apiCall = require('./apiCall');
 const brainMemory = require('./brainMemory');
+const notesManager = require('./notesManager');
 
 const TOOLS = {
   run_javascript: {
@@ -166,6 +167,74 @@ const TOOLS = {
       return { success: ok, filePath: 'workspace/BRAIN.md', message: 'Persistent memory updated successfully.' };
     },
   },
+  fetch_notes: {
+    description: 'Fetch persistent user notes, task lists, and reference data from workspace/NOTES.md. Use this tool when you need additional user information, task lists, or reference data not included in the standard prompt.',
+    parameters: {
+      section: { type: 'string', description: 'Optional specific section header to retrieve (e.g. "Active Tasks", "Project Notes")' },
+    },
+    execute: async ({ section } = {}) => {
+      const content = notesManager.getNotesContent();
+      const meta = notesManager.getNotesMetadata();
+      if (section && typeof section === 'string') {
+        const lines = content.split('\n');
+        let capturing = false;
+        const captured = [];
+        const normSection = section.toLowerCase().trim();
+        for (const line of lines) {
+          if (line.startsWith('#')) {
+            const headingText = line.replace(/^#+\s*/, '').toLowerCase().trim();
+            if (headingText.includes(normSection)) {
+              capturing = true;
+              captured.push(line);
+              continue;
+            } else if (capturing) {
+              break;
+            }
+          }
+          if (capturing) {
+            captured.push(line);
+          }
+        }
+        if (captured.length > 0) {
+          return {
+            filePath: 'workspace/NOTES.md',
+            section,
+            content: captured.join('\n').trim(),
+            totalLines: meta.lines,
+          };
+        }
+      }
+      return {
+        filePath: 'workspace/NOTES.md',
+        content,
+        totalLines: meta.lines,
+      };
+    },
+  },
+  update_notes: {
+    description: 'Update, replace, or append information in the persistent workspace/NOTES.md file. Use this to track multi-step tasks, update to-do checklists, or save reference notes.',
+    parameters: {
+      content: { type: 'string', description: 'Full markdown content to overwrite workspace/NOTES.md with' },
+      text: { type: 'string', description: 'Text or task to append to workspace/NOTES.md (if content is not provided or append is true)' },
+      append: { type: 'boolean', description: 'Set to true to append text instead of overwriting' },
+      section: { type: 'string', description: 'Optional section header to append under' },
+    },
+    execute: async ({ content, text, append, section } = {}) => {
+      let ok = false;
+      if (append || (!content && text)) {
+        ok = notesManager.appendNotesContent(text || '', section || '');
+      } else if (content !== undefined) {
+        ok = notesManager.saveNotesContent(content);
+      }
+      const meta = notesManager.getNotesMetadata();
+      return {
+        success: ok,
+        filePath: 'workspace/NOTES.md',
+        totalLines: meta.lines,
+        message: 'Notes updated successfully in workspace/NOTES.md.',
+      };
+    },
+  },
 };
 
 /**
@@ -220,6 +289,18 @@ async function executeTool(name, args = {}) {
     save_brain: 'update_brain_memory',
     save_memory: 'update_brain_memory',
     write_brain: 'update_brain_memory',
+    fetch_notes: 'fetch_notes',
+    get_notes: 'fetch_notes',
+    read_notes: 'fetch_notes',
+    notes: 'fetch_notes',
+    notes_read: 'fetch_notes',
+    notes_fetch: 'fetch_notes',
+    update_notes: 'update_notes',
+    save_notes: 'update_notes',
+    append_notes: 'update_notes',
+    write_notes: 'update_notes',
+    notes_update: 'update_notes',
+    notes_append: 'update_notes',
   };
 
   const toolName = aliasMap[name] || name;
@@ -285,6 +366,7 @@ TOOL USAGE GUIDELINES:
 - For reading files before making edits, call \`read_file\` first, then \`write_file\`.
 - For saving user tasks and to-dos, call \`create_task\`.
 - PERSISTENT BRAIN MEMORY: You have a persistent memory in \`workspace/BRAIN.md\` which stores user context, preferences, and projects. It is injected into your prompt and auto-consolidated after every 5 conversation messages. You can also explicitly inspect or update it using \`read_brain_memory\` or \`update_brain_memory\` if the user instructs you to remember something specific.
+- NOTES & WORKING TASKS (fetch_notes / update_notes): You have a dedicated working notebook and task list stored at \`workspace/NOTES.md\`. Unlike BRAIN.md, this file is NOT injected into your prompt by default because it is designed to hold larger reference notes, checklists, and working context. When you need extra reference details about the user, active tasks, or project specifications, invoke the \`fetch_notes\` tool. To add tasks, update checklists, or store long-term project notes, invoke \`update_notes\`.
 - MERMAID & DIAGRAMS INSTRUCTION: Whenever illustrating workflows, systems, architectures, timelines, state diagrams, or schemas, ALWAYS provide clear, valid Mermaid diagrams enclosed in \`\`\`mermaid code blocks. The workspace has built-in live preview for Mermaid diagrams.
 - LATEX MATH INSTRUCTION: For mathematical equations, proofs, and formulas, ALWAYS use LaTeX notation ($$...$$ for display block equations, $...$ for inline math). The workspace renders LaTeX with KaTeX.
 - NO EM DASHES INSTRUCTION: NEVER use em dashes (—). Always use standard hyphens or dashes (-) in your text.
@@ -349,7 +431,9 @@ function parseToolCalls(text) {
           'fetch_webpage', 'scrape_webpage', 'scrape_url', 'fetch_url', 'scrape',
           'api_call', 'api', 'http_request', 'curl', 'http', 'fetch', 'request',
           'read_brain_memory', 'read_brain', 'update_brain_memory', 'update_brain',
-          'read_memory', 'save_memory', 'write_brain', 'save_brain'
+          'read_memory', 'save_memory', 'write_brain', 'save_brain',
+          'fetch_notes', 'read_notes', 'get_notes', 'notes', 'update_notes',
+          'save_notes', 'append_notes', 'write_notes'
         ];
         if (knownTools.includes(toolName.toLowerCase()) && !calls.some(c => c.raw === match[0])) {
           calls.push({

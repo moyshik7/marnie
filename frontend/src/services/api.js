@@ -398,3 +398,22 @@ export async function updateBrainSettings(enabled) {
   });
 }
 
+// ── Notes (Persistent AI Notes in workspace/NOTES.md) ─────────
+export async function getNotes() {
+  return request('/notes');
+}
+
+export async function saveNotes(content) {
+  return request('/notes', {
+    method: 'PUT',
+    body: JSON.stringify({ content }),
+  });
+}
+
+export async function appendNote(text, section = '') {
+  return request('/notes/append', {
+    method: 'POST',
+    body: JSON.stringify({ text, section }),
+  });
+}
+

@@ -1144,6 +1144,54 @@ export default function ChatView({
                         <span>Brain Memory</span>
                     </button>
 
+                    {/* AI Notes (workspace/NOTES.md) button */}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (artifactOpen && currentArtifactPath === "NOTES.md") {
+                                handleCloseArtifact();
+                            } else {
+                                handleOpenArtifact("NOTES.md");
+                            }
+                        }}
+                        title="AI Notes & Tasks (workspace/NOTES.md)"
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.35rem",
+                            padding: "0.35rem 0.65rem",
+                            borderRadius: "6px",
+                            border: "1px solid var(--border-subtle)",
+                            backgroundColor:
+                                artifactOpen && currentArtifactPath === "NOTES.md"
+                                    ? "var(--bg-secondary)"
+                                    : "transparent",
+                            color:
+                                artifactOpen && currentArtifactPath === "NOTES.md"
+                                    ? "var(--accent-terracotta)"
+                                    : "var(--text-secondary)",
+                            fontSize: "0.78rem",
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!artifactOpen || currentArtifactPath !== "NOTES.md") {
+                                e.currentTarget.style.color = "var(--text-primary)";
+                                e.currentTarget.style.borderColor = "var(--border-strong)";
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!artifactOpen || currentArtifactPath !== "NOTES.md") {
+                                e.currentTarget.style.color = "var(--text-secondary)";
+                                e.currentTarget.style.borderColor = "var(--border-subtle)";
+                            }
+                        }}
+                    >
+                        <FileText size={14} />
+                        <span>Notes</span>
+                    </button>
+
                     {/* Top Light/Dark Theme Switcher Toggle */}
                     <ThemeToggle theme={theme} onToggle={onToggleTheme} />
                 </div>

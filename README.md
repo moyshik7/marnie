@@ -23,7 +23,10 @@
 ## Features
 
 > **Brain (memory)**
-> Persistent brain memory is established in a designated file. A background process consolidates recent conversation messages (up to five) with existing memory using a large language model. This consolidated memory is then automatica...
+> Persistent brain memory stored in `workspace/BRAIN.md`. A background process consolidates recent conversation messages (every 5 messages) with existing memory using an LLM. This consolidated memory is then automatically passed into every chat or agentic conversation unless otherwise specified.
+
+> **Notes**
+>  The Notes feature offers persistent storage separate from the primary brain, enabling on-demand retrieval and modification via `fetch_notes`. This contrasts with the main brain, which is injected directly into prompts.
 
 > **Task scheduling and repeating tasks**
 
@@ -44,6 +47,7 @@ All skills are documented with specifications under [`.agents/skills/`](.agents/
 | `cron-scheduler`     | Schedule and manage recurring background cron jobs stored persistently in SQLite with command, Discord, or webhook triggers  |
 | `deep-research`      | Autonomous multi-turn web research and iterative synthesis engine producing comprehensive markdown dossiers with citations   |
 | `discord-alerts`     | Dispatch rich embed alert notifications to configured Discord webhook channels                                               |
+| `fetch-notes`        | Fetch and update persistent user notes, task checklists, and reference data in `workspace/NOTES.md` on demand                |
 | `file-operations`    | Read, create, write, and patch local files on disk with precise line range replacements                                      |
 | `filesystem-search`  | Recursively search files and directories matching a pattern, substring, or regular expression                                |
 | `run-bash`           | Execute terminal and shell commands (bash/sh) directly on the host system                                                    |
@@ -159,17 +163,6 @@ docker run -d \
   marnie
 ```
 ---
-
-## Environment Variables
-
-| Variable              | Default                  | Description                                |
-|-----------------------|--------------------------|--------------------------------------------|
-| `PORT`                | `3000`                   | HTTP port                                  |
-| `OLLAMA_BASE_URL`     | `http://localhost:11434` | Ollama server URL                          |
-| `DEFAULT_MODEL`       | `qwen3.5:9B`             | Default model name                         |
-| `DISCORD_WEBHOOK_URL` | -                        | Discord webhook for alerts                 |
-| `WORKSPACE_DIR`       | `./workspace`            | Root directory for file operations         |
-| `DB_PATH`             | `./data/marnie.db`       | SQLite database path                       |
 
 
 ## API Documentation

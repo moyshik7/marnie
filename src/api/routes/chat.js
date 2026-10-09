@@ -81,6 +81,11 @@ async function runToolCallsAndFormat(toolCalls) {
         } else if (call.name === 'update_brain_memory' || call.name === 'update_brain' || call.name === 'save_brain') {
           callOutput += `\n<!-- file-artifact:{"path":"BRAIN.md","name":"BRAIN.md","action":"edited"} -->\n`;
           callOutput += `\n**Persistent Memory Updated:** \`workspace/BRAIN.md\`\n`;
+        } else if (call.name === 'fetch_notes' || call.name === 'get_notes' || call.name === 'read_notes' || call.name === 'notes') {
+          callOutput += `\n**AI Notes & Tasks (workspace/NOTES.md):**\n\n${res.content || '(Empty notes)'}\n`;
+        } else if (call.name === 'update_notes' || call.name === 'save_notes' || call.name === 'append_notes' || call.name === 'write_notes') {
+          callOutput += `\n<!-- file-artifact:{"path":"NOTES.md","name":"NOTES.md","action":"edited"} -->\n`;
+          callOutput += `\n**AI Notes Updated:** \`workspace/NOTES.md\`\n`;
         } else if (res.stdout !== undefined || res.stderr !== undefined) {
           if (res.stdout) callOutput += `\`\`\`\n${res.stdout.trimEnd()}\n\`\`\`\n`;
           if (res.stderr) callOutput += `\`\`\`stderr\n${res.stderr.trimEnd()}\n\`\`\`\n`;

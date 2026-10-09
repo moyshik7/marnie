@@ -5,6 +5,7 @@ import DeepResearchView from "./components/DeepResearchView";
 import SettingsModal from "./components/SettingsModal";
 import ToolsPanel from "./components/ToolsPanel";
 import ReportViewer from "./components/ReportViewer";
+import NotesModal from "./components/NotesModal";
 import {
     listConversations,
     createConversation,
@@ -59,6 +60,7 @@ export default function App() {
     const [isResearchOngoing, setIsResearchOngoing] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isToolsOpen, setIsToolsOpen] = useState(false);
+    const [isNotesOpen, setIsNotesOpen] = useState(false);
     const [isArtifactOpen, setIsArtifactOpen] = useState(false);
     const [activeArtifactPath, setActiveArtifactPath] = useState("");
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
@@ -340,6 +342,7 @@ export default function App() {
                 onRenameConversation={handleRenameConversation}
                 onOpenSettings={() => setIsSettingsOpen(true)}
                 onOpenTools={() => setIsToolsOpen(true)}
+                onOpenNotes={() => setIsNotesOpen(true)}
                 onOpenDeepResearch={() => setActiveSection("research")}
                 onOpenArtifacts={() => {
                     setActiveSection("chat");
@@ -403,6 +406,17 @@ export default function App() {
             <ToolsPanel
                 isOpen={isToolsOpen}
                 onClose={() => setIsToolsOpen(false)}
+            />
+
+            {/* AI Notes & Tasks Modal (workspace/NOTES.md) */}
+            <NotesModal
+                isOpen={isNotesOpen}
+                onClose={() => setIsNotesOpen(false)}
+                onOpenInArtifactPanel={(path) => {
+                    setActiveSection("chat");
+                    setActiveArtifactPath(path || "NOTES.md");
+                    setIsArtifactOpen(true);
+                }}
             />
         </div>
     );
