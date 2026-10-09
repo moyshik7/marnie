@@ -9,7 +9,7 @@
 <br />
 
 <p align="center">
-  	<img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/screenshot-browser.png" alt="Marnie Ui (In browser)"/>
+  	<img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/demo-chat.gif" alt="Marnie Ui (In browser)"/>
 </p>
 
 <br />
