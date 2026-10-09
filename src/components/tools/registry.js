@@ -12,6 +12,8 @@ const discord = require('./discord');
 const timer = require('./timer');
 const webSearch = require('./webSearch');
 const apiCall = require('./apiCall');
+const brainMemory = require('./brainMemory');
+const notesManager = require('./notesManager');
 
 const TOOLS = {
   run_javascript: {
@@ -39,27 +41,27 @@ const TOOLS = {
     execute: async ({ directory, pattern }) => filesystem.search({ directory, pattern }),
   },
   read_file: {
-    description: 'Read the contents of a local file (full or specific line range).',
+    description: 'Read the contents of a local file in workspace or repository (full or specific line range).',
     parameters: {
-      filePath: { type: 'string', description: 'Path to file to read', required: true },
+      filePath: { type: 'string', description: 'Path to file to read (relative to workspace or repo)', required: true },
       startLine: { type: 'number', description: '1-based starting line number (optional)' },
       endLine: { type: 'number', description: '1-based ending line number (optional)' },
     },
     execute: async ({ filePath, startLine, endLine }) => fileRead.read({ filePath, startLine, endLine }),
   },
   create_file: {
-    description: 'Create a new local file with initial content.',
+    description: 'Create a new local file strictly in the workspace directory with initial content. Opened in the browser and in-app preview/edit panel.',
     parameters: {
-      filePath: { type: 'string', description: 'Path to the new file', required: true },
+      filePath: { type: 'string', description: 'Path to the new file (must be inside workspace, e.g. "index.html" or "src/app.js")', required: true },
       content: { type: 'string', description: 'Initial file content' },
       overwrite: { type: 'boolean', description: 'Overwrite if file exists (default false)' },
     },
     execute: async ({ filePath, content, overwrite }) => fileCreate.create({ filePath, content, overwrite }),
   },
   write_file: {
-    description: 'Write, append, or replace specific lines in a local file. Reads file before line replacement.',
+    description: 'Write, append, or replace specific lines in a workspace file. Strictly restricted to workspace directory. Opened in browser and in-app preview/edit panel.',
     parameters: {
-      filePath: { type: 'string', description: 'Path to the file to modify', required: true },
+      filePath: { type: 'string', description: 'Path to the file to modify in workspace', required: true },
       content: { type: 'string', description: 'Content to insert or overwrite', required: true },
       startLine: { type: 'number', description: '1-based start line to replace (optional)' },
       endLine: { type: 'number', description: '1-based end line to replace (optional)' },
@@ -147,6 +149,118 @@ const TOOLS = {
     },
     execute: async (args) => apiCall.callApi(args),
   },
+  read_brain_memory: {
+    description: 'Read the persistent user memory file from workspace/BRAIN.md.',
+    parameters: {},
+    execute: async () => {
+      const content = brainMemory.getBrainContent();
+      return { filePath: 'workspace/BRAIN.md', content };
+    },
+  },
+  update_brain_memory: {
+    description: 'Update or append new facts, preferences, or context about the user to persistent workspace/BRAIN.md memory.',
+    parameters: {
+      content: { type: 'string', description: 'The updated markdown memory to save in workspace/BRAIN.md', required: true },
+    },
+    execute: async ({ content }) => {
+      const ok = brainMemory.saveBrainContent(content);
+      return { success: ok, filePath: 'workspace/BRAIN.md', message: 'Persistent memory updated successfully.' };
+    },
+  },
+  fetch_notes: {
+    description: 'Fetch persistent user notes, task lists, and reference data from workspace/NOTES.md. Use this tool when you need additional user information, task lists, or reference data not included in the standard prompt.',
+    parameters: {
+      section: { type: 'string', description: 'Optional specific section header to retrieve (e.g. "Active Tasks", "Project Notes")' },
+    },
+    execute: async ({ section } = {}) => {
+      const content = notesManager.getNotesContent();
+      const meta = notesManager.getNotesMetadata();
+      if (section && typeof section === 'string') {
+        const lines = content.split('\n');
+        let capturing = false;
+        const captured = [];
+        const normSection = section.toLowerCase().trim();
+        for (const line of lines) {
+          if (line.startsWith('#')) {
+            const headingText = line.replace(/^#+\s*/, '').toLowerCase().trim();
+            if (headingText.includes(normSection)) {
+              capturing = true;
+              captured.push(line);
+              continue;
+            } else if (capturing) {
+              break;
+            }
+          }
+          if (capturing) {
+            captured.push(line);
+          }
+        }
+        if (captured.length > 0) {
+          return {
+            filePath: 'workspace/NOTES.md',
+            section,
+            content: captured.join('\n').trim(),
+            totalLines: meta.lines,
+          };
+        }
+      }
+      return {
+        filePath: 'workspace/NOTES.md',
+        content,
+        totalLines: meta.lines,
+      };
+    },
+  },
+  edit_notes: {
+    description: 'Edit, update, or append notes, tasks, directives, and reference information in workspace/NOTES.md. Always use this tool to persist important findings, user instructions, multi-step progress, or task checklists so they are not lost.',
+    parameters: {
+      content: { type: 'string', description: 'Full markdown content to overwrite workspace/NOTES.md with' },
+      text: { type: 'string', description: 'Note, bullet point, or task item to append to workspace/NOTES.md (if content is omitted or append is true)' },
+      append: { type: 'boolean', description: 'Set to true to append text to the end of notes instead of overwriting (defaults to true if text is provided)' },
+      section: { type: 'string', description: 'Optional section header (e.g. "Active Tasks & Checklist") to append under' },
+    },
+    execute: async ({ content, text, append, section } = {}) => {
+      let ok = false;
+      const shouldAppend = append !== undefined ? append : (!content && Boolean(text));
+      if (shouldAppend) {
+        ok = notesManager.appendNotesContent(text || content || '', section || '');
+      } else if (content !== undefined) {
+        ok = notesManager.saveNotesContent(content);
+      }
+      const meta = notesManager.getNotesMetadata();
+      return {
+        success: ok,
+        filePath: 'workspace/NOTES.md',
+        totalLines: meta.lines,
+        message: 'Notes updated successfully in workspace/NOTES.md.',
+      };
+    },
+  },
+  update_notes: {
+    description: 'Update, replace, or append information in the persistent workspace/NOTES.md file. Use this to keep important things, track tasks, or save reference notes.',
+    parameters: {
+      content: { type: 'string', description: 'Full markdown content to overwrite workspace/NOTES.md with' },
+      text: { type: 'string', description: 'Text or task to append to workspace/NOTES.md (if content is omitted or append is true)' },
+      append: { type: 'boolean', description: 'Set to true to append text instead of overwriting' },
+      section: { type: 'string', description: 'Optional section header to append under' },
+    },
+    execute: async ({ content, text, append, section } = {}) => {
+      let ok = false;
+      const shouldAppend = append !== undefined ? append : (!content && Boolean(text));
+      if (shouldAppend) {
+        ok = notesManager.appendNotesContent(text || content || '', section || '');
+      } else if (content !== undefined) {
+        ok = notesManager.saveNotesContent(content);
+      }
+      const meta = notesManager.getNotesMetadata();
+      return {
+        success: ok,
+        filePath: 'workspace/NOTES.md',
+        totalLines: meta.lines,
+        message: 'Notes updated successfully in workspace/NOTES.md.',
+      };
+    },
+  },
 };
 
 /**
@@ -191,6 +305,32 @@ async function executeTool(name, args = {}) {
     http: 'api_call',
     fetch: 'api_call',
     request: 'api_call',
+    read_brain_memory: 'read_brain_memory',
+    read_brain: 'read_brain_memory',
+    read_memory: 'read_brain_memory',
+    get_brain: 'read_brain_memory',
+    get_memory: 'read_brain_memory',
+    update_brain_memory: 'update_brain_memory',
+    update_brain: 'update_brain_memory',
+    save_brain: 'update_brain_memory',
+    save_memory: 'update_brain_memory',
+    write_brain: 'update_brain_memory',
+    fetch_notes: 'fetch_notes',
+    get_notes: 'fetch_notes',
+    read_notes: 'fetch_notes',
+    notes: 'fetch_notes',
+    notes_read: 'fetch_notes',
+    notes_fetch: 'fetch_notes',
+    edit_notes: 'edit_notes',
+    notes_edit: 'edit_notes',
+    add_note: 'edit_notes',
+    add_notes: 'edit_notes',
+    update_notes: 'update_notes',
+    save_notes: 'update_notes',
+    append_notes: 'update_notes',
+    write_notes: 'update_notes',
+    notes_update: 'update_notes',
+    notes_append: 'update_notes',
   };
 
   const toolName = aliasMap[name] || name;
@@ -215,14 +355,14 @@ function buildSystemPrompt(customSystemPrompt = '') {
     })
     .join('\n\n');
 
-  return `You are Marnie, an advanced self-hosted AI workspace assistant (like Odysseus).
+  return `You are Marnie, an advanced self-hosted AI workspace assistant.
 You operate inside a real Linux environment and are equipped with native tools to interact directly with the operating system, terminal, filesystem, code runner, tasks, and integrations.
 
 CRITICAL INSTRUCTIONS:
 1. NEVER apologize or state "As an AI language model, I cannot execute code", "I cannot access external environments", or "I cannot interact with the operating system". You ARE connected to a real live backend and CAN execute code and commands.
 2. Whenever the user requests running code, testing commands, searching files, creating files, scheduling jobs, sending discord alerts, making API calls, scraping websites, or creating tasks, YOU MUST EXECUTE the appropriate tool.
-3. STRICT NO-EMOJI RULE: DO NOT use emojis anywhere in your responses, thought process, tool arguments, reminders, cron actions, or discord alerts (absolutely NO bells, party poppers, cakes, or other emojis). All text must be clean, professional, plain text without emojis unless the user explicitly requests emojis.
-4. DO NOT write fake markdown headers like "> **Executed Tool:** ..." or "> 🛠️ **Executed Tool:** ...". The backend automatically runs your tool and returns real execution output. Writing fake execution markdown will fail and will not perform the action.
+3. ZERO EMOJIS POLICY (CRITICAL FOR PROFESSIONAL LOOK): DO NOT USE ANY EMOJIS under any circumstance. Never include smileys, decorative icons, status emojis (e.g. no ✅, ❌, ⚠️, 🚀, 💡, 🔥, 📌, ✨, 😊, etc.), or emotional pictographs in your messages, headings, bullet points, explanations, thinking processes, code comments, or alerts. Emojis look unprofessional and clutter technical communication. Maintain a crisp, authoritative, professional, and clean plain-text technical tone at all times.
+4. DO NOT write fake markdown headers like "# **Executed Tool:** ..." or "# **Executed Tool:** ...". The backend automatically runs your tool and returns real execution output. Writing fake execution markdown will fail and will not perform the action.
 5. To execute a tool, write a tool call block using either of the following formats (or use native tool calling):
 
 <tool_call>
@@ -255,9 +395,13 @@ TOOL USAGE GUIDELINES:
 - For shell commands (e.g., git, package managers, system status), call \`run_bash\`.
 - For reading files before making edits, call \`read_file\` first, then \`write_file\`.
 - For saving user tasks and to-dos, call \`create_task\`.
+- PERSISTENT BRAIN MEMORY: You have a persistent memory in \`workspace/BRAIN.md\` which stores user context, preferences, and projects. It is injected into your prompt and auto-consolidated after every 5 conversation messages. You can also explicitly inspect or update it using \`read_brain_memory\` or \`update_brain_memory\` if the user instructs you to remember something specific.
+- KEEPING IMPORTANT THINGS IN NOTES (update_notes / edit_notes / fetch_notes): You have a separate dedicated working notebook and task list stored at \`workspace/NOTES.md\`. You can keep important things, user preferences, tasks, multi-step plans, research summaries, and architectural decisions in notes using \`update_notes\` (or \`edit_notes\`), and \`fetch_notes\` can be used to fetch notes whenever you need additional context. Unlike BRAIN.md, this file is NOT automatically injected into your prompt by default to preserve context window space, so proactively use \`update_notes\` (or \`edit_notes\`) to record important things and \`fetch_notes\` to retrieve them.
 - MERMAID & DIAGRAMS INSTRUCTION: Whenever illustrating workflows, systems, architectures, timelines, state diagrams, or schemas, ALWAYS provide clear, valid Mermaid diagrams enclosed in \`\`\`mermaid code blocks. The workspace has built-in live preview for Mermaid diagrams.
 - LATEX MATH INSTRUCTION: For mathematical equations, proofs, and formulas, ALWAYS use LaTeX notation ($$...$$ for display block equations, $...$ for inline math). The workspace renders LaTeX with KaTeX.
 - NO EM DASHES INSTRUCTION: NEVER use em dashes (—). Always use standard hyphens or dashes (-) in your text.
+- WORKSPACE BOUNDARY & REPO INTEGRITY: All created and edited files MUST be strictly inside the workspace directory (\`workspace/\`). You are strictly prohibited from creating or modifying files outside the workspace directory or touching files outside the repository. Always specify relative paths within workspace (e.g., \`index.html\`, \`styles.css\`, \`src/main.js\`).
+- IN-APP EDIT & PREVIEW PANEL (CLAUDE ARTIFACTS): When you create or edit files in the workspace (such as HTML, JavaScript, CSS, SVG, or Markdown), the user can immediately open them in the browser or view them in the Claude-like in-app Edit and Preview panel where code can be edited, tested, and copied. Always write complete, functional code.
 - When you emit a tool call, the system will execute it and deliver the real stdout/stderr back to the workspace.
 
 ${customSystemPrompt ? `\nADDITIONAL USER INSTRUCTIONS:\n${customSystemPrompt}` : ''}`.trim();
@@ -315,7 +459,12 @@ function parseToolCalls(text) {
           'create_task', 'list_tasks', 'create_cron', 'send_alert', 'set_timer', 'timer',
           'web_search', 'search', 'javascript', 'bash', 'terminal', 'js',
           'fetch_webpage', 'scrape_webpage', 'scrape_url', 'fetch_url', 'scrape',
-          'api_call', 'api', 'http_request', 'curl', 'http', 'fetch', 'request'
+          'api_call', 'api', 'http_request', 'curl', 'http', 'fetch', 'request',
+          'read_brain_memory', 'read_brain', 'update_brain_memory', 'update_brain',
+          'read_memory', 'save_memory', 'write_brain', 'save_brain',
+          'fetch_notes', 'read_notes', 'get_notes', 'notes', 'update_notes',
+          'edit_notes', 'notes_edit', 'add_note', 'add_notes',
+          'save_notes', 'append_notes', 'write_notes'
         ];
         if (knownTools.includes(toolName.toLowerCase()) && !calls.some(c => c.raw === match[0])) {
           calls.push({

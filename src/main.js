@@ -42,13 +42,16 @@ app.use((req, _res, next) => {
 */
 
 
-app.use('/api/chat',     require('./api/routes/chat'));
-app.use('/api/tools',    require('./api/routes/tools'));
-app.use('/api/tasks',    require('./api/routes/tasks'));
-app.use('/api/cron',     require('./api/routes/cron'));
-app.use('/api/alerts',   require('./api/routes/alerts'));
-app.use('/api/settings', require('./api/routes/settings'));
-app.use('/api/research', require('./api/routes/research'));
+app.use('/api/chat',      require('./api/routes/chat'));
+app.use('/api/tools',     require('./api/routes/tools'));
+app.use('/api/tasks',     require('./api/routes/tasks'));
+app.use('/api/cron',      require('./api/routes/cron'));
+app.use('/api/alerts',    require('./api/routes/alerts'));
+app.use('/api/settings',  require('./api/routes/settings'));
+app.use('/api/research',  require('./api/routes/research'));
+app.use('/api/workspace', require('./api/routes/workspace'));
+app.use('/api/brain',     require('./api/routes/brain'));
+app.use('/api/notes',     require('./api/routes/notes'));
 
 
 app.get('/health', (_req, res) => {

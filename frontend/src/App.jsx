@@ -5,6 +5,7 @@ import DeepResearchView from "./components/DeepResearchView";
 import SettingsModal from "./components/SettingsModal";
 import ToolsPanel from "./components/ToolsPanel";
 import ReportViewer from "./components/ReportViewer";
+import NotesModal from "./components/NotesModal";
 import {
     listConversations,
     createConversation,
@@ -59,6 +60,9 @@ export default function App() {
     const [isResearchOngoing, setIsResearchOngoing] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isToolsOpen, setIsToolsOpen] = useState(false);
+    const [isNotesOpen, setIsNotesOpen] = useState(false);
+    const [isArtifactOpen, setIsArtifactOpen] = useState(false);
+    const [activeArtifactPath, setActiveArtifactPath] = useState("");
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
         return localStorage.getItem("marnie_sidebar_collapsed") === "true";
     });
@@ -176,8 +180,17 @@ export default function App() {
                     }
                 }
             } else {
-                setActiveConversation(null);
-                setActiveConversationId(null);
+                // If there are no conversations at all, automatically create one so user can type immediately
+                try {
+                    const modelToUse = fallbackModel || (availableModels.length > 0 ? availableModels[0] : "llama3.2");
+                    const initialConv = await createConversation("New conversation", modelToUse);
+                    setConversations([initialConv]);
+                    selectConversation(initialConv.id, initialConv);
+                } catch (createErr) {
+                    console.warn("Failed to create initial conversation:", createErr);
+                    setActiveConversation(null);
+                    setActiveConversationId(null);
+                }
             }
         } catch (err) {
             console.warn("Failed to load conversations:", err);
@@ -338,7 +351,13 @@ export default function App() {
                 onRenameConversation={handleRenameConversation}
                 onOpenSettings={() => setIsSettingsOpen(true)}
                 onOpenTools={() => setIsToolsOpen(true)}
+                onOpenNotes={() => setIsNotesOpen(true)}
                 onOpenDeepResearch={() => setActiveSection("research")}
+                onOpenArtifacts={() => {
+                    setActiveSection("chat");
+                    setIsArtifactOpen((prev) => !prev);
+                }}
+                isArtifactOpen={isArtifactOpen}
                 activeSection={activeSection}
                 isResearchOngoing={isResearchOngoing}
                 theme={theme}
@@ -372,6 +391,15 @@ export default function App() {
                         onRefreshConversations={() =>
                             refreshConversations(activeModel)
                         }
+                        onSelectConversation={selectConversation}
+                        onConversationUpdated={(updatedConv) => {
+                            setActiveConversation(updatedConv);
+                            refreshConversations(activeModel);
+                        }}
+                        isArtifactOpen={isArtifactOpen}
+                        onToggleArtifact={setIsArtifactOpen}
+                        activeArtifactPath={activeArtifactPath}
+                        onSelectArtifactPath={setActiveArtifactPath}
                     />
                 )}
             </main>
@@ -392,6 +420,17 @@ export default function App() {
             <ToolsPanel
                 isOpen={isToolsOpen}
                 onClose={() => setIsToolsOpen(false)}
+            />
+
+            {/* AI Notes & Tasks Modal (workspace/NOTES.md) */}
+            <NotesModal
+                isOpen={isNotesOpen}
+                onClose={() => setIsNotesOpen(false)}
+                onOpenInArtifactPanel={(path) => {
+                    setActiveSection("chat");
+                    setActiveArtifactPath(path || "NOTES.md");
+                    setIsArtifactOpen(true);
+                }}
             />
         </div>
     );

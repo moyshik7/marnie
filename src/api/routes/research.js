@@ -222,7 +222,7 @@ router.post('/:id/cancel', (req, res) => {
 
 /**
  * DELETE /api/research
- * Clear all research runs.
+ * Clear all research runs and disk reports.
  */
 router.delete('/', (_req, res) => {
   try {
@@ -231,6 +231,15 @@ router.delete('/', (_req, res) => {
       engine.cancelResearch(r.id);
     }
     db.prepare('DELETE FROM deep_researches').run();
+
+    // Also remove markdown files from workspace/research/
+    try {
+      const diskReports = reportStorage.listReports();
+      for (const rep of diskReports) {
+        if (rep.slug) reportStorage.deleteReport(rep.slug);
+      }
+    } catch {}
+
     res.json({ cleared: true, count: all.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -239,13 +248,39 @@ router.delete('/', (_req, res) => {
 
 /**
  * DELETE /api/research/:id
- * Delete a research record.
+ * Delete a research record (handles both DB records and file-backed reports).
  */
 router.delete('/:id', (req, res) => {
   try {
-    engine.cancelResearch(req.params.id);
-    db.prepare('DELETE FROM deep_researches WHERE id = ?').run(req.params.id);
-    res.json({ deleted: req.params.id });
+    const targetId = req.params.id;
+
+    // Handle file-backed reports (id: "file-<slug>")
+    if (targetId.startsWith('file-')) {
+      const slug = targetId.slice(5);
+      reportStorage.deleteReport(slug);
+      return res.json({ deleted: targetId, slug });
+    }
+
+    // Lookup record in DB to find associated report slug before deleting
+    let associatedSlug = null;
+    try {
+      const existing = engine.getResearch(targetId);
+      if (existing) {
+        associatedSlug = existing.slug || (existing.error && existing.error.endsWith('.md') ? existing.error : null);
+      }
+    } catch {}
+
+    engine.cancelResearch(targetId);
+    db.prepare('DELETE FROM deep_researches WHERE id = ?').run(targetId);
+
+    // Also remove markdown report file from workspace/research if it exists
+    if (associatedSlug) {
+      try {
+        reportStorage.deleteReport(associatedSlug);
+      } catch {}
+    }
+
+    res.json({ deleted: targetId, slug: associatedSlug });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

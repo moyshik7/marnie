@@ -1,7 +1,7 @@
 {
     "name": "marnie",
-    "version": "0.3.3",
-    "description": "A self-hosted AI workspace but made in nodejs with features according to my own preference",
+    "version": "0.4.7",
+    "description": "The local AI workspace with built-in tools. Run deep research, scrape websites, interact with local files, and trigger webhooks with zero extra microservices required.",
     "main": "src/main.js",
     "scripts": {
         "start": "npm run build && node src/main.js",

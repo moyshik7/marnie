@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { v4: uuidv4 } = require('uuid');
+const { WORKSPACE_DIR } = require('../../utils/workspace');
 
 /**
  * Execute a JavaScript code snippet in a fresh child Node.js process.
@@ -25,6 +26,7 @@ function runJS({ code, timeout = 15_000, env = {} }) {
     let stderr = '';
 
     const child = spawn(process.execPath, [tmpFile], {
+      cwd: WORKSPACE_DIR,
       env: { ...process.env, ...env },
       timeout,
     });

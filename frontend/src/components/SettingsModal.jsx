@@ -9,6 +9,9 @@ import {
     RefreshCw,
     BotIcon,
     Globe,
+    Brain,
+    Edit3,
+    FileText,
 } from "lucide-react";
 import {
     getSettings,
@@ -18,6 +21,9 @@ import {
     getCustomApiBase,
     setCustomApiBase,
     listModels,
+    getBrainMemory,
+    saveBrainMemory,
+    consolidateBrainMemory,
 } from "../services/api";
 
 export default function SettingsModal({
@@ -42,6 +48,13 @@ export default function SettingsModal({
     const [agentModeEnabled, setAgentModeEnabled] = useState(true);
     const [systemPrompt, setSystemPrompt] = useState("");
     const [apiBaseUrl, setApiBaseUrl] = useState("");
+    const [brainEnabled, setBrainEnabled] = useState(true);
+    const [brainContent, setBrainContent] = useState("");
+    const [brainLastUpdated, setBrainLastUpdated] = useState(null);
+    const [brainConsolidating, setBrainConsolidating] = useState(false);
+    const [brainConsolidateMsg, setBrainConsolidateMsg] = useState(null);
+    const [brainEditing, setBrainEditing] = useState(false);
+    const [savingBrain, setSavingBrain] = useState(false);
 
     // Test states
     const [ollamaTesting, setOllamaTesting] = useState(false);
@@ -70,15 +83,70 @@ export default function SettingsModal({
                 setDeepResearchEnabled(s.deep_research_enabled === "true");
             if (s.agent_mode_enabled)
                 setAgentModeEnabled(s.agent_mode_enabled === "true");
+            if (s.brain_enabled !== undefined)
+                setBrainEnabled(s.brain_enabled !== "false");
             if (s.system_prompt) setSystemPrompt(s.system_prompt);
 
             // fetch models
             const models = await listModels();
             if (models.length) setAvailableModels(models);
+
+            // fetch persistent brain memory
+            try {
+                const b = await getBrainMemory();
+                if (b) {
+                    setBrainContent(b.content || "");
+                    setBrainLastUpdated(b.lastUpdated || null);
+                    if (b.enabled !== undefined) setBrainEnabled(b.enabled);
+                }
+            } catch (bErr) {
+                console.warn("Failed to fetch brain memory:", bErr.message);
+            }
         } catch (err) {
             console.warn("Failed to fetch settings:", err.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleConsolidateBrain = async () => {
+        setBrainConsolidating(true);
+        setBrainConsolidateMsg(null);
+        try {
+            const res = await consolidateBrainMemory(null, defaultModel);
+            if (res.updated) {
+                setBrainContent(res.content);
+                setBrainLastUpdated(new Date().toISOString());
+                setBrainConsolidateMsg({
+                    ok: true,
+                    message: "Brain memory successfully consolidated and saved to workspace/BRAIN.md!",
+                });
+            } else {
+                setBrainConsolidateMsg({
+                    ok: false,
+                    message: res.error || "Memory consolidation did not make changes.",
+                });
+            }
+        } catch (err) {
+            setBrainConsolidateMsg({
+                ok: false,
+                message: err.message || "Failed to consolidate memory",
+            });
+        } finally {
+            setBrainConsolidating(false);
+        }
+    };
+
+    const handleSaveBrainDirect = async () => {
+        setSavingBrain(true);
+        try {
+            await saveBrainMemory(brainContent);
+            setBrainEditing(false);
+            setBrainLastUpdated(new Date().toISOString());
+        } catch (err) {
+            alert("Failed to save BRAIN.md: " + err.message);
+        } finally {
+            setSavingBrain(false);
         }
     };
 
@@ -139,6 +207,7 @@ export default function SettingsModal({
                 search_provider: searchProvider,
                 deep_research_enabled: String(deepResearchEnabled),
                 agent_mode_enabled: String(agentModeEnabled),
+                brain_enabled: String(brainEnabled),
                 system_prompt: systemPrompt,
             });
 
@@ -1057,7 +1126,7 @@ export default function SettingsModal({
                         </div>
                     )}
 
-                    {/* TAB 4: STORAGE */}
+                    {/* TAB 4: STORAGE / MEMORY */}
                     {activeTab === "storage" && (
                         <div
                             style={{
@@ -1066,6 +1135,255 @@ export default function SettingsModal({
                                 gap: "1.25rem",
                             }}
                         >
+                            {/* Brain Persistent Memory Card */}
+                            <div
+                                style={{
+                                    padding: "1.25rem",
+                                    backgroundColor: "var(--bg-secondary)",
+                                    borderRadius: "var(--radius-sm)",
+                                    border: "1px solid var(--border-subtle)",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "0.85rem",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "0.6rem",
+                                        }}
+                                    >
+                                        <Brain
+                                            size={20}
+                                            color="var(--accent-terracotta)"
+                                        />
+                                        <div>
+                                            <div
+                                                style={{
+                                                    fontSize: "0.95rem",
+                                                    fontWeight: 600,
+                                                    color: "var(--text-primary)",
+                                                }}
+                                            >
+                                                Brain (Persistent User Memory)
+                                            </div>
+                                            <div
+                                                style={{
+                                                    fontSize: "0.78rem",
+                                                    color: "var(--text-muted)",
+                                                }}
+                                            >
+                                                Stored in <code>workspace/BRAIN.md</code> &middot; Auto-consolidated every 5 messages
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Toggle Switch */}
+                                    <label
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            cursor: "pointer",
+                                            position: "relative",
+                                        }}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={brainEnabled}
+                                            onChange={(e) => setBrainEnabled(e.target.checked)}
+                                            style={{ display: "none" }}
+                                        />
+                                        <div
+                                            style={{
+                                                width: "38px",
+                                                height: "20px",
+                                                backgroundColor: brainEnabled
+                                                    ? "var(--accent-terracotta)"
+                                                    : "var(--border-strong)",
+                                                borderRadius: "10px",
+                                                position: "relative",
+                                                transition: "background-color 0.2s ease",
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    width: "16px",
+                                                    height: "16px",
+                                                    backgroundColor: "#FFFFFF",
+                                                    borderRadius: "50%",
+                                                    position: "absolute",
+                                                    top: "2px",
+                                                    left: brainEnabled ? "20px" : "2px",
+                                                    transition: "left 0.2s ease",
+                                                    boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
+                                                }}
+                                            />
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <div
+                                    style={{
+                                        fontSize: "0.84rem",
+                                        color: "var(--text-secondary)",
+                                        lineHeight: 1.6,
+                                    }}
+                                >
+                                    Marnie learns and remembers your preferences, project context, and instructions over time.
+                                    After every 5 conversation messages, a background LLM call automatically synthesizes your
+                                    current memory with recent interactions. This context is injected into all chat and agentic workflows.
+                                </div>
+
+                                {brainLastUpdated && (
+                                    <div
+                                        style={{
+                                            fontSize: "0.76rem",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    >
+                                        Last consolidated: {new Date(brainLastUpdated).toLocaleString()}
+                                    </div>
+                                )}
+
+                                {/* Action Buttons */}
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "0.6rem",
+                                        marginTop: "0.25rem",
+                                    }}
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={handleConsolidateBrain}
+                                        disabled={brainConsolidating || !brainEnabled}
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "0.4rem",
+                                            padding: "0.45rem 0.85rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: "var(--bg-card)",
+                                            border: "1px solid var(--border-strong)",
+                                            color: "var(--text-primary)",
+                                            fontSize: "0.82rem",
+                                            fontWeight: 500,
+                                            cursor: brainConsolidating || !brainEnabled ? "not-allowed" : "pointer",
+                                            opacity: brainConsolidating || !brainEnabled ? 0.6 : 1,
+                                            transition: "all 0.15s ease",
+                                        }}
+                                    >
+                                        <RefreshCw
+                                            size={13}
+                                            style={{
+                                                animation: brainConsolidating ? "spin 1s linear infinite" : "none",
+                                            }}
+                                        />
+                                        <span>{brainConsolidating ? "Consolidating..." : "Consolidate Memory Now"}</span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setBrainEditing(!brainEditing)}
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "0.4rem",
+                                            padding: "0.45rem 0.85rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: brainEditing ? "var(--bg-secondary)" : "var(--bg-card)",
+                                            border: "1px solid var(--border-strong)",
+                                            color: brainEditing ? "var(--accent-terracotta)" : "var(--text-primary)",
+                                            fontSize: "0.82rem",
+                                            fontWeight: 500,
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        <Edit3 size={13} />
+                                        <span>{brainEditing ? "Hide Editor" : "View / Edit Memory"}</span>
+                                    </button>
+                                </div>
+
+                                {brainConsolidateMsg && (
+                                    <div
+                                        style={{
+                                            padding: "0.6rem 0.85rem",
+                                            borderRadius: "4px",
+                                            fontSize: "0.8rem",
+                                            backgroundColor: brainConsolidateMsg.ok
+                                                ? "rgba(34, 197, 94, 0.1)"
+                                                : "rgba(239, 68, 68, 0.1)",
+                                            border: `1px solid ${brainConsolidateMsg.ok ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.3)"}`,
+                                            color: brainConsolidateMsg.ok ? "#16a34a" : "#dc2626",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "0.4rem",
+                                        }}
+                                    >
+                                        {brainConsolidateMsg.ok ? <Check size={14} /> : <AlertCircle size={14} />}
+                                        <span>{brainConsolidateMsg.message}</span>
+                                    </div>
+                                )}
+
+                                {/* Expandable BRAIN.md Editor */}
+                                {brainEditing && (
+                                    <div
+                                        style={{
+                                            marginTop: "0.5rem",
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            gap: "0.5rem",
+                                        }}
+                                    >
+                                        <textarea
+                                            value={brainContent}
+                                            onChange={(e) => setBrainContent(e.target.value)}
+                                            rows={10}
+                                            placeholder="Persistent memory Markdown..."
+                                            style={{
+                                                width: "100%",
+                                                fontFamily: "var(--font-mono)",
+                                                fontSize: "0.82rem",
+                                                lineHeight: 1.5,
+                                                padding: "0.75rem",
+                                                borderRadius: "4px",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-card)",
+                                                color: "var(--text-primary)",
+                                                resize: "vertical",
+                                            }}
+                                        />
+                                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+                                            <button
+                                                type="button"
+                                                onClick={handleSaveBrainDirect}
+                                                disabled={savingBrain}
+                                                style={{
+                                                    padding: "0.45rem 1rem",
+                                                    borderRadius: "var(--radius-sm)",
+                                                    backgroundColor: "var(--accent-terracotta)",
+                                                    color: "#FFFFFF",
+                                                    border: "none",
+                                                    fontSize: "0.82rem",
+                                                    fontWeight: 500,
+                                                    cursor: savingBrain ? "not-allowed" : "pointer",
+                                                }}
+                                            >
+                                                {savingBrain ? "Saving..." : "Save BRAIN.md"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                             <div
                                 style={{
                                     padding: "1.1rem",

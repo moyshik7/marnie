@@ -80,6 +80,19 @@ export async function deleteConversation(id) {
   });
 }
 
+export async function forkConversation(id, { upToMessageId, title } = {}) {
+  return request(`/chat/conversations/${id}/fork`, {
+    method: 'POST',
+    body: JSON.stringify({ upToMessageId, title }),
+  });
+}
+
+export async function compactConversation(id) {
+  return request(`/chat/conversations/${id}/compact`, {
+    method: 'POST',
+  });
+}
+
 // ── Models ──────────────────────────────────────────────────
 export async function listModels() {
   try {
@@ -335,5 +348,85 @@ export async function getReportBySlug(slug) {
 
 export async function deleteMarkdownReport(slug) {
   return request(`/research/reports/${encodeURIComponent(slug)}`, { method: 'DELETE' });
+}
+
+// ── Workspace Files (Claude-like Artifacts & Browser Preview) ───
+export async function listWorkspaceFiles() {
+  return request('/workspace/files');
+}
+
+export async function getWorkspaceFile(filePath) {
+  return request(`/workspace/file?path=${encodeURIComponent(filePath)}`);
+}
+
+export async function saveWorkspaceFile(filePath, content) {
+  return request('/workspace/file', {
+    method: 'PUT',
+    body: JSON.stringify({ path: filePath, content }),
+  });
+}
+
+export async function createWorkspaceFile(filePath, content = '') {
+  return request('/workspace/file', {
+    method: 'POST',
+    body: JSON.stringify({ path: filePath, content, overwrite: true }),
+  });
+}
+
+export async function deleteWorkspaceFile(filePath) {
+  return request(`/workspace/file?path=${encodeURIComponent(filePath)}`, {
+    method: 'DELETE',
+  });
+}
+
+export function getWorkspaceRawUrl(filePath) {
+  const base = getApiBase();
+  const cleanPath = filePath.replace(/^[/\\]+/, '');
+  return `${base}/workspace/raw/${cleanPath}`;
+}
+
+// ── Brain Memory (Persistent Memory in workspace/BRAIN.md) ──────
+export async function getBrainMemory() {
+  return request('/brain');
+}
+
+export async function saveBrainMemory(content) {
+  return request('/brain', {
+    method: 'PUT',
+    body: JSON.stringify({ content }),
+  });
+}
+
+export async function consolidateBrainMemory(conversationId, model) {
+  return request('/brain/consolidate', {
+    method: 'POST',
+    body: JSON.stringify({ conversationId, model }),
+  });
+}
+
+export async function updateBrainSettings(enabled) {
+  return request('/brain/settings', {
+    method: 'PATCH',
+    body: JSON.stringify({ enabled }),
+  });
+}
+
+// ── Notes (Persistent AI Notes in workspace/NOTES.md) ─────────
+export async function getNotes() {
+  return request('/notes');
+}
+
+export async function saveNotes(content) {
+  return request('/notes', {
+    method: 'PUT',
+    body: JSON.stringify({ content }),
+  });
+}
+
+export async function appendNote(text, section = '') {
+  return request('/notes/append', {
+    method: 'POST',
+    body: JSON.stringify({ text, section }),
+  });
 }
 

@@ -24,11 +24,34 @@ import {
     HelpCircle,
     BotMessageSquare,
     ArrowUp,
+    ExternalLink,
+    FileCode,
+    FileText,
+    Eye,
+    Folder,
+    Slash,
+    GitFork,
+    Type,
+    Minimize2,
+    Palette,
+    Sparkles,
+    MessageSquarePlus,
 } from "lucide-react";
 import katex from "katex";
 import mermaid from "mermaid";
-import { sendMessageStream, getSettings } from "../services/api";
+import {
+    sendMessageStream,
+    getSettings,
+    getWorkspaceFile,
+    getWorkspaceRawUrl,
+    listWorkspaceFiles,
+    forkConversation,
+    compactConversation,
+    renameConversation,
+    createConversation,
+} from "../services/api";
 import ThemeToggle from "./ThemeToggle";
+import ArtifactPanel from "./ArtifactPanel";
 
 // Initialize mermaid once
 try {
@@ -187,36 +210,236 @@ function MermaidBlock({ chart }) {
 
 function parseMessageContent(rawContent) {
     if (!rawContent || typeof rawContent !== "string")
-        return { thinking: "", answer: "", toolOutputs: [] };
+        return { thinking: "", answer: "", toolOutputs: [], artifacts: [] };
 
     let content = rawContent;
     let thinking = "";
 
-    const thinkMatch = content.match(/^<think>([\s\S]*?)<\/think>\s*/i);
+    // 1. Match closed <think>...</think> anywhere in content
+    const thinkMatch = content.match(/<think>([\s\S]*?)<\/think>\s*/i);
     if (thinkMatch) {
         thinking = thinkMatch[1].trim();
-        content = content.slice(thinkMatch[0].length);
+        content = content.replace(thinkMatch[0], "").trim();
+    } else {
+        // Handle unclosed <think> tag (e.g. during live streaming)
+        const unclosedMatch = content.match(/<think>([\s\S]*)$/i);
+        if (unclosedMatch) {
+            thinking = unclosedMatch[1].trim();
+            content = content.replace(unclosedMatch[0], "").trim();
+        }
     }
 
+    // 2. Parse file artifact markers
+    const artifacts = [];
+    const artifactRegex = /<!-- file-artifact:([\s\S]*?) -->/gi;
+    let aMatch;
+    while ((aMatch = artifactRegex.exec(content)) !== null) {
+        try {
+            const parsed = JSON.parse(aMatch[1]);
+            if (parsed.path && !artifacts.some((a) => a.path === parsed.path)) {
+                artifacts.push(parsed);
+            }
+        } catch {}
+    }
+    content = content.replace(/<!-- file-artifact:[\s\S]*? -->/gi, "");
+
+    // 3. Parse tool outputs
     const toolOutputs = [];
     const toolOutputRegex = /<!-- tool-output:?(\w*) -->([\s\S]*?)<!-- \/tool-output -->/gi;
     let match;
     while ((match = toolOutputRegex.exec(content)) !== null) {
+        const tName = match[1] || "tool";
         toolOutputs.push({
-            toolName: match[1] || "tool",
+            toolName: tName,
             output: match[2].trim(),
         });
     }
 
-    const cleanAnswer = content
+    let cleanAnswer = content
         .replace(/<!-- tool-output:?(\w*) -->[\s\S]*?<!-- \/tool-output -->/gi, "")
         .trim();
+
+    // 4. CRITICAL RECOVERY: If cleanAnswer is completely empty but thinking has content,
+    // the model generated its response inside the thinking tokens (or finished during deliberation).
+    // Promote thinking to be the cleanAnswer so the response is NEVER left blank!
+    if (!cleanAnswer && thinking) {
+        cleanAnswer = thinking;
+        thinking = "";
+    }
 
     return {
         thinking,
         answer: cleanAnswer,
         toolOutputs,
+        artifacts,
     };
+}
+
+function ArtifactCard({ artifact, onOpenArtifact }) {
+    const [copied, setCopied] = useState(false);
+    const fileName = artifact.name || artifact.path.split("/").pop() || "file";
+    const ext = fileName.slice(fileName.lastIndexOf(".")).toLowerCase();
+    const isHtml = ext === ".html" || ext === ".htm";
+    const isSvg = ext === ".svg";
+    const isActionCreated = artifact.action === "created";
+
+    const handleCopy = async (e) => {
+        e.stopPropagation();
+        try {
+            const data = await getWorkspaceFile(artifact.path);
+            if (data && data.content !== undefined) {
+                navigator.clipboard.writeText(data.content);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            }
+        } catch (err) {
+            console.warn("Failed to copy artifact content:", err);
+        }
+    };
+
+    const handleOpenBrowser = (e) => {
+        e.stopPropagation();
+        const rawUrl = getWorkspaceRawUrl(artifact.path);
+        window.open(rawUrl, "_blank");
+    };
+
+    return (
+        <div
+            onClick={() => onOpenArtifact(artifact.path)}
+            title="Click to open in-app editor and preview panel"
+            style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0.65rem 0.9rem",
+                margin: "0.6rem 0",
+                borderRadius: "var(--radius-sm)",
+                backgroundColor: "var(--bg-secondary)",
+                border: "1px solid var(--border-subtle)",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-strong)";
+                e.currentTarget.style.backgroundColor = "var(--bg-card-hover)";
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-subtle)";
+                e.currentTarget.style.backgroundColor = "var(--bg-secondary)";
+            }}
+        >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.65rem", minWidth: 0 }}>
+                <div
+                    style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "6px",
+                        backgroundColor: isHtml ? "rgba(234, 88, 12, 0.12)" : "rgba(59, 130, 246, 0.12)",
+                        color: isHtml ? "#ea580c" : "#3b82f6",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                    }}
+                >
+                    {isHtml || isSvg ? <FileCode size={16} /> : <FileText size={16} />}
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                        <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--text-primary)" }}>
+                            {fileName}
+                        </span>
+                        <span
+                            style={{
+                                fontSize: "0.66rem",
+                                fontWeight: 500,
+                                padding: "0.08rem 0.35rem",
+                                borderRadius: "4px",
+                                backgroundColor: isActionCreated ? "rgba(22, 163, 74, 0.12)" : "rgba(217, 119, 6, 0.12)",
+                                color: isActionCreated ? "#16a34a" : "var(--accent-terracotta)",
+                                textTransform: "capitalize",
+                            }}
+                        >
+                            {isActionCreated ? "Created" : "Edited"}
+                        </span>
+                    </div>
+                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "1px" }}>
+                        workspace/{artifact.path} • Click to open preview & editor
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                {/* Copy code button */}
+                <button
+                    onClick={handleCopy}
+                    title="Copy file code to clipboard"
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.2rem",
+                        padding: "0.28rem 0.5rem",
+                        borderRadius: "4px",
+                        border: "1px solid var(--border-subtle)",
+                        backgroundColor: "var(--bg-card)",
+                        color: "var(--text-secondary)",
+                        fontSize: "0.72rem",
+                        cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
+                >
+                    {copied ? <Check size={12} color="#16a34a" /> : <Copy size={12} />}
+                    <span>{copied ? "Copied" : "Copy"}</span>
+                </button>
+
+                {/* Open directly in browser */}
+                <button
+                    onClick={handleOpenBrowser}
+                    title="Open directly in browser tab"
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.2rem",
+                        padding: "0.28rem 0.5rem",
+                        borderRadius: "4px",
+                        border: "1px solid var(--border-subtle)",
+                        backgroundColor: "var(--bg-card)",
+                        color: "var(--text-secondary)",
+                        fontSize: "0.72rem",
+                        cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
+                >
+                    <ExternalLink size={12} />
+                    <span>Browser</span>
+                </button>
+
+                {/* Open preview / edit panel */}
+                <button
+                    onClick={() => onOpenArtifact(artifact.path)}
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.25rem",
+                        padding: "0.28rem 0.6rem",
+                        borderRadius: "4px",
+                        border: "none",
+                        backgroundColor: "var(--accent-terracotta)",
+                        color: "#ffffff",
+                        fontSize: "0.74rem",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                    }}
+                >
+                    <Eye size={12} />
+                    <span>Open Panel</span>
+                </button>
+            </div>
+        </div>
+    );
 }
 
 function CollapsibleToolOutput({ toolName, output, defaultExpanded = false }) {
@@ -313,7 +536,7 @@ function CollapsibleToolOutput({ toolName, output, defaultExpanded = false }) {
     );
 }
 
-function ThinkingBox({ thinking, isStreaming = false, defaultExpanded = true }) {
+function ThinkingBox({ thinking, isStreaming = false, defaultExpanded = false }) {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
     if (!thinking) return null;
@@ -417,6 +640,96 @@ function ThinkingBox({ thinking, isStreaming = false, defaultExpanded = true }) 
     );
 }
 
+const SLASH_COMMANDS = [
+    {
+        name: "/elim5",
+        label: "/elim5",
+        args: "[question]",
+        description: "Explain like I'm five years old (simplified explanations)",
+        icon: Sparkles,
+        color: "#f59e0b",
+        execute: "prompt",
+    },
+    {
+        name: "/btw",
+        label: "/btw",
+        args: "<question>",
+        description: "Ask a side question without breaking or altering conversation context",
+        icon: MessageSquarePlus,
+        color: "#3b82f6",
+        execute: "side_question",
+    },
+    {
+        name: "/fork",
+        label: "/fork",
+        args: "[new-title]",
+        description: "Branches the current conversation into a new independent thread",
+        icon: GitFork,
+        color: "#8b5cf6",
+        execute: "action",
+    },
+    {
+        name: "/title",
+        label: "/title",
+        args: "<new-title>",
+        description: "Sets or updates the active window/conversation title",
+        icon: Type,
+        color: "#10b981",
+        execute: "action",
+    },
+    {
+        name: "/compact",
+        label: "/compact",
+        args: "",
+        description: "Summarizes the conversation so far to free up the context window while preserving critical history",
+        icon: Minimize2,
+        color: "#ec4899",
+        execute: "action",
+    },
+    {
+        name: "/output-style",
+        label: "/output-style",
+        args: "<standard|concise|bullet-points|technical|creative>",
+        description: "Customizes how text responses are rendered",
+        icon: Palette,
+        color: "#6366f1",
+        execute: "style_modal",
+    },
+];
+
+const OUTPUT_STYLES = [
+    {
+        id: "standard",
+        name: "Standard",
+        desc: "Default balanced response style with comprehensive explanations",
+        system: "",
+    },
+    {
+        id: "concise",
+        name: "Concise",
+        desc: "Ultra-brief, direct answers without unnecessary filler or preamble",
+        system: "Please provide ultra-concise, direct answers. Avoid filler, greetings, or unnecessary preamble.",
+    },
+    {
+        id: "bullet-points",
+        name: "Bullet Points",
+        desc: "Structured bullet points, key takeaways, and checklists",
+        system: "Format responses strictly using structured bullet points, checklists, and key takeaways.",
+    },
+    {
+        id: "technical",
+        name: "Technical Deep-Dive",
+        desc: "In-depth technical architecture, source code snippets, and trade-offs",
+        system: "Adopt a senior software engineering technical tone. Provide in-depth explanations, performance implications, architectural trade-offs, and complete code snippets.",
+    },
+    {
+        id: "creative",
+        name: "Creative & Engaging",
+        desc: "Engaging, conversational tone with storytelling and vivid analogies",
+        system: "Adopt an engaging, vivid, and conversational tone with illustrative analogies and expressive descriptions.",
+    },
+];
+
 export default function ChatView({
     conversation,
     activeModel,
@@ -427,6 +740,12 @@ export default function ChatView({
     onOpenTools,
     onOpenSettings,
     onRefreshConversations,
+    isArtifactOpen = false,
+    onToggleArtifact,
+    activeArtifactPath = "",
+    onSelectArtifactPath,
+    onSelectConversation,
+    onConversationUpdated,
 }) {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
@@ -434,6 +753,27 @@ export default function ChatView({
     const [streamingContent, setStreamingContent] = useState("");
     const [streamingThinking, setStreamingThinking] = useState("");
     const [copiedIndex, setCopiedIndex] = useState(null);
+
+    // Artifact state
+    const [internalArtifactOpen, setInternalArtifactOpen] = useState(false);
+    const [internalArtifactPath, setInternalArtifactPath] = useState("");
+
+    const artifactOpen = onToggleArtifact !== undefined ? isArtifactOpen : internalArtifactOpen;
+    const currentArtifactPath = onSelectArtifactPath !== undefined ? activeArtifactPath : internalArtifactPath;
+
+    const handleOpenArtifact = (path) => {
+        const targetPath = path || currentArtifactPath || "";
+        if (onSelectArtifactPath) onSelectArtifactPath(targetPath);
+        else setInternalArtifactPath(targetPath);
+
+        if (onToggleArtifact) onToggleArtifact(true);
+        else setInternalArtifactOpen(true);
+    };
+
+    const handleCloseArtifact = () => {
+        if (onToggleArtifact) onToggleArtifact(false);
+        else setInternalArtifactOpen(false);
+    };
 
     // Feature toggles
     const [webSearchActive, setWebSearchActive] = useState(false);
@@ -450,6 +790,16 @@ export default function ChatView({
     const [isListening, setIsListening] = useState(false);
     const [speechModalInfo, setSpeechModalInfo] = useState(null);
     const [copiedSetting, setCopiedSetting] = useState(false);
+
+    // Slash command & Output style state
+    const [slashSelectedIndex, setSlashSelectedIndex] = useState(0);
+    const [outputStyle, setOutputStyle] = useState(() => {
+        return localStorage.getItem("marnie_output_style") || "standard";
+    });
+    const [isStyleModalOpen, setIsStyleModalOpen] = useState(false);
+    const [sideQuestionQuery, setSideQuestionQuery] = useState(null); // when running /btw
+    const [isCompacting, setIsCompacting] = useState(false);
+    const [isForking, setIsForking] = useState(false);
 
     // Load search provider from settings
     useEffect(() => {
@@ -635,13 +985,113 @@ export default function ChatView({
         scrollToBottom();
     }, [messages, streamingContent]);
 
-    const handleSend = async (customPrompt) => {
+    const ensureConversation = async () => {
+        if (conversation?.id) return conversation;
+        const modelToUse =
+            activeModel ||
+            (availableModels.length > 0 ? availableModels[0] : "llama3.2");
+        const newConv = await createConversation("New conversation", modelToUse);
+        if (onSelectConversation) {
+            onSelectConversation(newConv.id, newConv);
+        }
+        if (onRefreshConversations) {
+            onRefreshConversations();
+        }
+        return newConv;
+    };
+
+    const handleSend = async (customPrompt, extraSystem = "", targetConversation = null) => {
         const textToSend = (
             typeof customPrompt === "string" ? customPrompt : input
         ).trim();
         if (!textToSend || isStreaming) return;
 
-        if (!conversation?.id) return;
+        let activeConv = targetConversation || conversation;
+        if (!activeConv?.id) {
+            try {
+                activeConv = await ensureConversation();
+            } catch (err) {
+                console.error("Failed to initialize conversation:", err);
+                return;
+            }
+        }
+        if (!activeConv?.id) return;
+
+        // Check if message starts with a slash command (slash commands can only be used at the beginning)
+        if (textToSend.startsWith("/")) {
+            const spaceIdx = textToSend.indexOf(" ");
+            const cmdName = (spaceIdx !== -1 ? textToSend.slice(0, spaceIdx) : textToSend).toLowerCase();
+            const cmdArg = (spaceIdx !== -1 ? textToSend.slice(spaceIdx + 1) : "").trim();
+
+            if (cmdName === "/elim5") {
+                const elim5Instruction = "Explain like I am five years old, make things easier to understand, avoid jargon, use simple everyday analogies, and break down complex concepts into bite-sized, playful explanations.";
+                const question = cmdArg;
+                if (!question) {
+                    setInput("/elim5 ");
+                    return;
+                }
+                setInput("");
+                await handleSend(question, elim5Instruction, activeConv);
+                return;
+            }
+
+            if (cmdName === "/btw") {
+                if (!cmdArg) {
+                    setInput("/btw ");
+                    return;
+                }
+                setInput("");
+                await handleSideQuestion(cmdArg, activeConv);
+                return;
+            }
+
+            if (cmdName === "/fork") {
+                setInput("");
+                await handleForkConversation(cmdArg, activeConv);
+                return;
+            }
+
+            if (cmdName === "/title") {
+                if (!cmdArg) {
+                    setInput("/title ");
+                    return;
+                }
+                setInput("");
+                await handleSetTitle(cmdArg, activeConv);
+                return;
+            }
+
+            if (cmdName === "/compact") {
+                setInput("");
+                await handleCompactConversation(activeConv);
+                return;
+            }
+
+            if (cmdName === "/output-style") {
+                setInput("");
+                if (cmdArg) {
+                    const matchedStyle = OUTPUT_STYLES.find(
+                        (s) => s.id === cmdArg.toLowerCase() || s.name.toLowerCase() === cmdArg.toLowerCase()
+                    );
+                    if (matchedStyle) {
+                        setOutputStyle(matchedStyle.id);
+                        localStorage.setItem("marnie_output_style", matchedStyle.id);
+                        setMessages((prev) => [
+                            ...prev,
+                            {
+                                id: `style-update-${Date.now()}`,
+                                role: "assistant",
+                                content: `**Output Style Updated:** Response style set to **${matchedStyle.name}**.\n\n*${matchedStyle.desc}*`,
+                                created_at: Math.floor(Date.now() / 1000),
+                            },
+                        ]);
+                        return;
+                    }
+                }
+                setIsStyleModalOpen(true);
+                return;
+            }
+        }
 
         // Optimistically add user message
         const userMsg = {
@@ -657,7 +1107,7 @@ export default function ChatView({
         setStreamingContent("");
         setStreamingThinking("");
 
-        // Prepare system instructions incorporating mode flags
+        // Prepare system instructions incorporating mode flags, active output-style, and custom instructions
         let augmentedSystem = "";
         if (webSearchActive) {
             const providerLabel = searchProvider === "searxng" ? "SearXNG" : "DuckDuckGo";
@@ -669,12 +1119,22 @@ export default function ChatView({
                 "\n[Mode: Agent Mode enabled - identify goals, break down sub-tasks, execute tools, and formulate complete answers. For web searches, keep queries short (2 to 5 words), and always synthesize search results to answer the user.]";
         }
 
+        // Apply selected output-style if set
+        const activeStyleObj = OUTPUT_STYLES.find((s) => s.id === outputStyle);
+        if (activeStyleObj && activeStyleObj.system) {
+            augmentedSystem += `\n[Output Style Instruction: ${activeStyleObj.system}]`;
+        }
+
+        if (extraSystem) {
+            augmentedSystem += `\n[User Directive: ${extraSystem}]`;
+        }
+
         const abortController = new AbortController();
         abortControllerRef.current = abortController;
 
         try {
             await sendMessageStream({
-                conversationId: conversation.id,
+                conversationId: activeConv.id,
                 message: textToSend,
                 model: activeModel,
                 system: augmentedSystem || undefined,
@@ -687,9 +1147,9 @@ export default function ChatView({
                     setIsStreaming(false);
                     setStreamingContent("");
                     setStreamingThinking("");
-                    const combined = finalThinking
-                        ? `<think>\n${finalThinking.trim()}\n</think>\n\n${finalContent.trim()}`
-                        : finalContent;
+                    const combined = finalContent?.trim()
+                        ? (finalThinking?.trim() ? `<think>\n${finalThinking.trim()}\n</think>\n\n${finalContent.trim()}` : finalContent.trim())
+                        : (finalThinking?.trim() || "");
                     setMessages((prev) => [
                         ...prev,
                         {
@@ -700,6 +1160,12 @@ export default function ChatView({
                         },
                     ]);
                     if (onRefreshConversations) onRefreshConversations();
+
+                    // Auto-open created/edited file in artifact panel
+                    const { artifacts } = parseMessageContent(combined);
+                    if (artifacts && artifacts.length > 0) {
+                        handleOpenArtifact(artifacts[artifacts.length - 1].path);
+                    }
                 },
             });
         } catch (err) {
@@ -722,30 +1188,272 @@ export default function ChatView({
         }
     };
 
+    // Slash command: /btw Ask a side question without altering conversation history
+    const handleSideQuestion = async (question, targetConv = null) => {
+        let activeConv = targetConv || conversation;
+        if (!activeConv?.id) {
+            try {
+                activeConv = await ensureConversation();
+            } catch (err) {
+                console.error("Failed to initialize conversation for /btw:", err);
+                return;
+            }
+        }
+        if (!activeConv?.id || !question.trim()) return;
+
+        const sideId = `side-${Date.now()}`;
+        setMessages((prev) => [
+            ...prev,
+            {
+                id: `user-${sideId}`,
+                role: "user",
+                content: `[Side Question /btw]: ${question}`,
+                created_at: Math.floor(Date.now() / 1000),
+            },
+        ]);
+
+        setIsStreaming(true);
+        setStreamingContent("");
+        setStreamingThinking("");
+
+        // Build brief side prompt referencing conversation context without storing it permanently in DB
+        const recentContext = messages.slice(-6).map(m => `${m.role.toUpperCase()}: ${(m.content || '').slice(0, 300)}`).join("\n\n");
+        const sideSystemPrompt = `You are answering a quick side-question ("/btw") for the user. Here is the background conversation context for reference only:\n\n${recentContext}\n\nProvide a direct, helpful, and concise answer to the side question without altering previous tasks. ZERO EMOJIS POLICY: Absolutely DO NOT use any emojis.`;
+
+        const abortController = new AbortController();
+        abortControllerRef.current = abortController;
+
+        try {
+            await sendMessageStream({
+                conversationId: activeConv.id,
+                message: `[Side Question /btw]: ${question}`,
+                model: activeModel,
+                system: sideSystemPrompt,
+                signal: abortController.signal,
+                onChunk: (_token, fullText, _thinkingToken, fullThinking) => {
+                    setStreamingContent(fullText);
+                    if (fullThinking) setStreamingThinking(fullThinking);
+                },
+                onDone: (finalContent, finalThinking) => {
+                    setIsStreaming(false);
+                    setStreamingContent("");
+                    setStreamingThinking("");
+                    const combined = finalContent?.trim()
+                        ? (finalThinking?.trim() ? `<think>\n${finalThinking.trim()}\n</think>\n\n${finalContent.trim()}` : finalContent.trim())
+                        : (finalThinking?.trim() || "");
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            id: `asst-${sideId}`,
+                            role: "assistant",
+                            content: `**[Side Note /btw Response]**\n\n${combined}`,
+                            created_at: Math.floor(Date.now() / 1000),
+                        },
+                    ]);
+                },
+            });
+        } catch (err) {
+            if (err.name !== "AbortError") {
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: `err-${sideId}`,
+                        role: "assistant",
+                        content: `Error executing /btw: ${err.message}`,
+                        created_at: Math.floor(Date.now() / 1000),
+                    },
+                ]);
+            }
+        } finally {
+            setIsStreaming(false);
+            setStreamingContent("");
+            setStreamingThinking("");
+            abortControllerRef.current = null;
+        }
+    };
+
+    // Slash command: /fork Branches conversation into a new thread
+    const handleForkConversation = async (customTitle, targetConv = null) => {
+        let activeConv = targetConv || conversation;
+        if (!activeConv?.id) {
+            try {
+                activeConv = await ensureConversation();
+            } catch (err) {
+                console.error("Failed to initialize conversation for /fork:", err);
+                return;
+            }
+        }
+        if (!activeConv?.id || isForking) return;
+        setIsForking(true);
+        try {
+            const forkTitle = customTitle || `Fork of ${activeConv.title || 'Conversation'}`;
+            const newConv = await forkConversation(activeConv.id, { title: forkTitle });
+            if (newConv && newConv.id) {
+                if (onRefreshConversations) await onRefreshConversations();
+                if (onSelectConversation) {
+                    onSelectConversation(newConv.id, newConv);
+                }
+            }
+        } catch (err) {
+            alert(`Failed to fork conversation: ${err.message}`);
+        } finally {
+            setIsForking(false);
+        }
+    };
+
+    // Slash command: /title Sets or updates window title
+    const handleSetTitle = async (newTitle, targetConv = null) => {
+        let activeConv = targetConv || conversation;
+        if (!activeConv?.id) {
+            try {
+                activeConv = await ensureConversation();
+            } catch (err) {
+                console.error("Failed to initialize conversation for /title:", err);
+                return;
+            }
+        }
+        if (!activeConv?.id || !newTitle.trim()) return;
+        try {
+            const updated = await renameConversation(activeConv.id, newTitle.trim());
+            if (onConversationUpdated) {
+                onConversationUpdated({ ...activeConv, title: newTitle.trim() });
+            } else if (onRefreshConversations) {
+                onRefreshConversations();
+            }
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: `title-update-${Date.now()}`,
+                    role: "assistant",
+                    content: `**Window Title Updated:** Conversation title changed to **"${newTitle.trim()}"**.`,
+                    created_at: Math.floor(Date.now() / 1000),
+                },
+            ]);
+        } catch (err) {
+            alert(`Failed to rename conversation: ${err.message}`);
+        }
+    };
+
+    // Slash command: /compact Summarizes conversation history
+    const handleCompactConversation = async (targetConv = null) => {
+        let activeConv = targetConv || conversation;
+        if (!activeConv?.id) {
+            try {
+                activeConv = await ensureConversation();
+            } catch (err) {
+                console.error("Failed to initialize conversation for /compact:", err);
+                return;
+            }
+        }
+        if (!activeConv?.id || isCompacting) return;
+        setIsCompacting(true);
+        try {
+            const res = await compactConversation(activeConv.id);
+            if (res?.conversation) {
+                if (onConversationUpdated) {
+                    onConversationUpdated(res.conversation);
+                } else if (onRefreshConversations) {
+                    onRefreshConversations();
+                }
+                if (res.conversation.messages) {
+                    setMessages(res.conversation.messages);
+                }
+            }
+        } catch (err) {
+            alert(`Failed to compact conversation: ${err.message}`);
+        } finally {
+            setIsCompacting(false);
+        }
+    };
+
     const handleStop = () => {
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
             setIsStreaming(false);
             if (streamingContent || streamingThinking) {
-                const combined = streamingThinking
-                    ? `<think>\n${streamingThinking.trim()}\n</think>\n\n${streamingContent.trim()} *(Generation stopped)*`
-                    : streamingContent + " *(Generation stopped)*";
-                setMessages((prev) => [
-                    ...prev,
-                    {
-                        id: `msg-stopped-${Date.now()}`,
-                        role: "assistant",
-                        content: combined,
-                        created_at: Math.floor(Date.now() / 1000),
-                    },
-                ]);
+                let combined = "";
+                if (streamingContent.trim() && streamingThinking.trim()) {
+                    combined = `<think>\n${streamingThinking.trim()}\n</think>\n\n${streamingContent.trim()} *(Generation stopped)*`;
+                } else if (streamingContent.trim()) {
+                    combined = `${streamingContent.trim()} *(Generation stopped)*`;
+                } else if (streamingThinking.trim()) {
+                    combined = `${streamingThinking.trim()} *(Generation stopped)*`;
+                }
+                if (combined) {
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            id: `msg-stopped-${Date.now()}`,
+                            role: "assistant",
+                            content: combined,
+                            created_at: Math.floor(Date.now() / 1000),
+                        },
+                    ]);
+                }
             }
             setStreamingContent("");
             setStreamingThinking("");
         }
     };
 
+    // Filter matching slash commands when typing starts with /
+    const isSlashMenuOpen = input.startsWith("/") && !input.includes(" ");
+    const slashSearchTerm = input.startsWith("/") ? input.slice(1).toLowerCase() : "";
+    const filteredSlashCommands = isSlashMenuOpen
+        ? SLASH_COMMANDS.filter((cmd) => cmd.name.slice(1).toLowerCase().startsWith(slashSearchTerm))
+        : [];
+
+    const handleSelectSlashCommand = (cmd) => {
+        if (cmd.execute === "action" && (cmd.name === "/fork" || cmd.name === "/compact")) {
+            if (cmd.name === "/fork") {
+                setInput("");
+                handleForkConversation();
+                return;
+            }
+            if (cmd.name === "/compact") {
+                setInput("");
+                handleCompactConversation();
+                return;
+            }
+        }
+        if (cmd.name === "/output-style") {
+            setInput("");
+            setIsStyleModalOpen(true);
+            return;
+        }
+        setInput(`${cmd.name} `);
+        if (textareaRef.current) {
+            textareaRef.current.focus();
+        }
+    };
+
     const handleKeyDown = (e) => {
+        if (isSlashMenuOpen && filteredSlashCommands.length > 0) {
+            if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setSlashSelectedIndex((prev) => (prev + 1) % filteredSlashCommands.length);
+                return;
+            }
+            if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setSlashSelectedIndex((prev) => (prev - 1 + filteredSlashCommands.length) % filteredSlashCommands.length);
+                return;
+            }
+            if (e.key === "Enter" || e.key === "Tab") {
+                e.preventDefault();
+                const selectedCmd = filteredSlashCommands[slashSelectedIndex] || filteredSlashCommands[0];
+                if (selectedCmd) {
+                    handleSelectSlashCommand(selectedCmd);
+                    return;
+                }
+            }
+            if (e.key === "Escape") {
+                e.preventDefault();
+                setInput("");
+                return;
+            }
+        }
+
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             handleSend();
@@ -770,17 +1478,19 @@ export default function ChatView({
     };
 
     return (
-        <div
-            style={{
-                flex: 1,
-                height: "100vh",
-                display: "flex",
-                flexDirection: "column",
-                backgroundColor: "var(--bg-primary)",
-                position: "relative",
-                overflow: "hidden",
-            }}
-        >
+        <div style={{ flex: 1, display: "flex", width: "100%", height: "100%", overflow: "hidden" }}>
+            <div
+                style={{
+                    flex: 1,
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    backgroundColor: "var(--bg-primary)",
+                    position: "relative",
+                    overflow: "hidden",
+                    minWidth: 0,
+                }}
+            >
             {/* Top Header Bar */}
             <header
                 style={{
@@ -817,7 +1527,7 @@ export default function ChatView({
                     </span>
                 </div>
 
-                {/* Right side: Theme Switcher & Tools */}
+                {/* Right side: Workspace Files, Theme Switcher & Tools */}
                 <div
                     style={{
                         display: "flex",
@@ -826,6 +1536,144 @@ export default function ChatView({
                         flexShrink: 0,
                     }}
                 >
+                    {/* Workspace Files & Live Preview button */}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (artifactOpen) {
+                                handleCloseArtifact();
+                            } else {
+                                handleOpenArtifact(currentArtifactPath || "");
+                            }
+                        }}
+                        title="Workspace Files & Live Preview"
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.35rem",
+                            padding: "0.35rem 0.65rem",
+                            borderRadius: "6px",
+                            border: "1px solid var(--border-subtle)",
+                            backgroundColor: artifactOpen ? "var(--bg-secondary)" : "transparent",
+                            color: artifactOpen ? "var(--accent-terracotta)" : "var(--text-secondary)",
+                            fontSize: "0.78rem",
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!artifactOpen) {
+                                e.currentTarget.style.color = "var(--text-primary)";
+                                e.currentTarget.style.borderColor = "var(--border-strong)";
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!artifactOpen) {
+                                e.currentTarget.style.color = "var(--text-secondary)";
+                                e.currentTarget.style.borderColor = "var(--border-subtle)";
+                            }
+                        }}
+                    >
+                        <FileCode size={14} />
+                        <span>Workspace Files</span>
+                    </button>
+
+                    {/* Brain Memory (workspace/BRAIN.md) button */}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (artifactOpen && currentArtifactPath === "BRAIN.md") {
+                                handleCloseArtifact();
+                            } else {
+                                handleOpenArtifact("BRAIN.md");
+                            }
+                        }}
+                        title="Brain Memory (workspace/BRAIN.md)"
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.35rem",
+                            padding: "0.35rem 0.65rem",
+                            borderRadius: "6px",
+                            border: "1px solid var(--border-subtle)",
+                            backgroundColor:
+                                artifactOpen && currentArtifactPath === "BRAIN.md"
+                                    ? "var(--bg-secondary)"
+                                    : "transparent",
+                            color:
+                                artifactOpen && currentArtifactPath === "BRAIN.md"
+                                    ? "var(--accent-terracotta)"
+                                    : "var(--text-secondary)",
+                            fontSize: "0.78rem",
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!artifactOpen || currentArtifactPath !== "BRAIN.md") {
+                                e.currentTarget.style.color = "var(--text-primary)";
+                                e.currentTarget.style.borderColor = "var(--border-strong)";
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!artifactOpen || currentArtifactPath !== "BRAIN.md") {
+                                e.currentTarget.style.color = "var(--text-secondary)";
+                                e.currentTarget.style.borderColor = "var(--border-subtle)";
+                            }
+                        }}
+                    >
+                        <Brain size={14} />
+                        <span>Brain Memory</span>
+                    </button>
+
+                    {/* AI Notes (workspace/NOTES.md) button */}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (artifactOpen && currentArtifactPath === "NOTES.md") {
+                                handleCloseArtifact();
+                            } else {
+                                handleOpenArtifact("NOTES.md");
+                            }
+                        }}
+                        title="AI Notes & Tasks (workspace/NOTES.md)"
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.35rem",
+                            padding: "0.35rem 0.65rem",
+                            borderRadius: "6px",
+                            border: "1px solid var(--border-subtle)",
+                            backgroundColor:
+                                artifactOpen && currentArtifactPath === "NOTES.md"
+                                    ? "var(--bg-secondary)"
+                                    : "transparent",
+                            color:
+                                artifactOpen && currentArtifactPath === "NOTES.md"
+                                    ? "var(--accent-terracotta)"
+                                    : "var(--text-secondary)",
+                            fontSize: "0.78rem",
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!artifactOpen || currentArtifactPath !== "NOTES.md") {
+                                e.currentTarget.style.color = "var(--text-primary)";
+                                e.currentTarget.style.borderColor = "var(--border-strong)";
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!artifactOpen || currentArtifactPath !== "NOTES.md") {
+                                e.currentTarget.style.color = "var(--text-secondary)";
+                                e.currentTarget.style.borderColor = "var(--border-subtle)";
+                            }
+                        }}
+                    >
+                        <FileText size={14} />
+                        <span>Notes</span>
+                    </button>
+
                     {/* Top Light/Dark Theme Switcher Toggle */}
                     <ThemeToggle theme={theme} onToggle={onToggleTheme} />
                 </div>
@@ -1079,6 +1927,7 @@ export default function ChatView({
                                                             thinking,
                                                             answer,
                                                             toolOutputs,
+                                                            artifacts,
                                                         } = parseMessageContent(
                                                             msg.content,
                                                         );
@@ -1087,7 +1936,7 @@ export default function ChatView({
                                                                 {thinking && (
                                                                     <ThinkingBox
                                                                         thinking={thinking}
-                                                                        defaultExpanded={true}
+                                                                        defaultExpanded={false}
                                                                     />
                                                                 )}
                                                                 {toolOutputs && toolOutputs.length > 0 && (
@@ -1102,12 +1951,20 @@ export default function ChatView({
                                                                         ))}
                                                                     </div>
                                                                 )}
+                                                                {artifacts && artifacts.length > 0 && (
+                                                                    <div style={{ marginBottom: "0.6rem" }}>
+                                                                        {artifacts.map((art, aIdx) => (
+                                                                            <ArtifactCard
+                                                                                key={aIdx}
+                                                                                artifact={art}
+                                                                                onOpenArtifact={handleOpenArtifact}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                )}
                                                                 <div className="markdown-body">
                                                                     {formatMarkdown(
-                                                                        answer ||
-                                                                            (!thinking && (!toolOutputs || toolOutputs.length === 0)
-                                                                                ? msg.content
-                                                                                : ""),
+                                                                        answer || thinking || (!toolOutputs || toolOutputs.length === 0 ? msg.content : "")
                                                                     )}
                                                                 </div>
                                                             </>
@@ -1209,14 +2066,44 @@ export default function ChatView({
                                             <ThinkingBox
                                                 thinking={streamingThinking}
                                                 isStreaming={true}
-                                                defaultExpanded={true}
+                                                defaultExpanded={false}
                                             />
                                         )}
                                         {(() => {
-                                            if (!streamingContent) return null;
+                                            if (!streamingContent) {
+                                                return (
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "0.5rem",
+                                                            color: "var(--text-muted)",
+                                                            fontSize: "0.82rem",
+                                                            padding: "0.35rem 0",
+                                                        }}
+                                                    >
+                                                        <span
+                                                            className="typing-dot"
+                                                            style={{
+                                                                width: "6px",
+                                                                height: "6px",
+                                                                backgroundColor: "var(--accent-terracotta)",
+                                                                borderRadius: "50%",
+                                                                display: "inline-block",
+                                                            }}
+                                                        />
+                                                        <span>
+                                                            {streamingThinking
+                                                                ? "Deliberating and formulating response..."
+                                                                : "Marnie is thinking..."}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            }
                                             const {
                                                 answer,
                                                 toolOutputs,
+                                                artifacts,
                                             } = parseMessageContent(streamingContent);
                                             return (
                                                 <>
@@ -1232,23 +2119,57 @@ export default function ChatView({
                                                             ))}
                                                         </div>
                                                     )}
-                                                    <div className="markdown-body">
-                                                        {formatMarkdown(
-                                                            answer || (!toolOutputs || toolOutputs.length === 0 ? streamingContent : "")
-                                                        )}
-                                                        <span
+                                                    {artifacts && artifacts.length > 0 && (
+                                                        <div style={{ marginBottom: "0.6rem" }}>
+                                                            {artifacts.map((art, aIdx) => (
+                                                                <ArtifactCard
+                                                                    key={aIdx}
+                                                                    artifact={art}
+                                                                    onOpenArtifact={handleOpenArtifact}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {answer ? (
+                                                        <div className="markdown-body">
+                                                            {formatMarkdown(answer)}
+                                                            <span
+                                                                style={{
+                                                                    display: "inline-block",
+                                                                    width: "7px",
+                                                                    height: "14px",
+                                                                    backgroundColor:
+                                                                        "var(--accent-terracotta)",
+                                                                    marginLeft: "3px",
+                                                                    verticalAlign: "middle",
+                                                                }}
+                                                                className="typing-dot"
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div
                                                             style={{
-                                                                display: "inline-block",
-                                                                width: "7px",
-                                                                height: "14px",
-                                                                backgroundColor:
-                                                                    "var(--accent-terracotta)",
-                                                                marginLeft: "3px",
-                                                                verticalAlign: "middle",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                gap: "0.5rem",
+                                                                color: "var(--text-muted)",
+                                                                fontSize: "0.82rem",
+                                                                padding: "0.35rem 0",
                                                             }}
-                                                            className="typing-dot"
-                                                        />
-                                                    </div>
+                                                        >
+                                                            <span
+                                                                className="typing-dot"
+                                                                style={{
+                                                                    width: "6px",
+                                                                    height: "6px",
+                                                                    backgroundColor: "var(--accent-terracotta)",
+                                                                    borderRadius: "50%",
+                                                                    display: "inline-block",
+                                                                }}
+                                                            />
+                                                            <span>Deliberating and formulating response...</span>
+                                                        </div>
+                                                    )}
                                                 </>
                                             );
                                         })()}
@@ -1295,6 +2216,189 @@ export default function ChatView({
                         position: "relative",
                     }}
                 >
+                    {/* Discord-style Slash Command Popup List */}
+                    {isSlashMenuOpen && filteredSlashCommands.length > 0 && (
+                        <div
+                            style={{
+                                position: "absolute",
+                                bottom: "calc(100% + 10px)",
+                                left: 0,
+                                right: 0,
+                                backgroundColor: "var(--bg-card)",
+                                border: "1px solid var(--border-strong)",
+                                borderRadius: "var(--radius-md)",
+                                boxShadow: "var(--shadow-lg)",
+                                padding: "0.45rem",
+                                zIndex: 120,
+                                maxHeight: "310px",
+                                overflowY: "auto",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "2px",
+                                animation: "fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1)",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    padding: "0.35rem 0.65rem 0.25rem 0.65rem",
+                                    fontSize: "0.7rem",
+                                    fontWeight: 700,
+                                    letterSpacing: "0.05em",
+                                    color: "var(--text-muted)",
+                                    textTransform: "uppercase",
+                                    borderBottom: "1px solid var(--border-subtle)",
+                                    marginBottom: "0.25rem",
+                                }}
+                            >
+                                <span style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                                    <Slash size={12} color="var(--accent-terracotta)" />
+                                    COMMANDS MATCHING &quot;{input}&quot;
+                                </span>
+                                <span style={{ fontSize: "0.68rem", fontWeight: 400, opacity: 0.8 }}>
+                                    ↑ ↓ to navigate • Enter to select • Esc to dismiss
+                                </span>
+                            </div>
+
+                            {filteredSlashCommands.map((cmd, idx) => {
+                                const isSelected = idx === slashSelectedIndex;
+                                const Icon = cmd.icon;
+                                return (
+                                    <div
+                                        key={cmd.name}
+                                        onClick={() => handleSelectSlashCommand(cmd)}
+                                        onMouseEnter={() => setSlashSelectedIndex(idx)}
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            padding: "0.5rem 0.75rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: isSelected ? "var(--bg-card-hover)" : "transparent",
+                                            border: isSelected ? "1px solid var(--border-strong)" : "1px solid transparent",
+                                            cursor: "pointer",
+                                            transition: "background-color 0.1s ease",
+                                        }}
+                                    >
+                                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
+                                            <div
+                                                style={{
+                                                    width: "28px",
+                                                    height: "28px",
+                                                    borderRadius: "6px",
+                                                    backgroundColor: `${cmd.color}18`,
+                                                    color: cmd.color,
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    flexShrink: 0,
+                                                }}
+                                            >
+                                                <Icon size={15} />
+                                            </div>
+                                            <div style={{ minWidth: 0 }}>
+                                                <div style={{ display: "flex", alignItems: "baseline", gap: "0.45rem" }}>
+                                                    <span
+                                                        style={{
+                                                            fontSize: "0.86rem",
+                                                            fontWeight: 600,
+                                                            color: isSelected ? "var(--accent-terracotta)" : "var(--text-primary)",
+                                                            fontFamily: "var(--font-mono)",
+                                                        }}
+                                                    >
+                                                        {cmd.name}
+                                                    </span>
+                                                    {cmd.args && (
+                                                        <span
+                                                            style={{
+                                                                fontSize: "0.72rem",
+                                                                color: "var(--text-muted)",
+                                                                fontFamily: "var(--font-mono)",
+                                                            }}
+                                                        >
+                                                            {cmd.args}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontSize: "0.76rem",
+                                                        color: "var(--text-secondary)",
+                                                        whiteSpace: "nowrap",
+                                                        overflow: "hidden",
+                                                        textOverflow: "ellipsis",
+                                                    }}
+                                                >
+                                                    {cmd.description}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div
+                                            style={{
+                                                fontSize: "0.7rem",
+                                                color: isSelected ? "var(--accent-terracotta)" : "var(--text-muted)",
+                                                padding: "0.2rem 0.45rem",
+                                                borderRadius: "4px",
+                                                backgroundColor: isSelected ? "var(--accent-light)" : "transparent",
+                                                fontWeight: 500,
+                                                flexShrink: 0,
+                                                marginLeft: "0.5rem",
+                                            }}
+                                        >
+                                            Tab ⇥
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Active Output Style indicator pill (if not standard) */}
+                    {outputStyle !== "standard" && (
+                        <div
+                            style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "0.4rem",
+                                padding: "0.2rem 0.55rem",
+                                borderRadius: "4px",
+                                backgroundColor: "rgba(99, 102, 241, 0.12)",
+                                border: "1px solid rgba(99, 102, 241, 0.3)",
+                                color: "#6366f1",
+                                fontSize: "0.72rem",
+                                fontWeight: 500,
+                                alignSelf: "flex-start",
+                                marginBottom: "-0.2rem",
+                            }}
+                        >
+                            <Palette size={12} />
+                            <span>
+                                Style: {OUTPUT_STYLES.find((s) => s.id === outputStyle)?.name || outputStyle}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setOutputStyle("standard");
+                                    localStorage.setItem("marnie_output_style", "standard");
+                                }}
+                                title="Reset to standard style"
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#6366f1",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                }}
+                            >
+                                <X size={12} />
+                            </button>
+                        </div>
+                    )}
+
                     {/* Top Row: Textarea on left, Voice Input button + Model Switcher trigger on right */}
                     <div
                         style={{
@@ -2155,6 +3259,156 @@ export default function ChatView({
                     </div>
                 </div>
             )}
+
+            {/* /output-style Modal */}
+            {isStyleModalOpen && (
+                <div
+                    style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: "rgba(0, 0, 0, 0.65)",
+                        backdropFilter: "blur(4px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 1000,
+                        padding: "1.25rem",
+                    }}
+                    onClick={() => setIsStyleModalOpen(false)}
+                >
+                    <div
+                        style={{
+                            backgroundColor: "var(--bg-card)",
+                            border: "1px solid var(--border-strong)",
+                            borderRadius: "var(--radius-lg)",
+                            width: "100%",
+                            maxWidth: "520px",
+                            boxShadow: "var(--shadow-xl)",
+                            overflow: "hidden",
+                            animation: "fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div
+                            style={{
+                                padding: "1.1rem 1.4rem",
+                                borderBottom: "1px solid var(--border-subtle)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                backgroundColor: "var(--bg-primary)",
+                            }}
+                        >
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                                <div
+                                    style={{
+                                        width: "30px",
+                                        height: "30px",
+                                        borderRadius: "6px",
+                                        backgroundColor: "rgba(99, 102, 241, 0.14)",
+                                        color: "#6366f1",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <Palette size={16} />
+                                </div>
+                                <div>
+                                    <h3
+                                        style={{
+                                            fontFamily: "var(--font-display)",
+                                            fontSize: "1.05rem",
+                                            fontWeight: 600,
+                                            color: "var(--text-primary)",
+                                            margin: 0,
+                                        }}
+                                    >
+                                        Output Style Customization
+                                    </h3>
+                                    <span style={{ fontSize: "0.74rem", color: "var(--text-muted)" }}>
+                                        Customize how AI text responses are formatted and rendered
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsStyleModalOpen(false)}
+                                style={{
+                                    background: "none",
+                                    border: "none",
+                                    color: "var(--text-muted)",
+                                    cursor: "pointer",
+                                    padding: "4px",
+                                }}
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                            {OUTPUT_STYLES.map((style) => {
+                                const isSelected = outputStyle === style.id;
+                                return (
+                                    <div
+                                        key={style.id}
+                                        onClick={() => {
+                                            setOutputStyle(style.id);
+                                            localStorage.setItem("marnie_output_style", style.id);
+                                            setIsStyleModalOpen(false);
+                                            setMessages((prev) => [
+                                                ...prev,
+                                                {
+                                                    id: `style-update-${Date.now()}`,
+                                                    role: "assistant",
+                                                    content: `🎨 **Output Style Updated:** Response style set to **${style.name}**.\n\n*${style.desc}*`,
+                                                    created_at: Math.floor(Date.now() / 1000),
+                                                },
+                                            ]);
+                                        }}
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            padding: "0.75rem 1rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: isSelected ? "var(--bg-secondary)" : "var(--bg-primary)",
+                                            border: isSelected ? "1.5px solid #6366f1" : "1px solid var(--border-subtle)",
+                                            cursor: "pointer",
+                                            transition: "all 0.15s ease",
+                                        }}
+                                    >
+                                        <div>
+                                            <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--text-primary)" }}>
+                                                {style.name}
+                                            </div>
+                                            <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)", marginTop: "2px" }}>
+                                                {style.desc}
+                                            </div>
+                                        </div>
+                                        {isSelected && <Check size={16} color="#6366f1" />}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+            </div>
+
+            {/* Claude-style Artifact Side Panel */}
+            <ArtifactPanel
+                isOpen={artifactOpen}
+                filePath={currentArtifactPath}
+                onClose={handleCloseArtifact}
+                onFileSelected={(path) => {
+                    if (onSelectArtifactPath) onSelectArtifactPath(path);
+                    else setInternalArtifactPath(path);
+                }}
+            />
         </div>
     );
 }

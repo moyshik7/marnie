@@ -2,17 +2,21 @@
 
 const { execFile, spawn } = require('child_process');
 const os = require('os');
+const { resolveSafeCwd } = require('../../utils/workspace');
 
 /**
  * Execute a bash command string.
+ * Strictly prevents running commands with a working directory outside the repo/workspace.
  * @param {object} opts
  * @param {string} opts.command   - Shell command to run
- * @param {string} [opts.cwd]     - Working directory (defaults to process.cwd)
+ * @param {string} [opts.cwd]     - Working directory (defaults to workspace)
  * @param {number} [opts.timeout] - Timeout in ms (default 30 000)
  * @param {object} [opts.env]     - Extra environment variables
  * @returns {Promise<{stdout:string, stderr:string, exitCode:number}>}
  */
 function run({ command, cwd, timeout = 30_000, env = {} }) {
+  const safeCwd = resolveSafeCwd(cwd);
+
   return new Promise((resolve) => {
     const shell = os.platform() === 'win32' ? 'cmd.exe' : '/bin/bash';
     const args  = os.platform() === 'win32' ? ['/c', command] : ['-c', command];
@@ -21,7 +25,7 @@ function run({ command, cwd, timeout = 30_000, env = {} }) {
     let stderr = '';
 
     const child = spawn(shell, args, {
-      cwd: cwd || process.cwd(),
+      cwd: safeCwd,
       env: { ...process.env, ...env },
       timeout,
     });

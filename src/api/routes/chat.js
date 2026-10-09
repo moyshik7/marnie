@@ -1,20 +1,36 @@
 'use strict';
 
 const router = require('express').Router();
+const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../../db/index');
 const ollama = require('../../components/providers/ollama/interact');
 const { executeTool, buildSystemPrompt, parseToolCalls, OLLAMA_TOOLS } = require('../../components/tools/registry');
-const { filterEmDashes } = require('../../components/tools/emDashFilter');
+const { filterEmDashes, filterEmojis, normalizeAssistantText } = require('../../components/tools/emDashFilter');
+const brain = require('../../components/tools/brainMemory');
 
-function getEffectiveSystemPrompt(customSystem = '') {
+function getEffectiveSystemPrompt(customSystem = '', options = {}) {
   let dbSystemPrompt = '';
   try {
     const row = db.prepare("SELECT value FROM settings WHERE key = 'system_prompt'").get();
     if (row && row.value) dbSystemPrompt = row.value;
   } catch {}
 
-  const merged = [dbSystemPrompt, customSystem].filter(Boolean).join('\n\n');
+  // Brain persistent memory context (workspace/BRAIN.md) injected by default unless explicitly disabled
+  let brainContext = '';
+  if (!options.skipBrain && !options.noBrain) {
+    try {
+      const enabledRow = db.prepare("SELECT value FROM settings WHERE key = 'brain_enabled'").get();
+      const isBrainEnabled = !enabledRow || enabledRow.value !== 'false';
+      if (isBrainEnabled) {
+        brainContext = brain.formatBrainForSystemPrompt();
+      }
+    } catch (err) {
+      console.warn('[brain] Failed to load brain context:', err.message);
+    }
+  }
+
+  const merged = [dbSystemPrompt, customSystem, brainContext].filter(Boolean).join('\n\n');
   return buildSystemPrompt(merged);
 }
 
@@ -26,7 +42,14 @@ async function runToolCallsAndFormat(toolCalls) {
       const res = await executeTool(call.name, call.arguments);
       callOutput += `\n> **Executed Tool:** \`${call.name}\`\n`;
       if (res && typeof res === 'object') {
-        if (call.name === 'send_alert' || call.name === 'discord_alert' || (res.sent === true && Object.keys(res).length === 1)) {
+        if (call.name === 'create_file' || call.name === 'write_file' || call.name === 'file_create' || call.name === 'file_write') {
+          const action = (call.name === 'create_file' || call.name === 'file_create') ? 'created' : 'edited';
+          const relPath = (res.relativePath || (res.path ? path.basename(res.path) : (call.arguments?.filePath || 'file'))).replace(/\\/g, '/');
+          const fileName = res.name || path.basename(relPath);
+          const linesText = res.totalLines !== undefined ? ` (${res.totalLines} lines)` : '';
+          callOutput += `\n<!-- file-artifact:{"path":"${relPath.replace(/"/g, '\\"')}","name":"${fileName.replace(/"/g, '\\"')}","action":"${action}"} -->\n`;
+          callOutput += `\n**File ${action === 'created' ? 'Created' : 'Updated'}:** \`${relPath}\`${linesText}\n`;
+        } else if (call.name === 'send_alert' || call.name === 'discord_alert' || (res.sent === true && Object.keys(res).length === 1)) {
           callOutput += `\nSuccessful\n`;
         } else if ((call.name === 'set_timer' || call.name === 'timer') && res.status) {
           callOutput += `\n${res.status}\n`;
@@ -53,6 +76,16 @@ async function runToolCallsAndFormat(toolCalls) {
             const truncated = dataStr.length > 3500 ? dataStr.slice(0, 3500) + '\n... (truncated)' : dataStr;
             callOutput += `\`\`\`json\n${truncated}\n\`\`\`\n`;
           }
+        } else if (call.name === 'read_brain_memory' || call.name === 'read_brain' || call.name === 'read_memory') {
+          callOutput += `\n**Persistent Brain Memory (workspace/BRAIN.md):**\n\n${res.content || '(Empty)'}\n`;
+        } else if (call.name === 'update_brain_memory' || call.name === 'update_brain' || call.name === 'save_brain') {
+          callOutput += `\n<!-- file-artifact:{"path":"BRAIN.md","name":"BRAIN.md","action":"edited"} -->\n`;
+          callOutput += `\n**Persistent Memory Updated:** \`workspace/BRAIN.md\`\n`;
+        } else if (call.name === 'fetch_notes' || call.name === 'get_notes' || call.name === 'read_notes' || call.name === 'notes') {
+          callOutput += `\n**AI Notes & Tasks (workspace/NOTES.md):**\n\n${res.content || '(Empty notes)'}\n`;
+        } else if (call.name === 'update_notes' || call.name === 'edit_notes' || call.name === 'notes_edit' || call.name === 'add_note' || call.name === 'add_notes' || call.name === 'save_notes' || call.name === 'append_notes' || call.name === 'write_notes') {
+          callOutput += `\n<!-- file-artifact:{"path":"NOTES.md","name":"NOTES.md","action":"edited"} -->\n`;
+          callOutput += `\n**AI Notes Updated:** \`workspace/NOTES.md\`\n`;
         } else if (res.stdout !== undefined || res.stderr !== undefined) {
           if (res.stdout) callOutput += `\`\`\`\n${res.stdout.trimEnd()}\n\`\`\`\n`;
           if (res.stderr) callOutput += `\`\`\`stderr\n${res.stderr.trimEnd()}\n\`\`\`\n`;
@@ -97,7 +130,7 @@ function touchConv(id) {
 function insertMsg(convId, role, content, toolCalls = null, toolCallId = null) {
   const id = uuidv4();
   const filteredContent = role === 'assistant' && typeof content === 'string'
-    ? filterEmDashes(content)
+    ? normalizeAssistantText(content)
     : content;
   stmtMsgInsert.run({
     id,
@@ -181,6 +214,140 @@ router.delete('/conversations/:id', (req, res) => {
   res.json({ deleted: req.params.id });
 });
 
+/**
+ * POST /api/chat/conversations/:id/fork
+ * Fork current conversation up to an optional message ID into a new independent thread.
+ * Body: { upToMessageId?, title? }
+ */
+router.post('/conversations/:id/fork', (req, res) => {
+  const sourceConv = stmtConvGet.get(req.params.id);
+  if (!sourceConv) return res.status(404).json({ error: 'Source conversation not found' });
+
+  const { upToMessageId, title } = req.body;
+  const newConvId = uuidv4();
+  const forkTitle = title || `Fork of ${sourceConv.title}`;
+
+  stmtConvCreate.run({
+    id: newConvId,
+    title: forkTitle,
+    model: sourceConv.model,
+    provider: sourceConv.provider || 'ollama',
+  });
+
+  const sourceMsgs = stmtMsgList.all(sourceConv.id);
+  let msgsToCopy = sourceMsgs;
+  if (upToMessageId) {
+    const targetIdx = sourceMsgs.findIndex((m) => m.id === upToMessageId);
+    if (targetIdx !== -1) {
+      msgsToCopy = sourceMsgs.slice(0, targetIdx + 1);
+    }
+  }
+
+  const insertForkMsg = db.prepare(`
+    INSERT INTO messages (id, conversation_id, role, content, tool_calls, tool_call_id, created_at)
+    VALUES (@id, @conversation_id, @role, @content, @tool_calls, @tool_call_id, @created_at)
+  `);
+
+  const tx = db.transaction(() => {
+    for (const msg of msgsToCopy) {
+      insertForkMsg.run({
+        id: uuidv4(),
+        conversation_id: newConvId,
+        role: msg.role,
+        content: msg.content,
+        tool_calls: msg.tool_calls,
+        tool_call_id: msg.tool_call_id,
+        created_at: msg.created_at,
+      });
+    }
+  });
+  tx();
+
+  const createdConv = stmtConvGet.get(newConvId);
+  const messages = stmtMsgList.all(newConvId).map(parseMsg);
+  res.status(201).json({ ...createdConv, messages });
+});
+
+/**
+ * POST /api/chat/conversations/:id/compact
+ * Summarize conversation history so far to free context window while preserving critical points.
+ * Replaces older history in SQLite with a consolidated summary system/assistant note.
+ */
+router.post('/conversations/:id/compact', async (req, res) => {
+  const conv = stmtConvGet.get(req.params.id);
+  if (!conv) return res.status(404).json({ error: 'Conversation not found' });
+
+  const msgs = stmtMsgList.all(conv.id);
+  if (msgs.length <= 1) {
+    return res.json({
+      success: true,
+      compacted: false,
+      message: 'Conversation is too short to compact.',
+      conversation: { ...conv, messages: msgs.map(parseMsg) },
+    });
+  }
+
+  // Build condensed transcript of past messages
+  const transcriptLines = msgs.map((m) => {
+    let text = (m.content || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+    if (text.length > 500) text = text.slice(0, 500) + '...';
+    return `${m.role.toUpperCase()}: ${text}`;
+  }).join('\n\n');
+
+  let summary = '';
+  try {
+    const summaryPrompt = [
+      {
+        role: 'system',
+        content: 'You are an expert conversation summarizer and state compressor. Condense the previous conversation into a structured summary that captures all important facts, user requirements, decisions made, code files modified, and current progress. Be clear, concise, and structured.',
+      },
+      {
+        role: 'user',
+        content: `Please condense and compact the following conversation transcript while preserving all critical context, project state, and user constraints:\n\n${transcriptLines}`,
+      },
+    ];
+
+    const modelToUse = conv.model || process.env.DEFAULT_MODEL || 'llama3.2';
+    const llmRes = await ollama.chat({
+      model: modelToUse,
+      messages: summaryPrompt,
+    });
+    summary = (llmRes.message?.content || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+  } catch (err) {
+    console.warn('[compact] LLM summarization fallback to manual outline:', err.message);
+  }
+
+  if (!summary) {
+    summary = `### Previous Conversation Summary (Compacted)\n\nKey context from previous messages (${msgs.length} messages) compacted on ${new Date().toISOString()}.\n\n` +
+      msgs.slice(0, 4).map(m => `- **${m.role}**: ${(m.content || '').slice(0, 160).replace(/\n/g, ' ')}`).join('\n');
+  }
+
+  const compactedMessageContent = `<!-- compacted-context -->\n### Compacted Conversation Summary\n${summary}\n\n*(Earlier conversation history was compacted to free up the context window while preserving critical context.)*`;
+
+  // Retain the very last user/assistant message if relevant, replace the rest with the summary
+  const lastMsg = msgs[msgs.length - 1];
+  const deleteStmt = db.prepare('DELETE FROM messages WHERE conversation_id = ?');
+
+  const tx = db.transaction(() => {
+    deleteStmt.run(conv.id);
+    // Insert summary as first message
+    insertMsg(conv.id, 'assistant', compactedMessageContent);
+    // If the last message was a user message, keep it so it is not lost
+    if (lastMsg && lastMsg.role === 'user') {
+      insertMsg(conv.id, 'user', lastMsg.content);
+    }
+  });
+  tx();
+
+  const updatedMsgs = stmtMsgList.all(conv.id).map(parseMsg);
+  res.json({
+    success: true,
+    compacted: true,
+    summary,
+    conversation: { ...stmtConvGet.get(conv.id), messages: updatedMsgs },
+  });
+});
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Messages
 // ═══════════════════════════════════════════════════════════════════════════
@@ -213,6 +380,7 @@ function sanitizeHistoryForLLM(rawMessages) {
       content = content.replace(/<think>[\s\S]*?<\/think>\s*/gi, '').trim();
 
       // 2. Strip comment-delimited tool outputs while preserving subsequent assistant answers
+      content = content.replace(/<!-- file-artifact:[\s\S]*?-->/gi, '');
       content = content.replace(/<!-- tool-output:?(\w*) -->[\s\S]*?<!-- \/tool-output -->/gi, (_m, name) => {
         return `\n[Action: Tool "${name || 'tool'}" executed successfully]\n`;
       });
@@ -260,7 +428,7 @@ router.post('/conversations/:id/complete', async (req, res) => {
   const history = sanitizeHistoryForLLM(rawHistory);
 
   // Prepend comprehensive workspace system prompt
-  const effectiveSystem = getEffectiveSystemPrompt(system);
+  const effectiveSystem = getEffectiveSystemPrompt(system, options);
   const messages = [{ role: 'system', content: effectiveSystem }, ...history];
 
   try {
@@ -361,10 +529,23 @@ router.post('/conversations/:id/complete', async (req, res) => {
       }
 
       // Persist assistant message in SQLite, preserving thinking if present
-      const persistedContent = fullThinking
-        ? `<think>\n${fullThinking.trim()}\n</think>\n\n${fullContent.trim()}`
-        : fullContent.trim();
+      const persistedContent = fullContent.trim()
+        ? (fullThinking.trim() ? `<think>\n${fullThinking.trim()}\n</think>\n\n${fullContent.trim()}` : fullContent.trim())
+        : (fullThinking.trim() || '');
       insertMsg(conv.id, 'assistant', persistedContent);
+
+      // Background auto-consolidation of BRAIN.md memory if 5-message trigger reached
+      try {
+        const trigger = brain.checkMemoryTrigger(conv.id);
+        if (trigger.shouldConsolidate) {
+          brain.consolidateMemory({ conversationId: conv.id, model: conv.model }).catch((err) => {
+            console.warn('[brain] Background consolidation error:', err.message);
+          });
+        }
+      } catch (err) {
+        console.warn('[brain] Memory trigger check error:', err.message);
+      }
+
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();
     } else {
@@ -445,10 +626,23 @@ router.post('/conversations/:id/complete', async (req, res) => {
         }
       }
 
-      const persistedContent = thinkingContent
-        ? `<think>\n${thinkingContent.trim()}\n</think>\n\n${assistantContent.trim()}`
-        : assistantContent.trim();
+      const persistedContent = assistantContent.trim()
+        ? (thinkingContent.trim() ? `<think>\n${thinkingContent.trim()}\n</think>\n\n${assistantContent.trim()}` : assistantContent.trim())
+        : (thinkingContent.trim() || '');
       const saved = insertMsg(conv.id, 'assistant', persistedContent);
+
+      // Background auto-consolidation of BRAIN.md memory if 5-message trigger reached
+      try {
+        const trigger = brain.checkMemoryTrigger(conv.id);
+        if (trigger.shouldConsolidate) {
+          brain.consolidateMemory({ conversationId: conv.id, model: conv.model }).catch((err) => {
+            console.warn('[brain] Background consolidation error:', err.message);
+          });
+        }
+      } catch (err) {
+        console.warn('[brain] Memory trigger check error:', err.message);
+      }
+
       res.json({
         message: parseMsg(saved),
         usage: lastUsage,
@@ -481,7 +675,7 @@ router.post('/complete', async (req, res) => {
   const cleanMessages = sanitizeHistoryForLLM(rawMessages);
   const messages = hasSystem
     ? cleanMessages
-    : [{ role: 'system', content: getEffectiveSystemPrompt() }, ...cleanMessages];
+    : [{ role: 'system', content: getEffectiveSystemPrompt('', options) }, ...cleanMessages];
 
   try {
     if (stream) {
@@ -654,10 +848,10 @@ router.post('/complete', async (req, res) => {
         }
       }
 
-      const finalContent = thinkingContent
-        ? `<think>\n${thinkingContent.trim()}\n</think>\n\n${assistantContent.trim()}`
-        : assistantContent.trim();
-      res.json({ message: { role: 'assistant', content: filterEmDashes(finalContent) }, usage: lastUsage });
+      const finalContent = assistantContent.trim()
+        ? (thinkingContent.trim() ? `<think>\n${thinkingContent.trim()}\n</think>\n\n${assistantContent.trim()}` : assistantContent.trim())
+        : (thinkingContent.trim() || '');
+      res.json({ message: { role: 'assistant', content: normalizeAssistantText(finalContent) }, usage: lastUsage });
     }
   } catch (err) {
     if (!res.headersSent) {

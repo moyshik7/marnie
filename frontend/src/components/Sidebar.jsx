@@ -14,6 +14,8 @@ import {
     Bot,
     ChevronLeft,
     ChevronRight,
+    FileCode,
+    FileText,
 } from "lucide-react";
 
 export default function Sidebar({
@@ -25,7 +27,10 @@ export default function Sidebar({
     onRenameConversation,
     onOpenSettings,
     onOpenTools,
+    onOpenNotes,
     onOpenDeepResearch,
+    onOpenArtifacts,
+    isArtifactOpen = false,
     activeSection = "chat",
     isResearchOngoing = false,
     theme,
@@ -468,6 +473,43 @@ export default function Sidebar({
                     alignItems: isCollapsed ? "center" : "stretch",
                 }}
             >
+                {/* Workspace Files trigger */}
+                <button
+                    onClick={onOpenArtifacts}
+                    title={isCollapsed ? "Workspace Files & Preview" : undefined}
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: isCollapsed ? "center" : "flex-start",
+                        gap: "0.65rem",
+                        padding: isCollapsed ? "0.55rem 0" : "0.55rem 0.65rem",
+                        borderRadius: "var(--radius-sm)",
+                        color: isArtifactOpen ? "var(--accent-terracotta)" : "var(--text-secondary)",
+                        backgroundColor: isArtifactOpen ? "var(--bg-card)" : "transparent",
+                        fontSize: "0.85rem",
+                        width: "100%",
+                        textAlign: isCollapsed ? "center" : "left",
+                        border: isArtifactOpen ? "1px solid var(--border-subtle)" : "1px solid transparent",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                        if (!isArtifactOpen) {
+                            e.currentTarget.style.backgroundColor = "var(--bg-tertiary)";
+                            e.currentTarget.style.color = "var(--text-primary)";
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (!isArtifactOpen) {
+                            e.currentTarget.style.backgroundColor = "transparent";
+                            e.currentTarget.style.color = "var(--text-secondary)";
+                        }
+                    }}
+                >
+                    <FileCode size={16} style={{ flexShrink: 0 }} />
+                    {!isCollapsed && <span>Workspace Files</span>}
+                </button>
+
                 {/* Tools drawer trigger */}
                 <button
                     onClick={onOpenTools}
@@ -500,6 +542,39 @@ export default function Sidebar({
                 >
                     <Wrench size={16} style={{ flexShrink: 0 }} />
                     {!isCollapsed && <span>Tools & Tasks</span>}
+                </button>
+
+                {/* AI Notes (workspace/NOTES.md) trigger - above Deep Research */}
+                <button
+                    onClick={onOpenNotes}
+                    title={isCollapsed ? "Notes & Tasks (workspace/NOTES.md)" : undefined}
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.65rem",
+                        padding: isCollapsed ? "0.55rem 0" : "0.55rem 0.65rem",
+                        borderRadius: "var(--radius-sm)",
+                        color: "var(--text-secondary)",
+                        backgroundColor: "transparent",
+                        border: "1px solid transparent",
+                        fontSize: "0.85rem",
+                        width: "100%",
+                        textAlign: isCollapsed ? "center" : "left",
+                        justifyContent: isCollapsed ? "center" : "flex-start",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "var(--bg-tertiary)";
+                        e.currentTarget.style.color = "var(--text-primary)";
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.color = "var(--text-secondary)";
+                    }}
+                >
+                    <FileText size={16} style={{ flexShrink: 0 }} />
+                    {!isCollapsed && <span>Notes</span>}
                 </button>
 
                 {/* Deep Research view trigger - matching grayish color */}

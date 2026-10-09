@@ -1,71 +1,42 @@
 <p align="center">
   	<img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/logo-wide.png" alt="Marnie Logo (Wide)"/>
 </p>
-<h1 align="center">
-	Marnie
-</h1>
+
+<br />
+
+> **The local AI workspace with built-in tools.** Run deep research, scrape websites, interact with local files, and trigger webhooks with zero extra microservices required.
 
 <br />
 
 <p align="center">
-  	A self-hosted AI workspace made in nodejs with features according to my own preference.
-</p>
-
-<br />
-
-<div align="center">
-  	<img src="https://img.shields.io/github/actions/workflow/status/moyshik7/marnie/deploy.yml?branch=main&label=GitHub%20CI" />
-  	<img src="https://github.com/moyshik7/marnie/actions/workflows/deploy.yml/badge.svg" />
-  	<img src="https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white" />
-  	<img src="https://img.shields.io/badge/node.js-%236DA55F.svg?style=for-the-badge&logo=node.js&logoColor=white" />
-  	<img src="https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB" />
-  	<img src="https://img.shields.io/badge/ollama-%23000000.svg?style=for-the-badge&logo=ollama&logoColor=white" />
-</div>
-
-<br />
-
-<p align="center">
-  	<img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/screenshot-browser.png" alt="Marnie Ui (In browser)"/>
+  	<img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/demo-chat.gif" alt="Marnie Ui (In browser)"/>
 </p>
 
 <br />
 <br />
-<br />
-
-### Name taken from 2014 anime "When Marnie Was There"
-
-<p align="center">
-  	<img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/when-marnie-was-there-original-poster.png" alt="When Marnie was here original poster"/>
-</p>
-
 
 ## Quick Links:
 - [Installation (Manually)](#installation-manually)
 - [Installation (Docker)](#installation-docker)
 - [Skills](#skills-reference)
+- [Slash Commands](#slash-commands-reference)
 
+## Features
 
-## Tools & Skills
-- [x] Web search (DuckDuckGo, SearXNG)
-- [x] Web scraper (Cheerio and Axios site extractor)
-- [x] Terminal access (Bash / Shell commands)
-- [x] Filesystem search (Recursive regex / pattern search)
-- [x] Get current datetime
-- [ ] Get current weather
-- [x] Send api requests
-    - [x] GET
-    - [x] POST
-    - [x] PUT, PATCH, DELETE
-- [ ] Code run
-    - [ ] Python
-    - [x] Javascript (Node.js isolated runner)
-- [x] Local File Create
-- [x] Local File Read
-- [x] Local File Write (Targeted line range edits and replacements)
-- [x] Create Tasks (SQLite task tracking)
-- [x] Create scheduled tasks (Cron scheduler)
-- [x] Discord Webhook alerts
-- [x] Countdown timer with alert notifications
+> **Brain (memory)**  
+> Persistent brain memory stored in `workspace/BRAIN.md`. A background process consolidates recent conversation messages (every 5 messages) with existing memory using an LLM. This consolidated memory is then automatically passed into every chat or agentic conversation unless otherwise specified.
+
+> **Notes**  
+>  The Notes feature offers persistent storage separate from the primary brain, enabling on-demand retrieval and modification via `fetch_notes`. This contrasts with the main brain, which is injected directly into prompts.
+
+> **Task scheduling and repeating tasks**  
+
+> **Multi-Step Deep Research**  
+
+> **A buttload of built in tools and skills**  
+
+> **Math and flowchart generation and preiew**  
+> Using latex for math equation preview and mermaid for flowchart preview.
 
 ### Skills Reference
 
@@ -77,6 +48,8 @@ All skills are documented with specifications under [`.agents/skills/`](.agents/
 | `cron-scheduler`     | Schedule and manage recurring background cron jobs stored persistently in SQLite with command, Discord, or webhook triggers  |
 | `deep-research`      | Autonomous multi-turn web research and iterative synthesis engine producing comprehensive markdown dossiers with citations   |
 | `discord-alerts`     | Dispatch rich embed alert notifications to configured Discord webhook channels                                               |
+| `edit-notes`         | Edit, update, and append tasks, checklists, and working notes in `workspace/NOTES.md`                                        |
+| `fetch-notes`        | Fetch and update persistent user notes, task checklists, and reference data in `workspace/NOTES.md` on demand                |
 | `file-operations`    | Read, create, write, and patch local files on disk with precise line range replacements                                      |
 | `filesystem-search`  | Recursively search files and directories matching a pattern, substring, or regular expression                                |
 | `run-bash`           | Execute terminal and shell commands (bash/sh) directly on the host system                                                    |
@@ -86,16 +59,22 @@ All skills are documented with specifications under [`.agents/skills/`](.agents/
 | `web-scraper`        | Lightweight webpage text extraction and scraping tool using Cheerio and Axios to extract readable text                       |
 | `web-search`         | Live web search via DuckDuckGo or SearXNG with automatic link content scraping                                               |
 
+### Slash Commands Reference
 
-## Integrations:
-- [x] Discord Webhook
-- [x] Duckduckgo search
-- [x] SearXNG
-- [ ] Brave search
-- [ ] Mail
-- [ ] OCR for uploaded files
+Slash commands can be used at the beginning of any prompt. Typing `/` automatically opens a Discord-style interactive autocomplete popup to filter and select commands using arrow keys or Tab.
 
-## LLM Sources
+| Command                  | Description                                                                                                            |
+|--------------------------|------------------------------------------------------------------------------------------------------------------------|
+| `/elim5 [question]`      | Explains like you're five years old, simplifying technical jargon into bite-sized analogies and plain language         |
+| `/btw <question>`        | Asks a side question referencing conversation background without breaking, altering, or polluting conversation history |
+| `/fork [new-title]`      | Branches the current conversation into a new independent thread with historical continuity preserved                   |
+| `/title <new-title>`     | Sets or updates the active window and conversation title across the interface and database                             |
+| `/compact`               | Summarizes previous conversation turns to free up the model context window while preserving critical context           |
+| `/output-style [style]`  | Customizes how AI responses are rendered; opens an interactive style picker or sets the style directly                 |
+
+> Output styles: standard | concise | technical | creative | bullet-points
+
+## Supported LLM Sources
 - [x] Ollama
 - [ ] llama.cpp
 - [ ] Gemini API
@@ -106,41 +85,30 @@ All skills are documented with specifications under [`.agents/skills/`](.agents/
 - [ ] Cloudflare
 - [ ] Vercel
 
-## Features
-- [x] Chat
-- [x] Agent Mode
-- [ ] Deep Research
-- [ ] Deep Research Report
-- [x] Mermaid Preview
-- [x] Latex Math Preview
 
 ---
 
 ## Installation (Manually)
+### Requirements:
+- NodeJS 24.x or higher
+- Git
+- Curl
 
-#### Clone this repo
+### Linux and MacOS
+Run this in a terminal
+
 ```bash
-git clone https://github.com/moyshik7/marnie.git
-cd marnie
+bash <(curl -fsSL https://raw.githubusercontent.com/moyshik7/marnie/main/install.sh)
 ```
 
-#### Install Dependencies
+<br />
+<br />
 
-```bash
-npm install
-cd frontend && npm install && npm run build && cd ..
-```
+### Windows
+Run this in **powershell** (NOT COMMAND PROMPT)
 
-#### Copy and edit environment config
-
-```bash
-cp .env.example .env
-```
-
-#### Start the server (First time)
-
-```bash
-npm start
+```ps1
+irm https://raw.githubusercontent.com/moyshik7/marnie/main/install.ps1 | iex
 ```
 
 #### Start the server (Later without rebuilding the entire app)
@@ -149,31 +117,26 @@ npm start
 npm run nobuild
 ```
 
-> If you encounter any UI glitch try rebuilding the app.
+> If you encounter any UI glitch try rebuilding the app with `npm run build`
 
 The app is accessible at [http://localhost:3000](http://localhost:3000)
 
 > If port 3000 is in use, it will use 3001 then 3002, 3003 ....
 
+<br />
+<br />
+<br />
 
 ## Installation (Docker)
-
 You can run Marnie using Docker Compose or standalone Docker.
-
-#### Option 1: Docker Compose (Recommended)
-
-1. Clone the repository:
+### Option 1: Docker Compose (Recommended)
+#### Clone the repository:
 ```bash
 git clone https://github.com/moyshik7/marnie.git
 cd marnie
 ```
 
-2. (Optional) Copy and customize environment variables:
-```bash
-cp .env.example .env
-```
-
-3. Build and start the container:
+#### Build and start the container:
 ```bash
 docker compose up -d --build
 ```
@@ -188,14 +151,14 @@ docker compose logs -f
 docker compose down
 ```
 
-#### Option 2: Docker CLI
+### Option 2: Docker CLI
 
-1. Build the Docker image:
+#### 1. Build the Docker image:
 ```bash
 docker build -t marnie .
 ```
 
-2. Run the container:
+#### 2. Run the container:
 ```bash
 docker run -d \
   --name marnie \
@@ -208,18 +171,10 @@ docker run -d \
 ```
 ---
 
-## Environment Variables
-
-| Variable              | Default                  | Description                                |
-|-----------------------|--------------------------|--------------------------------------------|
-| `PORT`                | `3000`                   | HTTP port                                  |
-| `OLLAMA_BASE_URL`     | `http://localhost:11434` | Ollama server URL                          |
-| `DEFAULT_MODEL`       | `qwen3.5:9B`             | Default model name                         |
-| `DISCORD_WEBHOOK_URL` | -                        | Discord webhook for alerts                 |
-| `WORKSPACE_DIR`       | `./workspace`            | Root directory for file operations         |
-| `DB_PATH`             | `./data/marnie.db`       | SQLite database path                       |
-
 
 ## API Documentation
 
 See [`docs/API.md`](docs/API.md) for full API reference.
+
+
+> The name `Marnie` was taken from the 2014 anime "When Marnie Was There"

@@ -12,7 +12,10 @@ Security fixes and updates are actively provided for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| `0.1.x` | :white_check_mark: |
+| `0.4.x` | :white_check_mark: |
+| `0.3.x` | :white_check_mark: |
+| `0.2.x` | :x:                |
+| `0.1.x` | :x:                |
 | `< 0.1` | :x:                |
 
 ---

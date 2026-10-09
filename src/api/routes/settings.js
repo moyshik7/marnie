@@ -44,6 +44,7 @@ const updateSettingsHandler = (req, res) => {
     'deep_research_enabled',
     'agent_mode_enabled',
     'system_prompt',
+    'brain_enabled',
   ];
 
   const updatedKeys = [];
