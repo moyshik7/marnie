@@ -39,27 +39,27 @@ const TOOLS = {
     execute: async ({ directory, pattern }) => filesystem.search({ directory, pattern }),
   },
   read_file: {
-    description: 'Read the contents of a local file (full or specific line range).',
+    description: 'Read the contents of a local file in workspace or repository (full or specific line range).',
     parameters: {
-      filePath: { type: 'string', description: 'Path to file to read', required: true },
+      filePath: { type: 'string', description: 'Path to file to read (relative to workspace or repo)', required: true },
       startLine: { type: 'number', description: '1-based starting line number (optional)' },
       endLine: { type: 'number', description: '1-based ending line number (optional)' },
     },
     execute: async ({ filePath, startLine, endLine }) => fileRead.read({ filePath, startLine, endLine }),
   },
   create_file: {
-    description: 'Create a new local file with initial content.',
+    description: 'Create a new local file strictly in the workspace directory with initial content. Opened in the browser and in-app preview/edit panel.',
     parameters: {
-      filePath: { type: 'string', description: 'Path to the new file', required: true },
+      filePath: { type: 'string', description: 'Path to the new file (must be inside workspace, e.g. "index.html" or "src/app.js")', required: true },
       content: { type: 'string', description: 'Initial file content' },
       overwrite: { type: 'boolean', description: 'Overwrite if file exists (default false)' },
     },
     execute: async ({ filePath, content, overwrite }) => fileCreate.create({ filePath, content, overwrite }),
   },
   write_file: {
-    description: 'Write, append, or replace specific lines in a local file. Reads file before line replacement.',
+    description: 'Write, append, or replace specific lines in a workspace file. Strictly restricted to workspace directory. Opened in browser and in-app preview/edit panel.',
     parameters: {
-      filePath: { type: 'string', description: 'Path to the file to modify', required: true },
+      filePath: { type: 'string', description: 'Path to the file to modify in workspace', required: true },
       content: { type: 'string', description: 'Content to insert or overwrite', required: true },
       startLine: { type: 'number', description: '1-based start line to replace (optional)' },
       endLine: { type: 'number', description: '1-based end line to replace (optional)' },
@@ -258,6 +258,8 @@ TOOL USAGE GUIDELINES:
 - MERMAID & DIAGRAMS INSTRUCTION: Whenever illustrating workflows, systems, architectures, timelines, state diagrams, or schemas, ALWAYS provide clear, valid Mermaid diagrams enclosed in \`\`\`mermaid code blocks. The workspace has built-in live preview for Mermaid diagrams.
 - LATEX MATH INSTRUCTION: For mathematical equations, proofs, and formulas, ALWAYS use LaTeX notation ($$...$$ for display block equations, $...$ for inline math). The workspace renders LaTeX with KaTeX.
 - NO EM DASHES INSTRUCTION: NEVER use em dashes (—). Always use standard hyphens or dashes (-) in your text.
+- WORKSPACE BOUNDARY & REPO INTEGRITY: All created and edited files MUST be strictly inside the workspace directory (\`workspace/\`). You are strictly prohibited from creating or modifying files outside the workspace directory or touching files outside the repository. Always specify relative paths within workspace (e.g., \`index.html\`, \`styles.css\`, \`src/main.js\`).
+- IN-APP EDIT & PREVIEW PANEL (CLAUDE ARTIFACTS): When you create or edit files in the workspace (such as HTML, JavaScript, CSS, SVG, or Markdown), the user can immediately open them in the browser or view them in the Claude-like in-app Edit and Preview panel where code can be edited, tested, and copied. Always write complete, functional code.
 - When you emit a tool call, the system will execute it and deliver the real stdout/stderr back to the workspace.
 
 ${customSystemPrompt ? `\nADDITIONAL USER INSTRUCTIONS:\n${customSystemPrompt}` : ''}`.trim();

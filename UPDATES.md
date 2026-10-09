@@ -1,23 +1,17 @@
-### Automatic Meta Image Extraction & Markdown Header Storage
+## Updates on 0.4.x
+- Added a text editor with markdown, latex, mermaid preview and edit mode.
+- Edited / Created files can be viewed and edited in the browser
+- Bug fix: File editor edits the source code of the app and renders the app corrupted. Fixed: Now the file edit and create can only edit / create files inside the workspace directory.
 
-- Created metaImageFetcher.js to extract OpenGraph (og:image), Twitter cards (twitter:image), or prominent article images from discovered source websites.
-- Saved into the YAML frontmatter of workspace/research/<slug>.md
-
-```md
----
-title: "Bangladesh Low-Investment Business Opportunities: 2025-2026 Market Analysis"
-keywords: ["Bangladesh", "SMEs", "Low Investment"]
-prompt: "Find me 10 business ideas to start in bangladesh..."
-sources: ["https://example.com/..."]
-image: "https://www.99businessideas.com/wp-content/uploads/2021/02/businessideasinbangladesh.jpg"
-duration: "533.4s"
-rounds: 3
-queries: 7
-urls_analyzed: 13
-model: "qwen3.5:9b"
-search_engine: "duckduckgo"
-time: "2026-10-08T20:16:35.704Z"
----
-```
-
-
+## Updates on 0.3.x
+- Updated research report page
+- Deep research can now use tools
+- Research report preview now supports latex preview
+- Research report preview now supports mermaid flowchart preview
+- Research preview now mobile friendly and optimized for mobile
+- Research preview pages can now be viewed without opening the dashboard with individual link
+- Docker build now uses node 24.x
+- Discord webhook embed issue fixed
+- Fixed bug: Duckduckgo search returning zero results
+- Major ui improvements
+- [Full changelog](https://github.com/moyshik7/marnie/commits/0.3.3)

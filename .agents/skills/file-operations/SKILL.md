@@ -30,15 +30,15 @@ Read whole files or specific line ranges (1-indexed).
 Aliases: `file_read`
 
 ### 2. `create_file`
-Create a brand new file with initial content.
+Create a brand new file with initial content strictly inside the workspace directory (`workspace/`).
 
 ```json
 <tool_call>
 {
   "name": "create_file",
   "arguments": {
-    "filePath": "/home/sayuri/code/marnie/notes.txt",
-    "content": "Initial notes content",
+    "filePath": "index.html",
+    "content": "<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>",
     "overwrite": false
   }
 }
@@ -47,14 +47,14 @@ Create a brand new file with initial content.
 Aliases: `file_create`
 
 ### 3. `write_file`
-Overwrite, append, or replace specific line numbers in an existing file. Reads current file content before modification.
+Overwrite, append, or replace specific line numbers in an existing workspace file. Reads current file content before modification.
 
 ```json
 <tool_call>
 {
   "name": "write_file",
   "arguments": {
-    "filePath": "/home/sayuri/code/marnie/notes.txt",
+    "filePath": "index.html",
     "content": "Updated notes line\n",
     "append": true
   }

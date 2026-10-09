@@ -24,11 +24,23 @@ import {
     HelpCircle,
     BotMessageSquare,
     ArrowUp,
+    ExternalLink,
+    FileCode,
+    FileText,
+    Eye,
+    Folder,
 } from "lucide-react";
 import katex from "katex";
 import mermaid from "mermaid";
-import { sendMessageStream, getSettings } from "../services/api";
+import {
+    sendMessageStream,
+    getSettings,
+    getWorkspaceFile,
+    getWorkspaceRawUrl,
+    listWorkspaceFiles,
+} from "../services/api";
 import ThemeToggle from "./ThemeToggle";
+import ArtifactPanel from "./ArtifactPanel";
 
 // Initialize mermaid once
 try {
@@ -187,7 +199,7 @@ function MermaidBlock({ chart }) {
 
 function parseMessageContent(rawContent) {
     if (!rawContent || typeof rawContent !== "string")
-        return { thinking: "", answer: "", toolOutputs: [] };
+        return { thinking: "", answer: "", toolOutputs: [], artifacts: [] };
 
     let content = rawContent;
     let thinking = "";
@@ -198,12 +210,27 @@ function parseMessageContent(rawContent) {
         content = content.slice(thinkMatch[0].length);
     }
 
+    // Parse file artifact markers
+    const artifacts = [];
+    const artifactRegex = /<!-- file-artifact:([\s\S]*?) -->/gi;
+    let aMatch;
+    while ((aMatch = artifactRegex.exec(content)) !== null) {
+        try {
+            const parsed = JSON.parse(aMatch[1]);
+            if (parsed.path && !artifacts.some((a) => a.path === parsed.path)) {
+                artifacts.push(parsed);
+            }
+        } catch {}
+    }
+    content = content.replace(/<!-- file-artifact:[\s\S]*? -->/gi, "");
+
     const toolOutputs = [];
     const toolOutputRegex = /<!-- tool-output:?(\w*) -->([\s\S]*?)<!-- \/tool-output -->/gi;
     let match;
     while ((match = toolOutputRegex.exec(content)) !== null) {
+        const tName = match[1] || "tool";
         toolOutputs.push({
-            toolName: match[1] || "tool",
+            toolName: tName,
             output: match[2].trim(),
         });
     }
@@ -216,7 +243,175 @@ function parseMessageContent(rawContent) {
         thinking,
         answer: cleanAnswer,
         toolOutputs,
+        artifacts,
     };
+}
+
+function ArtifactCard({ artifact, onOpenArtifact }) {
+    const [copied, setCopied] = useState(false);
+    const fileName = artifact.name || artifact.path.split("/").pop() || "file";
+    const ext = fileName.slice(fileName.lastIndexOf(".")).toLowerCase();
+    const isHtml = ext === ".html" || ext === ".htm";
+    const isSvg = ext === ".svg";
+    const isActionCreated = artifact.action === "created";
+
+    const handleCopy = async (e) => {
+        e.stopPropagation();
+        try {
+            const data = await getWorkspaceFile(artifact.path);
+            if (data && data.content !== undefined) {
+                navigator.clipboard.writeText(data.content);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            }
+        } catch (err) {
+            console.warn("Failed to copy artifact content:", err);
+        }
+    };
+
+    const handleOpenBrowser = (e) => {
+        e.stopPropagation();
+        const rawUrl = getWorkspaceRawUrl(artifact.path);
+        window.open(rawUrl, "_blank");
+    };
+
+    return (
+        <div
+            onClick={() => onOpenArtifact(artifact.path)}
+            title="Click to open in-app editor and preview panel"
+            style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0.65rem 0.9rem",
+                margin: "0.6rem 0",
+                borderRadius: "var(--radius-sm)",
+                backgroundColor: "var(--bg-secondary)",
+                border: "1px solid var(--border-subtle)",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-strong)";
+                e.currentTarget.style.backgroundColor = "var(--bg-card-hover)";
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-subtle)";
+                e.currentTarget.style.backgroundColor = "var(--bg-secondary)";
+            }}
+        >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.65rem", minWidth: 0 }}>
+                <div
+                    style={{
+                        width: "32px",
+                        height: "32px",
+                        borderRadius: "6px",
+                        backgroundColor: isHtml ? "rgba(234, 88, 12, 0.12)" : "rgba(59, 130, 246, 0.12)",
+                        color: isHtml ? "#ea580c" : "#3b82f6",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                    }}
+                >
+                    {isHtml || isSvg ? <FileCode size={16} /> : <FileText size={16} />}
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                        <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--text-primary)" }}>
+                            {fileName}
+                        </span>
+                        <span
+                            style={{
+                                fontSize: "0.66rem",
+                                fontWeight: 500,
+                                padding: "0.08rem 0.35rem",
+                                borderRadius: "4px",
+                                backgroundColor: isActionCreated ? "rgba(22, 163, 74, 0.12)" : "rgba(217, 119, 6, 0.12)",
+                                color: isActionCreated ? "#16a34a" : "var(--accent-terracotta)",
+                                textTransform: "capitalize",
+                            }}
+                        >
+                            {isActionCreated ? "Created" : "Edited"}
+                        </span>
+                    </div>
+                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "1px" }}>
+                        workspace/{artifact.path} • Click to open preview & editor
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                {/* Copy code button */}
+                <button
+                    onClick={handleCopy}
+                    title="Copy file code to clipboard"
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.2rem",
+                        padding: "0.28rem 0.5rem",
+                        borderRadius: "4px",
+                        border: "1px solid var(--border-subtle)",
+                        backgroundColor: "var(--bg-card)",
+                        color: "var(--text-secondary)",
+                        fontSize: "0.72rem",
+                        cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
+                >
+                    {copied ? <Check size={12} color="#16a34a" /> : <Copy size={12} />}
+                    <span>{copied ? "Copied" : "Copy"}</span>
+                </button>
+
+                {/* Open directly in browser */}
+                <button
+                    onClick={handleOpenBrowser}
+                    title="Open directly in browser tab"
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.2rem",
+                        padding: "0.28rem 0.5rem",
+                        borderRadius: "4px",
+                        border: "1px solid var(--border-subtle)",
+                        backgroundColor: "var(--bg-card)",
+                        color: "var(--text-secondary)",
+                        fontSize: "0.72rem",
+                        cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
+                >
+                    <ExternalLink size={12} />
+                    <span>Browser</span>
+                </button>
+
+                {/* Open preview / edit panel */}
+                <button
+                    onClick={() => onOpenArtifact(artifact.path)}
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.25rem",
+                        padding: "0.28rem 0.6rem",
+                        borderRadius: "4px",
+                        border: "none",
+                        backgroundColor: "var(--accent-terracotta)",
+                        color: "#ffffff",
+                        fontSize: "0.74rem",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                    }}
+                >
+                    <Eye size={12} />
+                    <span>Open Panel</span>
+                </button>
+            </div>
+        </div>
+    );
 }
 
 function CollapsibleToolOutput({ toolName, output, defaultExpanded = false }) {
@@ -427,6 +622,10 @@ export default function ChatView({
     onOpenTools,
     onOpenSettings,
     onRefreshConversations,
+    isArtifactOpen = false,
+    onToggleArtifact,
+    activeArtifactPath = "",
+    onSelectArtifactPath,
 }) {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
@@ -434,6 +633,27 @@ export default function ChatView({
     const [streamingContent, setStreamingContent] = useState("");
     const [streamingThinking, setStreamingThinking] = useState("");
     const [copiedIndex, setCopiedIndex] = useState(null);
+
+    // Artifact state
+    const [internalArtifactOpen, setInternalArtifactOpen] = useState(false);
+    const [internalArtifactPath, setInternalArtifactPath] = useState("");
+
+    const artifactOpen = onToggleArtifact !== undefined ? isArtifactOpen : internalArtifactOpen;
+    const currentArtifactPath = onSelectArtifactPath !== undefined ? activeArtifactPath : internalArtifactPath;
+
+    const handleOpenArtifact = (path) => {
+        const targetPath = path || currentArtifactPath || "";
+        if (onSelectArtifactPath) onSelectArtifactPath(targetPath);
+        else setInternalArtifactPath(targetPath);
+
+        if (onToggleArtifact) onToggleArtifact(true);
+        else setInternalArtifactOpen(true);
+    };
+
+    const handleCloseArtifact = () => {
+        if (onToggleArtifact) onToggleArtifact(false);
+        else setInternalArtifactOpen(false);
+    };
 
     // Feature toggles
     const [webSearchActive, setWebSearchActive] = useState(false);
@@ -700,6 +920,12 @@ export default function ChatView({
                         },
                     ]);
                     if (onRefreshConversations) onRefreshConversations();
+
+                    // Auto-open created/edited file in artifact panel
+                    const { artifacts } = parseMessageContent(combined);
+                    if (artifacts && artifacts.length > 0) {
+                        handleOpenArtifact(artifacts[artifacts.length - 1].path);
+                    }
                 },
             });
         } catch (err) {
@@ -770,17 +996,19 @@ export default function ChatView({
     };
 
     return (
-        <div
-            style={{
-                flex: 1,
-                height: "100vh",
-                display: "flex",
-                flexDirection: "column",
-                backgroundColor: "var(--bg-primary)",
-                position: "relative",
-                overflow: "hidden",
-            }}
-        >
+        <div style={{ flex: 1, display: "flex", width: "100%", height: "100%", overflow: "hidden" }}>
+            <div
+                style={{
+                    flex: 1,
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    backgroundColor: "var(--bg-primary)",
+                    position: "relative",
+                    overflow: "hidden",
+                    minWidth: 0,
+                }}
+            >
             {/* Top Header Bar */}
             <header
                 style={{
@@ -817,7 +1045,7 @@ export default function ChatView({
                     </span>
                 </div>
 
-                {/* Right side: Theme Switcher & Tools */}
+                {/* Right side: Workspace Files, Theme Switcher & Tools */}
                 <div
                     style={{
                         display: "flex",
@@ -826,6 +1054,48 @@ export default function ChatView({
                         flexShrink: 0,
                     }}
                 >
+                    {/* Workspace Files & Live Preview button */}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (artifactOpen) {
+                                handleCloseArtifact();
+                            } else {
+                                handleOpenArtifact(currentArtifactPath || "");
+                            }
+                        }}
+                        title="Workspace Files & Live Preview"
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.35rem",
+                            padding: "0.35rem 0.65rem",
+                            borderRadius: "6px",
+                            border: "1px solid var(--border-subtle)",
+                            backgroundColor: artifactOpen ? "var(--bg-secondary)" : "transparent",
+                            color: artifactOpen ? "var(--accent-terracotta)" : "var(--text-secondary)",
+                            fontSize: "0.78rem",
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!artifactOpen) {
+                                e.currentTarget.style.color = "var(--text-primary)";
+                                e.currentTarget.style.borderColor = "var(--border-strong)";
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!artifactOpen) {
+                                e.currentTarget.style.color = "var(--text-secondary)";
+                                e.currentTarget.style.borderColor = "var(--border-subtle)";
+                            }
+                        }}
+                    >
+                        <FileCode size={14} />
+                        <span>Workspace Files</span>
+                    </button>
+
                     {/* Top Light/Dark Theme Switcher Toggle */}
                     <ThemeToggle theme={theme} onToggle={onToggleTheme} />
                 </div>
@@ -1079,6 +1349,7 @@ export default function ChatView({
                                                             thinking,
                                                             answer,
                                                             toolOutputs,
+                                                            artifacts,
                                                         } = parseMessageContent(
                                                             msg.content,
                                                         );
@@ -1098,6 +1369,17 @@ export default function ChatView({
                                                                                 toolName={to.toolName}
                                                                                 output={to.output}
                                                                                 defaultExpanded={false}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                                {artifacts && artifacts.length > 0 && (
+                                                                    <div style={{ marginBottom: "0.6rem" }}>
+                                                                        {artifacts.map((art, aIdx) => (
+                                                                            <ArtifactCard
+                                                                                key={aIdx}
+                                                                                artifact={art}
+                                                                                onOpenArtifact={handleOpenArtifact}
                                                                             />
                                                                         ))}
                                                                     </div>
@@ -1217,6 +1499,7 @@ export default function ChatView({
                                             const {
                                                 answer,
                                                 toolOutputs,
+                                                artifacts,
                                             } = parseMessageContent(streamingContent);
                                             return (
                                                 <>
@@ -1228,6 +1511,17 @@ export default function ChatView({
                                                                     toolName={to.toolName}
                                                                     output={to.output}
                                                                     defaultExpanded={false}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {artifacts && artifacts.length > 0 && (
+                                                        <div style={{ marginBottom: "0.6rem" }}>
+                                                            {artifacts.map((art, aIdx) => (
+                                                                <ArtifactCard
+                                                                    key={aIdx}
+                                                                    artifact={art}
+                                                                    onOpenArtifact={handleOpenArtifact}
                                                                 />
                                                             ))}
                                                         </div>
@@ -2155,6 +2449,18 @@ export default function ChatView({
                     </div>
                 </div>
             )}
+            </div>
+
+            {/* Claude-style Artifact Side Panel */}
+            <ArtifactPanel
+                isOpen={artifactOpen}
+                filePath={currentArtifactPath}
+                onClose={handleCloseArtifact}
+                onFileSelected={(path) => {
+                    if (onSelectArtifactPath) onSelectArtifactPath(path);
+                    else setInternalArtifactPath(path);
+                }}
+            />
         </div>
     );
 }

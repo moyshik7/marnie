@@ -1,6 +1,7 @@
 'use strict';
 
 const router = require('express').Router();
+const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../../db/index');
 const ollama = require('../../components/providers/ollama/interact');
@@ -26,7 +27,14 @@ async function runToolCallsAndFormat(toolCalls) {
       const res = await executeTool(call.name, call.arguments);
       callOutput += `\n> **Executed Tool:** \`${call.name}\`\n`;
       if (res && typeof res === 'object') {
-        if (call.name === 'send_alert' || call.name === 'discord_alert' || (res.sent === true && Object.keys(res).length === 1)) {
+        if (call.name === 'create_file' || call.name === 'write_file' || call.name === 'file_create' || call.name === 'file_write') {
+          const action = (call.name === 'create_file' || call.name === 'file_create') ? 'created' : 'edited';
+          const relPath = (res.relativePath || (res.path ? path.basename(res.path) : (call.arguments?.filePath || 'file'))).replace(/\\/g, '/');
+          const fileName = res.name || path.basename(relPath);
+          const linesText = res.totalLines !== undefined ? ` (${res.totalLines} lines)` : '';
+          callOutput += `\n<!-- file-artifact:{"path":"${relPath.replace(/"/g, '\\"')}","name":"${fileName.replace(/"/g, '\\"')}","action":"${action}"} -->\n`;
+          callOutput += `\n**File ${action === 'created' ? 'Created' : 'Updated'}:** \`${relPath}\`${linesText}\n`;
+        } else if (call.name === 'send_alert' || call.name === 'discord_alert' || (res.sent === true && Object.keys(res).length === 1)) {
           callOutput += `\nSuccessful\n`;
         } else if ((call.name === 'set_timer' || call.name === 'timer') && res.status) {
           callOutput += `\n${res.status}\n`;
@@ -213,6 +221,7 @@ function sanitizeHistoryForLLM(rawMessages) {
       content = content.replace(/<think>[\s\S]*?<\/think>\s*/gi, '').trim();
 
       // 2. Strip comment-delimited tool outputs while preserving subsequent assistant answers
+      content = content.replace(/<!-- file-artifact:[\s\S]*?-->/gi, '');
       content = content.replace(/<!-- tool-output:?(\w*) -->[\s\S]*?<!-- \/tool-output -->/gi, (_m, name) => {
         return `\n[Action: Tool "${name || 'tool'}" executed successfully]\n`;
       });

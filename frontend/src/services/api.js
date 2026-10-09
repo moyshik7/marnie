@@ -337,3 +337,38 @@ export async function deleteMarkdownReport(slug) {
   return request(`/research/reports/${encodeURIComponent(slug)}`, { method: 'DELETE' });
 }
 
+// ── Workspace Files (Claude-like Artifacts & Browser Preview) ───
+export async function listWorkspaceFiles() {
+  return request('/workspace/files');
+}
+
+export async function getWorkspaceFile(filePath) {
+  return request(`/workspace/file?path=${encodeURIComponent(filePath)}`);
+}
+
+export async function saveWorkspaceFile(filePath, content) {
+  return request('/workspace/file', {
+    method: 'PUT',
+    body: JSON.stringify({ path: filePath, content }),
+  });
+}
+
+export async function createWorkspaceFile(filePath, content = '') {
+  return request('/workspace/file', {
+    method: 'POST',
+    body: JSON.stringify({ path: filePath, content, overwrite: true }),
+  });
+}
+
+export async function deleteWorkspaceFile(filePath) {
+  return request(`/workspace/file?path=${encodeURIComponent(filePath)}`, {
+    method: 'DELETE',
+  });
+}
+
+export function getWorkspaceRawUrl(filePath) {
+  const base = getApiBase();
+  const cleanPath = filePath.replace(/^[/\\]+/, '');
+  return `${base}/workspace/raw/${cleanPath}`;
+}
+

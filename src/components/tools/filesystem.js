@@ -2,11 +2,12 @@
 
 const fs = require('fs');
 const path = require('path');
+const { WORKSPACE_DIR, REPO_ROOT } = require('../../utils/workspace');
 
 /**
  * Recursively search a directory for files matching a pattern.
  * @param {object} opts
- * @param {string} opts.directory   - Root directory to search from
+ * @param {string} [opts.directory] - Root directory to search from (defaults to workspace)
  * @param {string} [opts.pattern]   - Glob-like substring or regex string to match filenames
  * @param {boolean} [opts.useRegex] - If true, treat `pattern` as a regular expression
  * @param {number} [opts.maxDepth]  - Max recursion depth (default 10)
@@ -14,7 +15,11 @@ const path = require('path');
  * @returns {{ matches: string[], truncated: boolean }}
  */
 function search({ directory, pattern = '', useRegex = false, maxDepth = 10, maxResults = 200 }) {
-  const root = path.resolve(directory);
+  const root = directory ? path.resolve(WORKSPACE_DIR, directory) : WORKSPACE_DIR;
+  const relRepo = path.relative(REPO_ROOT, root);
+  if (relRepo.startsWith('..') || path.isAbsolute(relRepo)) {
+    throw Object.assign(new Error('Security Error: Search directory is outside the repository.'), { status: 403 });
+  }
   const results = [];
   let truncated = false;
 
@@ -59,10 +64,14 @@ function search({ directory, pattern = '', useRegex = false, maxDepth = 10, maxR
  * Stat a path (file or directory info).
  */
 function stat(targetPath) {
-  const resolved = path.resolve(targetPath);
-  const s = fs.statSync(resolved);
+  const root = targetPath ? path.resolve(WORKSPACE_DIR, targetPath) : WORKSPACE_DIR;
+  const relRepo = path.relative(REPO_ROOT, root);
+  if (relRepo.startsWith('..') || path.isAbsolute(relRepo)) {
+    throw Object.assign(new Error('Security Error: Path is outside the repository.'), { status: 403 });
+  }
+  const s = fs.statSync(root);
   return {
-    path: resolved,
+    path: root,
     isFile: s.isFile(),
     isDirectory: s.isDirectory(),
     size: s.size,

@@ -59,6 +59,8 @@ export default function App() {
     const [isResearchOngoing, setIsResearchOngoing] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isToolsOpen, setIsToolsOpen] = useState(false);
+    const [isArtifactOpen, setIsArtifactOpen] = useState(false);
+    const [activeArtifactPath, setActiveArtifactPath] = useState("");
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
         return localStorage.getItem("marnie_sidebar_collapsed") === "true";
     });
@@ -339,6 +341,11 @@ export default function App() {
                 onOpenSettings={() => setIsSettingsOpen(true)}
                 onOpenTools={() => setIsToolsOpen(true)}
                 onOpenDeepResearch={() => setActiveSection("research")}
+                onOpenArtifacts={() => {
+                    setActiveSection("chat");
+                    setIsArtifactOpen((prev) => !prev);
+                }}
+                isArtifactOpen={isArtifactOpen}
                 activeSection={activeSection}
                 isResearchOngoing={isResearchOngoing}
                 theme={theme}
@@ -372,6 +379,10 @@ export default function App() {
                         onRefreshConversations={() =>
                             refreshConversations(activeModel)
                         }
+                        isArtifactOpen={isArtifactOpen}
+                        onToggleArtifact={setIsArtifactOpen}
+                        activeArtifactPath={activeArtifactPath}
+                        onSelectArtifactPath={setActiveArtifactPath}
                     />
                 )}
             </main>

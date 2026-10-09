@@ -2,29 +2,29 @@
 
 const fs = require('fs');
 const path = require('path');
+const { resolveWorkspacePath } = require('../../utils/workspace');
 const { read } = require('./fileRead');
 
 /**
  * Write or patch a local file.
+ * Strictly restricted to the workspace directory.
  *
  * Modes:
  *  - `overwrite`  : Replace the entire file content (default when no line range given).
  *  - `line-range` : Replace lines [startLine..endLine] (1-based, inclusive) with newContent.
  *  - `append`     : Append content to end of file.
  *
- * IMPORTANT: When using line-range mode the current file is always read first
- * (via fileRead) so that the caller knows the existing content before writing.
- *
  * @param {object} opts
- * @param {string} opts.filePath     - Path to the file
+ * @param {string} opts.filePath     - Path to the file (within workspace)
  * @param {string} opts.content      - New content to write / insert
  * @param {number} [opts.startLine]  - 1-based start line to replace
  * @param {number} [opts.endLine]    - 1-based end line to replace (inclusive)
  * @param {boolean} [opts.append]    - Append to file instead of overwriting
- * @returns {{ path:string, totalLines:number, previousContent:string|null }}
+ * @returns {{ path:string, relativePath:string, name:string, totalLines:number, previousContent:string|null }}
  */
 function write({ filePath, content, startLine, endLine, append = false }) {
-  const resolved = path.resolve(filePath);
+  const { resolved, relativePath } = resolveWorkspacePath(filePath);
+  const name = path.basename(resolved);
 
   // Ensure parent directory exists
   const dir = path.dirname(resolved);
@@ -36,7 +36,13 @@ function write({ filePath, content, startLine, endLine, append = false }) {
   if (append) {
     fs.appendFileSync(resolved, content, 'utf8');
     const result = read({ filePath: resolved });
-    return { path: resolved, totalLines: result.totalLines, previousContent: null };
+    return {
+      path: resolved,
+      relativePath,
+      name,
+      totalLines: result.totalLines,
+      previousContent: null,
+    };
   }
 
   // ── Line-range replace ────────────────────────────────────────
@@ -54,6 +60,8 @@ function write({ filePath, content, startLine, endLine, append = false }) {
     fs.writeFileSync(resolved, newContent, 'utf8');
     return {
       path: resolved,
+      relativePath,
+      name,
       totalLines: lines.length,
       previousContent: existing.content,
     };
@@ -66,7 +74,13 @@ function write({ filePath, content, startLine, endLine, append = false }) {
   }
   fs.writeFileSync(resolved, content, 'utf8');
   const finalLines = content.split('\n').length;
-  return { path: resolved, totalLines: finalLines, previousContent: previous };
+  return {
+    path: resolved,
+    relativePath,
+    name,
+    totalLines: finalLines,
+    previousContent: previous,
+  };
 }
 
 module.exports = { write };

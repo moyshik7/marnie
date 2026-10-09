@@ -5,22 +5,9 @@
 	Marnie
 </h1>
 
-<br />
+> **The local AI workspace with built-in tools.** Run deep research, scrape websites, interact with local files, and trigger webhooks with zero extra microservices required.
 
-<p align="center">
-  	A powerful, self-hosted AI workspace for chatting, research, automation, and more—built to adapt to the way you work.
-</p>
-
-<br />
-
-<div align="center">
-  	<img src="https://img.shields.io/github/actions/workflow/status/moyshik7/marnie/deploy.yml?branch=main&label=GitHub%20CI" />
-  	<img src="https://github.com/moyshik7/marnie/actions/workflows/deploy.yml/badge.svg" />
-  	<img src="https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white" />
-  	<img src="https://img.shields.io/badge/node.js-%236DA55F.svg?style=for-the-badge&logo=node.js&logoColor=white" />
-  	<img src="https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB" />
-  	<img src="https://img.shields.io/badge/ollama-%23000000.svg?style=for-the-badge&logo=ollama&logoColor=white" />
-</div>
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 <br />
 
@@ -30,13 +17,6 @@
 
 <br />
 <br />
-<br />
-
-### Name taken from 2014 anime "When Marnie Was There"
-
-<p align="center">
-  	<img src="https://raw.githubusercontent.com/moyshik7/marnie/main/branding/when-marnie-was-there-original-poster.png" alt="When Marnie was here original poster"/>
-</p>
 
 
 ## Quick Links:
@@ -44,28 +24,6 @@
 - [Installation (Docker)](#installation-docker)
 - [Skills](#skills-reference)
 
-
-## Tools & Skills
-- [x] Web search (DuckDuckGo, SearXNG)
-- [x] Web scraper (Cheerio and Axios site extractor)
-- [x] Terminal access (Bash / Shell commands)
-- [x] Filesystem search (Recursive regex / pattern search)
-- [x] Get current datetime
-- [ ] Get current weather
-- [x] Send api requests
-    - [x] GET
-    - [x] POST
-    - [x] PUT, PATCH, DELETE
-- [ ] Code run
-    - [ ] Python
-    - [x] Javascript (Node.js isolated runner)
-- [x] Local File Create
-- [x] Local File Read
-- [x] Local File Write (Targeted line range edits and replacements)
-- [x] Create Tasks (SQLite task tracking)
-- [x] Create scheduled tasks (Cron scheduler)
-- [x] Discord Webhook alerts
-- [x] Countdown timer with alert notifications
 
 ### Skills Reference
 
@@ -87,15 +45,8 @@ All skills are documented with specifications under [`.agents/skills/`](.agents/
 | `web-search`         | Live web search via DuckDuckGo or SearXNG with automatic link content scraping                                               |
 
 
-## Integrations:
-- [x] Discord Webhook
-- [x] Duckduckgo search
-- [x] SearXNG
-- [ ] Brave search
-- [ ] Mail
-- [ ] OCR for uploaded files
 
-## LLM Sources
+## Supported LLM Sources
 - [x] Ollama
 - [ ] llama.cpp
 - [ ] Gemini API
@@ -106,41 +57,27 @@ All skills are documented with specifications under [`.agents/skills/`](.agents/
 - [ ] Cloudflare
 - [ ] Vercel
 
-## Features
-- [x] Chat
-- [x] Agent Mode
-- [ ] Deep Research
-- [ ] Deep Research Report
-- [x] Mermaid Preview
-- [x] Latex Math Preview
 
 ---
 
 ## Installation (Manually)
+### Requirements:
+- NodeJS 24.x or higher
+- Git
+- Curl
 
-#### Clone this repo
+### Linux and MacOS
+Run this in a terminal
+
 ```bash
-git clone https://github.com/moyshik7/marnie.git
-cd marnie
+bash <(curl -fsSL https://raw.githubusercontent.com/moyshik7/marnie/main/install.sh)
 ```
 
-#### Install Dependencies
+### Windows
+Run this in **powershell** (NOT COMMAND PROMPT)
 
-```bash
-npm install
-cd frontend && npm install && npm run build && cd ..
-```
-
-#### Copy and edit environment config
-
-```bash
-cp .env.example .env
-```
-
-#### Start the server (First time)
-
-```bash
-npm start
+```ps1
+irm https://raw.githubusercontent.com/moyshik7/marnie/main/install.ps1 | iex
 ```
 
 #### Start the server (Later without rebuilding the entire app)
@@ -223,3 +160,6 @@ docker run -d \
 ## API Documentation
 
 See [`docs/API.md`](docs/API.md) for full API reference.
+
+
+> The name `Marnie` was taken from the 2014 anime "When Marnie Was There"
