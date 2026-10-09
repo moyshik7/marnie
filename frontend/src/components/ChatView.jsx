@@ -29,6 +29,13 @@ import {
     FileText,
     Eye,
     Folder,
+    Slash,
+    GitFork,
+    Type,
+    Minimize2,
+    Palette,
+    Sparkles,
+    MessageSquarePlus,
 } from "lucide-react";
 import katex from "katex";
 import mermaid from "mermaid";
@@ -38,6 +45,9 @@ import {
     getWorkspaceFile,
     getWorkspaceRawUrl,
     listWorkspaceFiles,
+    forkConversation,
+    compactConversation,
+    renameConversation,
 } from "../services/api";
 import ThemeToggle from "./ThemeToggle";
 import ArtifactPanel from "./ArtifactPanel";
@@ -612,6 +622,96 @@ function ThinkingBox({ thinking, isStreaming = false, defaultExpanded = true }) 
     );
 }
 
+const SLASH_COMMANDS = [
+    {
+        name: "/elim5",
+        label: "/elim5",
+        args: "[question]",
+        description: "Explain like I'm five years old (simplified explanations)",
+        icon: Sparkles,
+        color: "#f59e0b",
+        execute: "prompt",
+    },
+    {
+        name: "/btw",
+        label: "/btw",
+        args: "<question>",
+        description: "Ask a side question without breaking or altering conversation context",
+        icon: MessageSquarePlus,
+        color: "#3b82f6",
+        execute: "side_question",
+    },
+    {
+        name: "/fork",
+        label: "/fork",
+        args: "[new-title]",
+        description: "Branches the current conversation into a new independent thread",
+        icon: GitFork,
+        color: "#8b5cf6",
+        execute: "action",
+    },
+    {
+        name: "/title",
+        label: "/title",
+        args: "<new-title>",
+        description: "Sets or updates the active window/conversation title",
+        icon: Type,
+        color: "#10b981",
+        execute: "action",
+    },
+    {
+        name: "/compact",
+        label: "/compact",
+        args: "",
+        description: "Summarizes the conversation so far to free up the context window while preserving critical history",
+        icon: Minimize2,
+        color: "#ec4899",
+        execute: "action",
+    },
+    {
+        name: "/output-style",
+        label: "/output-style",
+        args: "<standard|concise|bullet-points|technical|creative>",
+        description: "Customizes how text responses are rendered",
+        icon: Palette,
+        color: "#6366f1",
+        execute: "style_modal",
+    },
+];
+
+const OUTPUT_STYLES = [
+    {
+        id: "standard",
+        name: "Standard",
+        desc: "Default balanced response style with comprehensive explanations",
+        system: "",
+    },
+    {
+        id: "concise",
+        name: "Concise",
+        desc: "Ultra-brief, direct answers without unnecessary filler or preamble",
+        system: "Please provide ultra-concise, direct answers. Avoid filler, greetings, or unnecessary preamble.",
+    },
+    {
+        id: "bullet-points",
+        name: "Bullet Points",
+        desc: "Structured bullet points, key takeaways, and checklists",
+        system: "Format responses strictly using structured bullet points, checklists, and key takeaways.",
+    },
+    {
+        id: "technical",
+        name: "Technical Deep-Dive",
+        desc: "In-depth technical architecture, source code snippets, and trade-offs",
+        system: "Adopt a senior software engineering technical tone. Provide in-depth explanations, performance implications, architectural trade-offs, and complete code snippets.",
+    },
+    {
+        id: "creative",
+        name: "Creative & Engaging",
+        desc: "Engaging, conversational tone with storytelling and vivid analogies",
+        system: "Adopt an engaging, vivid, and conversational tone with illustrative analogies and expressive descriptions.",
+    },
+];
+
 export default function ChatView({
     conversation,
     activeModel,
@@ -626,6 +726,8 @@ export default function ChatView({
     onToggleArtifact,
     activeArtifactPath = "",
     onSelectArtifactPath,
+    onSelectConversation,
+    onConversationUpdated,
 }) {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
@@ -670,6 +772,16 @@ export default function ChatView({
     const [isListening, setIsListening] = useState(false);
     const [speechModalInfo, setSpeechModalInfo] = useState(null);
     const [copiedSetting, setCopiedSetting] = useState(false);
+
+    // Slash command & Output style state
+    const [slashSelectedIndex, setSlashSelectedIndex] = useState(0);
+    const [outputStyle, setOutputStyle] = useState(() => {
+        return localStorage.getItem("marnie_output_style") || "standard";
+    });
+    const [isStyleModalOpen, setIsStyleModalOpen] = useState(false);
+    const [sideQuestionQuery, setSideQuestionQuery] = useState(null); // when running /btw
+    const [isCompacting, setIsCompacting] = useState(false);
+    const [isForking, setIsForking] = useState(false);
 
     // Load search provider from settings
     useEffect(() => {
@@ -855,13 +967,89 @@ export default function ChatView({
         scrollToBottom();
     }, [messages, streamingContent]);
 
-    const handleSend = async (customPrompt) => {
+    const handleSend = async (customPrompt, extraSystem = "") => {
         const textToSend = (
             typeof customPrompt === "string" ? customPrompt : input
         ).trim();
         if (!textToSend || isStreaming) return;
 
         if (!conversation?.id) return;
+
+        // Check if message starts with a slash command (slash commands can only be used at the beginning)
+        if (textToSend.startsWith("/")) {
+            const spaceIdx = textToSend.indexOf(" ");
+            const cmdName = (spaceIdx !== -1 ? textToSend.slice(0, spaceIdx) : textToSend).toLowerCase();
+            const cmdArg = (spaceIdx !== -1 ? textToSend.slice(spaceIdx + 1) : "").trim();
+
+            if (cmdName === "/elim5") {
+                const elim5Instruction = "Explain like I am five years old, make things easier to understand, avoid jargon, use simple everyday analogies, and break down complex concepts into bite-sized, playful explanations.";
+                const question = cmdArg;
+                if (!question) {
+                    setInput("/elim5 ");
+                    return;
+                }
+                setInput("");
+                await handleSend(question, elim5Instruction);
+                return;
+            }
+
+            if (cmdName === "/btw") {
+                if (!cmdArg) {
+                    setInput("/btw ");
+                    return;
+                }
+                setInput("");
+                await handleSideQuestion(cmdArg);
+                return;
+            }
+
+            if (cmdName === "/fork") {
+                setInput("");
+                await handleForkConversation(cmdArg);
+                return;
+            }
+
+            if (cmdName === "/title") {
+                if (!cmdArg) {
+                    setInput("/title ");
+                    return;
+                }
+                setInput("");
+                await handleSetTitle(cmdArg);
+                return;
+            }
+
+            if (cmdName === "/compact") {
+                setInput("");
+                await handleCompactConversation();
+                return;
+            }
+
+            if (cmdName === "/output-style") {
+                setInput("");
+                if (cmdArg) {
+                    const matchedStyle = OUTPUT_STYLES.find(
+                        (s) => s.id === cmdArg.toLowerCase() || s.name.toLowerCase() === cmdArg.toLowerCase()
+                    );
+                    if (matchedStyle) {
+                        setOutputStyle(matchedStyle.id);
+                        localStorage.setItem("marnie_output_style", matchedStyle.id);
+                        setMessages((prev) => [
+                            ...prev,
+                            {
+                                id: `style-update-${Date.now()}`,
+                                role: "assistant",
+                                content: `🎨 **Output Style Updated:** Response style set to **${matchedStyle.name}**.\n\n*${matchedStyle.desc}*`,
+                                created_at: Math.floor(Date.now() / 1000),
+                            },
+                        ]);
+                        return;
+                    }
+                }
+                setIsStyleModalOpen(true);
+                return;
+            }
+        }
 
         // Optimistically add user message
         const userMsg = {
@@ -877,7 +1065,7 @@ export default function ChatView({
         setStreamingContent("");
         setStreamingThinking("");
 
-        // Prepare system instructions incorporating mode flags
+        // Prepare system instructions incorporating mode flags, active output-style, and custom instructions
         let augmentedSystem = "";
         if (webSearchActive) {
             const providerLabel = searchProvider === "searxng" ? "SearXNG" : "DuckDuckGo";
@@ -887,6 +1075,16 @@ export default function ChatView({
         if (agentModeActive) {
             augmentedSystem +=
                 "\n[Mode: Agent Mode enabled - identify goals, break down sub-tasks, execute tools, and formulate complete answers. For web searches, keep queries short (2 to 5 words), and always synthesize search results to answer the user.]";
+        }
+
+        // Apply selected output-style if set
+        const activeStyleObj = OUTPUT_STYLES.find((s) => s.id === outputStyle);
+        if (activeStyleObj && activeStyleObj.system) {
+            augmentedSystem += `\n[Output Style Instruction: ${activeStyleObj.system}]`;
+        }
+
+        if (extraSystem) {
+            augmentedSystem += `\n[User Directive: ${extraSystem}]`;
         }
 
         const abortController = new AbortController();
@@ -948,6 +1146,148 @@ export default function ChatView({
         }
     };
 
+    // Slash command: /btw Ask a side question without altering conversation history
+    const handleSideQuestion = async (question) => {
+        if (!conversation?.id || !question.trim()) return;
+
+        const sideId = `side-${Date.now()}`;
+        setMessages((prev) => [
+            ...prev,
+            {
+                id: `user-${sideId}`,
+                role: "user",
+                content: `💬 /btw ${question}`,
+                created_at: Math.floor(Date.now() / 1000),
+            },
+        ]);
+
+        setIsStreaming(true);
+        setStreamingContent("");
+        setStreamingThinking("");
+
+        // Build brief side prompt referencing conversation context without storing it permanently in DB
+        const recentContext = messages.slice(-6).map(m => `${m.role.toUpperCase()}: ${(m.content || '').slice(0, 300)}`).join("\n\n");
+        const sideSystemPrompt = `You are answering a quick side-question ("/btw") for the user. Here is the background conversation context for reference only:\n\n${recentContext}\n\nProvide a direct, helpful, and concise answer to the side question without altering previous tasks.`;
+
+        const abortController = new AbortController();
+        abortControllerRef.current = abortController;
+
+        try {
+            await sendMessageStream({
+                conversationId: conversation.id,
+                message: `[Side Question /btw]: ${question}`,
+                model: activeModel,
+                system: sideSystemPrompt,
+                signal: abortController.signal,
+                onChunk: (_token, fullText, _thinkingToken, fullThinking) => {
+                    setStreamingContent(fullText);
+                    if (fullThinking) setStreamingThinking(fullThinking);
+                },
+                onDone: (finalContent, finalThinking) => {
+                    setIsStreaming(false);
+                    setStreamingContent("");
+                    setStreamingThinking("");
+                    const combined = finalThinking
+                        ? `<think>\n${finalThinking.trim()}\n</think>\n\n${finalContent.trim()}`
+                        : finalContent;
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            id: `asst-${sideId}`,
+                            role: "assistant",
+                            content: `**[Side Note /btw Response]**\n\n${combined}`,
+                            created_at: Math.floor(Date.now() / 1000),
+                        },
+                    ]);
+                },
+            });
+        } catch (err) {
+            if (err.name !== "AbortError") {
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: `err-${sideId}`,
+                        role: "assistant",
+                        content: `⚠️ Error executing /btw: ${err.message}`,
+                        created_at: Math.floor(Date.now() / 1000),
+                    },
+                ]);
+            }
+        } finally {
+            setIsStreaming(false);
+            setStreamingContent("");
+            setStreamingThinking("");
+            abortControllerRef.current = null;
+        }
+    };
+
+    // Slash command: /fork Branches conversation into a new thread
+    const handleForkConversation = async (customTitle) => {
+        if (!conversation?.id || isForking) return;
+        setIsForking(true);
+        try {
+            const forkTitle = customTitle || `Fork of ${conversation.title || 'Conversation'}`;
+            const newConv = await forkConversation(conversation.id, { title: forkTitle });
+            if (newConv && newConv.id) {
+                if (onRefreshConversations) await onRefreshConversations();
+                if (onSelectConversation) {
+                    onSelectConversation(newConv.id, newConv);
+                }
+            }
+        } catch (err) {
+            alert(`Failed to fork conversation: ${err.message}`);
+        } finally {
+            setIsForking(false);
+        }
+    };
+
+    // Slash command: /title Sets or updates window title
+    const handleSetTitle = async (newTitle) => {
+        if (!conversation?.id || !newTitle.trim()) return;
+        try {
+            const updated = await renameConversation(conversation.id, newTitle.trim());
+            if (onConversationUpdated) {
+                onConversationUpdated({ ...conversation, title: newTitle.trim() });
+            } else if (onRefreshConversations) {
+                onRefreshConversations();
+            }
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: `title-update-${Date.now()}`,
+                    role: "assistant",
+                    content: `🏷️ **Window Title Updated:** Conversation title changed to **"${newTitle.trim()}"**.`,
+                    created_at: Math.floor(Date.now() / 1000),
+                },
+            ]);
+        } catch (err) {
+            alert(`Failed to rename conversation: ${err.message}`);
+        }
+    };
+
+    // Slash command: /compact Summarizes conversation history
+    const handleCompactConversation = async () => {
+        if (!conversation?.id || isCompacting) return;
+        setIsCompacting(true);
+        try {
+            const res = await compactConversation(conversation.id);
+            if (res?.conversation) {
+                if (onConversationUpdated) {
+                    onConversationUpdated(res.conversation);
+                } else if (onRefreshConversations) {
+                    onRefreshConversations();
+                }
+                if (res.conversation.messages) {
+                    setMessages(res.conversation.messages);
+                }
+            }
+        } catch (err) {
+            alert(`Failed to compact conversation: ${err.message}`);
+        } finally {
+            setIsCompacting(false);
+        }
+    };
+
     const handleStop = () => {
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
@@ -971,7 +1311,64 @@ export default function ChatView({
         }
     };
 
+    // Filter matching slash commands when typing starts with /
+    const isSlashMenuOpen = input.startsWith("/") && !input.includes(" ");
+    const slashSearchTerm = input.startsWith("/") ? input.slice(1).toLowerCase() : "";
+    const filteredSlashCommands = isSlashMenuOpen
+        ? SLASH_COMMANDS.filter((cmd) => cmd.name.slice(1).toLowerCase().startsWith(slashSearchTerm))
+        : [];
+
+    const handleSelectSlashCommand = (cmd) => {
+        if (cmd.execute === "action" && (cmd.name === "/fork" || cmd.name === "/compact")) {
+            if (cmd.name === "/fork") {
+                setInput("");
+                handleForkConversation();
+                return;
+            }
+            if (cmd.name === "/compact") {
+                setInput("");
+                handleCompactConversation();
+                return;
+            }
+        }
+        if (cmd.name === "/output-style") {
+            setInput("");
+            setIsStyleModalOpen(true);
+            return;
+        }
+        setInput(`${cmd.name} `);
+        if (textareaRef.current) {
+            textareaRef.current.focus();
+        }
+    };
+
     const handleKeyDown = (e) => {
+        if (isSlashMenuOpen && filteredSlashCommands.length > 0) {
+            if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setSlashSelectedIndex((prev) => (prev + 1) % filteredSlashCommands.length);
+                return;
+            }
+            if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setSlashSelectedIndex((prev) => (prev - 1 + filteredSlashCommands.length) % filteredSlashCommands.length);
+                return;
+            }
+            if (e.key === "Enter" || e.key === "Tab") {
+                e.preventDefault();
+                const selectedCmd = filteredSlashCommands[slashSelectedIndex] || filteredSlashCommands[0];
+                if (selectedCmd) {
+                    handleSelectSlashCommand(selectedCmd);
+                    return;
+                }
+            }
+            if (e.key === "Escape") {
+                e.preventDefault();
+                setInput("");
+                return;
+            }
+        }
+
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             handleSend();
@@ -1685,6 +2082,189 @@ export default function ChatView({
                         position: "relative",
                     }}
                 >
+                    {/* Discord-style Slash Command Popup List */}
+                    {isSlashMenuOpen && filteredSlashCommands.length > 0 && (
+                        <div
+                            style={{
+                                position: "absolute",
+                                bottom: "calc(100% + 10px)",
+                                left: 0,
+                                right: 0,
+                                backgroundColor: "var(--bg-card)",
+                                border: "1px solid var(--border-strong)",
+                                borderRadius: "var(--radius-md)",
+                                boxShadow: "var(--shadow-lg)",
+                                padding: "0.45rem",
+                                zIndex: 120,
+                                maxHeight: "310px",
+                                overflowY: "auto",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "2px",
+                                animation: "fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1)",
+                            }}
+                        >
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    padding: "0.35rem 0.65rem 0.25rem 0.65rem",
+                                    fontSize: "0.7rem",
+                                    fontWeight: 700,
+                                    letterSpacing: "0.05em",
+                                    color: "var(--text-muted)",
+                                    textTransform: "uppercase",
+                                    borderBottom: "1px solid var(--border-subtle)",
+                                    marginBottom: "0.25rem",
+                                }}
+                            >
+                                <span style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                                    <Slash size={12} color="var(--accent-terracotta)" />
+                                    COMMANDS MATCHING &quot;{input}&quot;
+                                </span>
+                                <span style={{ fontSize: "0.68rem", fontWeight: 400, opacity: 0.8 }}>
+                                    ↑ ↓ to navigate • Enter to select • Esc to dismiss
+                                </span>
+                            </div>
+
+                            {filteredSlashCommands.map((cmd, idx) => {
+                                const isSelected = idx === slashSelectedIndex;
+                                const Icon = cmd.icon;
+                                return (
+                                    <div
+                                        key={cmd.name}
+                                        onClick={() => handleSelectSlashCommand(cmd)}
+                                        onMouseEnter={() => setSlashSelectedIndex(idx)}
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            padding: "0.5rem 0.75rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: isSelected ? "var(--bg-card-hover)" : "transparent",
+                                            border: isSelected ? "1px solid var(--border-strong)" : "1px solid transparent",
+                                            cursor: "pointer",
+                                            transition: "background-color 0.1s ease",
+                                        }}
+                                    >
+                                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
+                                            <div
+                                                style={{
+                                                    width: "28px",
+                                                    height: "28px",
+                                                    borderRadius: "6px",
+                                                    backgroundColor: `${cmd.color}18`,
+                                                    color: cmd.color,
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    flexShrink: 0,
+                                                }}
+                                            >
+                                                <Icon size={15} />
+                                            </div>
+                                            <div style={{ minWidth: 0 }}>
+                                                <div style={{ display: "flex", alignItems: "baseline", gap: "0.45rem" }}>
+                                                    <span
+                                                        style={{
+                                                            fontSize: "0.86rem",
+                                                            fontWeight: 600,
+                                                            color: isSelected ? "var(--accent-terracotta)" : "var(--text-primary)",
+                                                            fontFamily: "var(--font-mono)",
+                                                        }}
+                                                    >
+                                                        {cmd.name}
+                                                    </span>
+                                                    {cmd.args && (
+                                                        <span
+                                                            style={{
+                                                                fontSize: "0.72rem",
+                                                                color: "var(--text-muted)",
+                                                                fontFamily: "var(--font-mono)",
+                                                            }}
+                                                        >
+                                                            {cmd.args}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontSize: "0.76rem",
+                                                        color: "var(--text-secondary)",
+                                                        whiteSpace: "nowrap",
+                                                        overflow: "hidden",
+                                                        textOverflow: "ellipsis",
+                                                    }}
+                                                >
+                                                    {cmd.description}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div
+                                            style={{
+                                                fontSize: "0.7rem",
+                                                color: isSelected ? "var(--accent-terracotta)" : "var(--text-muted)",
+                                                padding: "0.2rem 0.45rem",
+                                                borderRadius: "4px",
+                                                backgroundColor: isSelected ? "var(--accent-light)" : "transparent",
+                                                fontWeight: 500,
+                                                flexShrink: 0,
+                                                marginLeft: "0.5rem",
+                                            }}
+                                        >
+                                            Tab ⇥
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* Active Output Style indicator pill (if not standard) */}
+                    {outputStyle !== "standard" && (
+                        <div
+                            style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "0.4rem",
+                                padding: "0.2rem 0.55rem",
+                                borderRadius: "4px",
+                                backgroundColor: "rgba(99, 102, 241, 0.12)",
+                                border: "1px solid rgba(99, 102, 241, 0.3)",
+                                color: "#6366f1",
+                                fontSize: "0.72rem",
+                                fontWeight: 500,
+                                alignSelf: "flex-start",
+                                marginBottom: "-0.2rem",
+                            }}
+                        >
+                            <Palette size={12} />
+                            <span>
+                                Style: {OUTPUT_STYLES.find((s) => s.id === outputStyle)?.name || outputStyle}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setOutputStyle("standard");
+                                    localStorage.setItem("marnie_output_style", "standard");
+                                }}
+                                title="Reset to standard style"
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#6366f1",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                }}
+                            >
+                                <X size={12} />
+                            </button>
+                        </div>
+                    )}
+
                     {/* Top Row: Textarea on left, Voice Input button + Model Switcher trigger on right */}
                     <div
                         style={{
@@ -2541,6 +3121,144 @@ export default function ChatView({
                             >
                                 Got it
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* /output-style Modal */}
+            {isStyleModalOpen && (
+                <div
+                    style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: "rgba(0, 0, 0, 0.65)",
+                        backdropFilter: "blur(4px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 1000,
+                        padding: "1.25rem",
+                    }}
+                    onClick={() => setIsStyleModalOpen(false)}
+                >
+                    <div
+                        style={{
+                            backgroundColor: "var(--bg-card)",
+                            border: "1px solid var(--border-strong)",
+                            borderRadius: "var(--radius-lg)",
+                            width: "100%",
+                            maxWidth: "520px",
+                            boxShadow: "var(--shadow-xl)",
+                            overflow: "hidden",
+                            animation: "fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div
+                            style={{
+                                padding: "1.1rem 1.4rem",
+                                borderBottom: "1px solid var(--border-subtle)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                backgroundColor: "var(--bg-primary)",
+                            }}
+                        >
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                                <div
+                                    style={{
+                                        width: "30px",
+                                        height: "30px",
+                                        borderRadius: "6px",
+                                        backgroundColor: "rgba(99, 102, 241, 0.14)",
+                                        color: "#6366f1",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <Palette size={16} />
+                                </div>
+                                <div>
+                                    <h3
+                                        style={{
+                                            fontFamily: "var(--font-display)",
+                                            fontSize: "1.05rem",
+                                            fontWeight: 600,
+                                            color: "var(--text-primary)",
+                                            margin: 0,
+                                        }}
+                                    >
+                                        Output Style Customization
+                                    </h3>
+                                    <span style={{ fontSize: "0.74rem", color: "var(--text-muted)" }}>
+                                        Customize how AI text responses are formatted and rendered
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsStyleModalOpen(false)}
+                                style={{
+                                    background: "none",
+                                    border: "none",
+                                    color: "var(--text-muted)",
+                                    cursor: "pointer",
+                                    padding: "4px",
+                                }}
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                            {OUTPUT_STYLES.map((style) => {
+                                const isSelected = outputStyle === style.id;
+                                return (
+                                    <div
+                                        key={style.id}
+                                        onClick={() => {
+                                            setOutputStyle(style.id);
+                                            localStorage.setItem("marnie_output_style", style.id);
+                                            setIsStyleModalOpen(false);
+                                            setMessages((prev) => [
+                                                ...prev,
+                                                {
+                                                    id: `style-update-${Date.now()}`,
+                                                    role: "assistant",
+                                                    content: `🎨 **Output Style Updated:** Response style set to **${style.name}**.\n\n*${style.desc}*`,
+                                                    created_at: Math.floor(Date.now() / 1000),
+                                                },
+                                            ]);
+                                        }}
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            padding: "0.75rem 1rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: isSelected ? "var(--bg-secondary)" : "var(--bg-primary)",
+                                            border: isSelected ? "1.5px solid #6366f1" : "1px solid var(--border-subtle)",
+                                            cursor: "pointer",
+                                            transition: "all 0.15s ease",
+                                        }}
+                                    >
+                                        <div>
+                                            <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--text-primary)" }}>
+                                                {style.name}
+                                            </div>
+                                            <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)", marginTop: "2px" }}>
+                                                {style.desc}
+                                            </div>
+                                        </div>
+                                        {isSelected && <Check size={16} color="#6366f1" />}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>

@@ -214,6 +214,140 @@ router.delete('/conversations/:id', (req, res) => {
   res.json({ deleted: req.params.id });
 });
 
+/**
+ * POST /api/chat/conversations/:id/fork
+ * Fork current conversation up to an optional message ID into a new independent thread.
+ * Body: { upToMessageId?, title? }
+ */
+router.post('/conversations/:id/fork', (req, res) => {
+  const sourceConv = stmtConvGet.get(req.params.id);
+  if (!sourceConv) return res.status(404).json({ error: 'Source conversation not found' });
+
+  const { upToMessageId, title } = req.body;
+  const newConvId = uuidv4();
+  const forkTitle = title || `Fork of ${sourceConv.title}`;
+
+  stmtConvCreate.run({
+    id: newConvId,
+    title: forkTitle,
+    model: sourceConv.model,
+    provider: sourceConv.provider || 'ollama',
+  });
+
+  const sourceMsgs = stmtMsgList.all(sourceConv.id);
+  let msgsToCopy = sourceMsgs;
+  if (upToMessageId) {
+    const targetIdx = sourceMsgs.findIndex((m) => m.id === upToMessageId);
+    if (targetIdx !== -1) {
+      msgsToCopy = sourceMsgs.slice(0, targetIdx + 1);
+    }
+  }
+
+  const insertForkMsg = db.prepare(`
+    INSERT INTO messages (id, conversation_id, role, content, tool_calls, tool_call_id, created_at)
+    VALUES (@id, @conversation_id, @role, @content, @tool_calls, @tool_call_id, @created_at)
+  `);
+
+  const tx = db.transaction(() => {
+    for (const msg of msgsToCopy) {
+      insertForkMsg.run({
+        id: uuidv4(),
+        conversation_id: newConvId,
+        role: msg.role,
+        content: msg.content,
+        tool_calls: msg.tool_calls,
+        tool_call_id: msg.tool_call_id,
+        created_at: msg.created_at,
+      });
+    }
+  });
+  tx();
+
+  const createdConv = stmtConvGet.get(newConvId);
+  const messages = stmtMsgList.all(newConvId).map(parseMsg);
+  res.status(201).json({ ...createdConv, messages });
+});
+
+/**
+ * POST /api/chat/conversations/:id/compact
+ * Summarize conversation history so far to free context window while preserving critical points.
+ * Replaces older history in SQLite with a consolidated summary system/assistant note.
+ */
+router.post('/conversations/:id/compact', async (req, res) => {
+  const conv = stmtConvGet.get(req.params.id);
+  if (!conv) return res.status(404).json({ error: 'Conversation not found' });
+
+  const msgs = stmtMsgList.all(conv.id);
+  if (msgs.length <= 1) {
+    return res.json({
+      success: true,
+      compacted: false,
+      message: 'Conversation is too short to compact.',
+      conversation: { ...conv, messages: msgs.map(parseMsg) },
+    });
+  }
+
+  // Build condensed transcript of past messages
+  const transcriptLines = msgs.map((m) => {
+    let text = (m.content || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+    if (text.length > 500) text = text.slice(0, 500) + '...';
+    return `${m.role.toUpperCase()}: ${text}`;
+  }).join('\n\n');
+
+  let summary = '';
+  try {
+    const summaryPrompt = [
+      {
+        role: 'system',
+        content: 'You are an expert conversation summarizer and state compressor. Condense the previous conversation into a structured summary that captures all important facts, user requirements, decisions made, code files modified, and current progress. Be clear, concise, and structured.',
+      },
+      {
+        role: 'user',
+        content: `Please condense and compact the following conversation transcript while preserving all critical context, project state, and user constraints:\n\n${transcriptLines}`,
+      },
+    ];
+
+    const modelToUse = conv.model || process.env.DEFAULT_MODEL || 'llama3.2';
+    const llmRes = await ollama.chat({
+      model: modelToUse,
+      messages: summaryPrompt,
+    });
+    summary = (llmRes.message?.content || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+  } catch (err) {
+    console.warn('[compact] LLM summarization fallback to manual outline:', err.message);
+  }
+
+  if (!summary) {
+    summary = `### Previous Conversation Summary (Compacted)\n\nKey context from previous messages (${msgs.length} messages) compacted on ${new Date().toISOString()}.\n\n` +
+      msgs.slice(0, 4).map(m => `- **${m.role}**: ${(m.content || '').slice(0, 160).replace(/\n/g, ' ')}`).join('\n');
+  }
+
+  const compactedMessageContent = `<!-- compacted-context -->\n### Compacted Conversation Summary\n${summary}\n\n*(Earlier conversation history was compacted to free up the context window while preserving critical context.)*`;
+
+  // Retain the very last user/assistant message if relevant, replace the rest with the summary
+  const lastMsg = msgs[msgs.length - 1];
+  const deleteStmt = db.prepare('DELETE FROM messages WHERE conversation_id = ?');
+
+  const tx = db.transaction(() => {
+    deleteStmt.run(conv.id);
+    // Insert summary as first message
+    insertMsg(conv.id, 'assistant', compactedMessageContent);
+    // If the last message was a user message, keep it so it is not lost
+    if (lastMsg && lastMsg.role === 'user') {
+      insertMsg(conv.id, 'user', lastMsg.content);
+    }
+  });
+  tx();
+
+  const updatedMsgs = stmtMsgList.all(conv.id).map(parseMsg);
+  res.json({
+    success: true,
+    compacted: true,
+    summary,
+    conversation: { ...stmtConvGet.get(conv.id), messages: updatedMsgs },
+  });
+});
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Messages
 // ═══════════════════════════════════════════════════════════════════════════

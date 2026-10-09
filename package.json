@@ -1,6 +1,6 @@
 {
     "name": "marnie",
-    "version": "0.4.3",
+    "version": "0.4.4",
     "description": "A self-hosted AI workspace but made in nodejs with features according to my own preference",
     "main": "src/main.js",
     "scripts": {

@@ -80,6 +80,19 @@ export async function deleteConversation(id) {
   });
 }
 
+export async function forkConversation(id, { upToMessageId, title } = {}) {
+  return request(`/chat/conversations/${id}/fork`, {
+    method: 'POST',
+    body: JSON.stringify({ upToMessageId, title }),
+  });
+}
+
+export async function compactConversation(id) {
+  return request(`/chat/conversations/${id}/compact`, {
+    method: 'POST',
+  });
+}
+
 // ── Models ──────────────────────────────────────────────────
 export async function listModels() {
   try {

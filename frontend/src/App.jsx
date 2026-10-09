@@ -382,6 +382,11 @@ export default function App() {
                         onRefreshConversations={() =>
                             refreshConversations(activeModel)
                         }
+                        onSelectConversation={selectConversation}
+                        onConversationUpdated={(updatedConv) => {
+                            setActiveConversation(updatedConv);
+                            refreshConversations(activeModel);
+                        }}
                         isArtifactOpen={isArtifactOpen}
                         onToggleArtifact={setIsArtifactOpen}
                         activeArtifactPath={activeArtifactPath}
