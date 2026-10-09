@@ -573,7 +573,7 @@ export default function Sidebar({
                         e.currentTarget.style.color = "var(--text-secondary)";
                     }}
                 >
-                    <FileText size={16} style={{ color: "var(--accent-terracotta)", flexShrink: 0 }} />
+                    <FileText size={16} style={{ flexShrink: 0 }} />
                     {!isCollapsed && <span>Notes</span>}
                 </button>
 

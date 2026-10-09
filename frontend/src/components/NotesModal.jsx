@@ -6,333 +6,21 @@ import {
     Copy,
     Save,
     RotateCw,
-    Edit3,
-    Eye,
     Plus,
-    ExternalLink,
-    AlertCircle,
-    CheckSquare,
-    Square,
     Clock,
     Hash,
-    ListTodo,
-    Trash2,
 } from "lucide-react";
 import { getNotes, saveNotes, appendNote } from "../services/api";
-
-/**
- * Format inline markdown: bold, italics, inline code, links
- */
-function renderInlineMarkdown(text) {
-    if (!text) return null;
-    // Split by inline code `...`
-    const codeParts = text.split(/(`[^`]+`)/g);
-
-    return codeParts.map((part, pIdx) => {
-        if (part.startsWith("`") && part.endsWith("`")) {
-            return (
-                <code
-                    key={pIdx}
-                    style={{
-                        padding: "0.15rem 0.35rem",
-                        borderRadius: "3px",
-                        backgroundColor: "var(--bg-tertiary)",
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "0.85em",
-                        color: "var(--accent-terracotta)",
-                    }}
-                >
-                    {part.slice(1, -1)}
-                </code>
-            );
-        }
-
-        // Handle bold **...**
-        const boldParts = part.split(/(\*\*[^*]+\*\*)/g);
-        return boldParts.map((bPart, bIdx) => {
-            if (bPart.startsWith("**") && bPart.endsWith("**")) {
-                return <strong key={`${pIdx}-${bIdx}`}>{bPart.slice(2, -2)}</strong>;
-            }
-
-            // Handle italic *...*
-            const italicParts = bPart.split(/(\*[^*]+\*)/g);
-            return italicParts.map((iPart, iIdx) => {
-                if (iPart.startsWith("*") && iPart.endsWith("*")) {
-                    return <em key={`${pIdx}-${bIdx}-${iIdx}`}>{iPart.slice(1, -1)}</em>;
-                }
-                return iPart;
-            });
-        });
-    });
-}
-
-/**
- * Render Markdown Notes with interactive task checkboxes
- */
-function NotesMarkdownViewer({ content, onToggleTask }) {
-    if (!content || !content.trim()) {
-        return (
-            <div style={{ color: "var(--text-muted)", fontStyle: "italic", padding: "1rem" }}>
-                No notes found. Switch to Edit tab or use the Quick Add bar below to write your first note.
-            </div>
-        );
-    }
-
-    const lines = content.split("\n");
-    const elements = [];
-    let inCodeBlock = false;
-    let codeBuffer = [];
-    let codeLang = "";
-
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-
-        // Code block toggle
-        if (line.trim().startsWith("```")) {
-            if (inCodeBlock) {
-                elements.push(
-                    <div
-                        key={`code-${i}`}
-                        style={{
-                            margin: "0.75rem 0",
-                            borderRadius: "var(--radius-sm)",
-                            backgroundColor: "var(--bg-card)",
-                            border: "1px solid var(--border-subtle)",
-                            overflow: "hidden",
-                        }}
-                    >
-                        {codeLang && (
-                            <div
-                                style={{
-                                    padding: "0.3rem 0.75rem",
-                                    fontSize: "0.72rem",
-                                    fontFamily: "var(--font-mono)",
-                                    color: "var(--text-muted)",
-                                    backgroundColor: "var(--bg-secondary)",
-                                    borderBottom: "1px solid var(--border-subtle)",
-                                    textTransform: "uppercase",
-                                }}
-                            >
-                                {codeLang}
-                            </div>
-                        )}
-                        <pre style={{ margin: 0, padding: "0.75rem", overflowX: "auto", fontFamily: "var(--font-mono)", fontSize: "0.82rem" }}>
-                            <code>{codeBuffer.join("\n")}</code>
-                        </pre>
-                    </div>
-                );
-                codeBuffer = [];
-                inCodeBlock = false;
-                codeLang = "";
-            } else {
-                inCodeBlock = true;
-                codeLang = line.trim().slice(3).trim();
-            }
-            continue;
-        }
-
-        if (inCodeBlock) {
-            codeBuffer.push(line);
-            continue;
-        }
-
-        const trimmed = line.trim();
-
-        // Empty lines
-        if (!trimmed) {
-            elements.push(<div key={`empty-${i}`} style={{ height: "0.6rem" }} />);
-            continue;
-        }
-
-        // Headers
-        if (trimmed.startsWith("# ")) {
-            elements.push(
-                <h1
-                    key={`h1-${i}`}
-                    style={{
-                        fontSize: "1.35rem",
-                        fontWeight: 700,
-                        color: "var(--text-primary)",
-                        margin: "1.2rem 0 0.5rem 0",
-                        paddingBottom: "0.35rem",
-                        borderBottom: "1px solid var(--border-subtle)",
-                    }}
-                >
-                    {trimmed.slice(2)}
-                </h1>
-            );
-            continue;
-        }
-        if (trimmed.startsWith("## ")) {
-            elements.push(
-                <h2
-                    key={`h2-${i}`}
-                    style={{
-                        fontSize: "1.15rem",
-                        fontWeight: 600,
-                        color: "var(--text-primary)",
-                        margin: "1rem 0 0.4rem 0",
-                        paddingBottom: "0.25rem",
-                        borderBottom: "1px solid var(--border-subtle)",
-                    }}
-                >
-                    {trimmed.slice(3)}
-                </h2>
-            );
-            continue;
-        }
-        if (trimmed.startsWith("### ")) {
-            elements.push(
-                <h3
-                    key={`h3-${i}`}
-                    style={{
-                        fontSize: "1rem",
-                        fontWeight: 600,
-                        color: "var(--text-primary)",
-                        margin: "0.85rem 0 0.35rem 0",
-                    }}
-                >
-                    {trimmed.slice(4)}
-                </h3>
-            );
-            continue;
-        }
-
-        // Horizontal Rule
-        if (trimmed === "---" || trimmed === "***" || trimmed === "___") {
-            elements.push(
-                <hr
-                    key={`hr-${i}`}
-                    style={{
-                        border: "none",
-                        borderTop: "1px solid var(--border-subtle)",
-                        margin: "1rem 0",
-                    }}
-                />
-            );
-            continue;
-        }
-
-        // Blockquote
-        if (trimmed.startsWith("> ")) {
-            elements.push(
-                <blockquote
-                    key={`quote-${i}`}
-                    style={{
-                        margin: "0.5rem 0",
-                        padding: "0.4rem 0.85rem",
-                        borderLeft: "3px solid var(--accent-terracotta)",
-                        backgroundColor: "var(--bg-secondary)",
-                        color: "var(--text-secondary)",
-                        fontSize: "0.85rem",
-                        borderRadius: "0 4px 4px 0",
-                    }}
-                >
-                    {renderInlineMarkdown(trimmed.slice(2))}
-                </blockquote>
-            );
-            continue;
-        }
-
-        // Task Items: - [ ] or - [x]
-        const taskMatch = line.match(/^(\s*)-\s*\[([ xX])\]\s*(.*)$/);
-        if (taskMatch) {
-            const indent = taskMatch[1].length;
-            const isChecked = taskMatch[2].toLowerCase() === "x";
-            const taskText = taskMatch[3];
-
-            elements.push(
-                <div
-                    key={`task-${i}`}
-                    onClick={() => onToggleTask(i, line, isChecked)}
-                    style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: "0.55rem",
-                        padding: "0.3rem 0.45rem",
-                        marginLeft: `${indent * 0.75}rem`,
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        transition: "background-color 0.1s ease",
-                        backgroundColor: "transparent",
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "var(--bg-secondary)";
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                    }}
-                >
-                    <div style={{ marginTop: "0.15rem", color: isChecked ? "var(--accent-terracotta)" : "var(--text-muted)" }}>
-                        {isChecked ? <CheckSquare size={16} /> : <Square size={16} />}
-                    </div>
-                    <span
-                        style={{
-                            fontSize: "0.88rem",
-                            lineHeight: 1.5,
-                            color: isChecked ? "var(--text-muted)" : "var(--text-primary)",
-                            textDecoration: isChecked ? "line-through" : "none",
-                            wordBreak: "break-word",
-                        }}
-                    >
-                        {renderInlineMarkdown(taskText)}
-                    </span>
-                </div>
-            );
-            continue;
-        }
-
-        // Standard bullet items
-        if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
-            elements.push(
-                <div
-                    key={`bullet-${i}`}
-                    style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: "0.5rem",
-                        padding: "0.2rem 0",
-                        fontSize: "0.88rem",
-                        color: "var(--text-primary)",
-                    }}
-                >
-                    <span style={{ color: "var(--accent-terracotta)", fontWeight: "bold" }}>&bull;</span>
-                    <span>{renderInlineMarkdown(trimmed.slice(2))}</span>
-                </div>
-            );
-            continue;
-        }
-
-        // Standard Paragraph
-        elements.push(
-            <p
-                key={`p-${i}`}
-                style={{
-                    margin: "0.3rem 0",
-                    fontSize: "0.88rem",
-                    lineHeight: 1.6,
-                    color: "var(--text-primary)",
-                }}
-            >
-                {renderInlineMarkdown(line)}
-            </p>
-        );
-    }
-
-    return <div>{elements}</div>;
-}
 
 export default function NotesModal({
     isOpen,
     onClose,
-    onOpenInArtifactPanel,
 }) {
     const [content, setContent] = useState("");
     const [savedContent, setSavedContent] = useState("");
     const [metadata, setMetadata] = useState(null);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [activeTab, setActiveTab] = useState("preview"); // 'preview' | 'edit'
     const [copied, setCopied] = useState(false);
     const [saveToast, setSaveToast] = useState(false);
     const [quickNote, setQuickNote] = useState("");
@@ -421,30 +109,6 @@ export default function NotesModal({
         }
     };
 
-    // Toggle checkbox directly on the specific line in markdown
-    const handleToggleTask = (lineIndex, originalLine, isChecked) => {
-        const lines = content.split("\n");
-        if (lines[lineIndex] !== undefined) {
-            if (isChecked) {
-                lines[lineIndex] = lines[lineIndex].replace(/-\s*\[[xX]\]/, "- [ ]");
-            } else {
-                lines[lineIndex] = lines[lineIndex].replace(/-\s*\[\s*\]/, "- [x]");
-            }
-            const newContent = lines.join("\n");
-            setContent(newContent);
-            saveNotes(newContent)
-                .then((res) => {
-                    setSavedContent(newContent);
-                    if (res) {
-                        setMetadata((prev) => ({
-                            ...prev,
-                            lastModified: res.lastModified,
-                        }));
-                    }
-                })
-                .catch((err) => console.warn("Failed to auto-save task toggle:", err));
-        }
-    };
 
     // Sync editor scrolling
     const handleScroll = (e) => {
@@ -562,85 +226,6 @@ export default function NotesModal({
 
                     {/* Header Controls */}
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        {/* Tab Switcher */}
-                        <div
-                            style={{
-                                display: "flex",
-                                backgroundColor: "var(--bg-card)",
-                                borderRadius: "6px",
-                                border: "1px solid var(--border-subtle)",
-                                padding: "2px",
-                            }}
-                        >
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab("preview")}
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.35rem",
-                                    padding: "0.3rem 0.65rem",
-                                    borderRadius: "4px",
-                                    border: "none",
-                                    backgroundColor: activeTab === "preview" ? "var(--bg-secondary)" : "transparent",
-                                    color: activeTab === "preview" ? "var(--accent-terracotta)" : "var(--text-secondary)",
-                                    fontSize: "0.78rem",
-                                    fontWeight: activeTab === "preview" ? 600 : 400,
-                                    cursor: "pointer",
-                                }}
-                            >
-                                <Eye size={13} />
-                                <span>Preview</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab("edit")}
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.35rem",
-                                    padding: "0.3rem 0.65rem",
-                                    borderRadius: "4px",
-                                    border: "none",
-                                    backgroundColor: activeTab === "edit" ? "var(--bg-secondary)" : "transparent",
-                                    color: activeTab === "edit" ? "var(--accent-terracotta)" : "var(--text-secondary)",
-                                    fontSize: "0.78rem",
-                                    fontWeight: activeTab === "edit" ? 600 : 400,
-                                    cursor: "pointer",
-                                }}
-                            >
-                                <Edit3 size={13} />
-                                <span>Edit</span>
-                            </button>
-                        </div>
-
-                        {/* Open in Claude Artifact Split Panel */}
-                        {onOpenInArtifactPanel && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    onClose();
-                                    onOpenInArtifactPanel("NOTES.md");
-                                }}
-                                title="Open side-by-side in Artifact Panel"
-                                style={{
-                                    padding: "0.35rem 0.55rem",
-                                    borderRadius: "var(--radius-sm)",
-                                    border: "1px solid var(--border-subtle)",
-                                    backgroundColor: "var(--bg-card)",
-                                    color: "var(--text-secondary)",
-                                    fontSize: "0.76rem",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.35rem",
-                                    cursor: "pointer",
-                                }}
-                            >
-                                <ExternalLink size={13} />
-                                <span className="hidden-mobile">Artifact Panel</span>
-                            </button>
-                        )}
-
                         {/* Copy Button */}
                         <button
                             type="button"
@@ -756,84 +341,61 @@ export default function NotesModal({
                     </button>
                 </form>
 
-                {/* Content Area */}
+                {/* Content Area - Clean direct editor */}
                 <div
                     style={{
                         flex: 1,
-                        overflowY: "auto",
-                        position: "relative",
+                        overflow: "hidden",
                         display: "flex",
-                        backgroundColor: "var(--bg-primary)",
+                        backgroundColor: "var(--bg-card)",
                     }}
                 >
-                    {activeTab === "preview" ? (
-                        <div
-                            style={{
-                                flex: 1,
-                                padding: "1.5rem 2rem",
-                                overflowY: "auto",
-                            }}
-                        >
-                            <NotesMarkdownViewer content={content} onToggleTask={handleToggleTask} />
-                        </div>
-                    ) : (
-                        <div
-                            style={{
-                                display: "flex",
-                                width: "100%",
-                                height: "100%",
-                                overflow: "hidden",
-                                backgroundColor: "var(--bg-card)",
-                            }}
-                        >
-                            {/* Line Numbers */}
-                            <div
-                                ref={lineNumbersRef}
-                                style={{
-                                    width: "48px",
-                                    padding: "0.75rem 0.5rem",
-                                    backgroundColor: "var(--bg-secondary)",
-                                    borderRight: "1px solid var(--border-subtle)",
-                                    color: "var(--text-muted)",
-                                    fontFamily: "var(--font-mono)",
-                                    fontSize: "0.82rem",
-                                    lineHeight: "1.5rem",
-                                    textAlign: "right",
-                                    userSelect: "none",
-                                    overflowY: "hidden",
-                                }}
-                            >
-                                {Array.from({ length: lineCount }).map((_, i) => (
-                                    <div key={i}>{i + 1}</div>
-                                ))}
-                            </div>
+                    {/* Line Numbers */}
+                    <div
+                        ref={lineNumbersRef}
+                        style={{
+                            width: "48px",
+                            padding: "0.75rem 0.5rem",
+                            backgroundColor: "var(--bg-secondary)",
+                            borderRight: "1px solid var(--border-subtle)",
+                            color: "var(--text-muted)",
+                            fontFamily: "var(--font-mono)",
+                            fontSize: "0.82rem",
+                            lineHeight: "1.5rem",
+                            textAlign: "right",
+                            userSelect: "none",
+                            overflowY: "hidden",
+                        }}
+                    >
+                        {Array.from({ length: lineCount }).map((_, i) => (
+                            <div key={i}>{i + 1}</div>
+                        ))}
+                    </div>
 
-                            {/* Textarea Editor */}
-                            <textarea
-                                ref={textareaRef}
-                                value={content}
-                                onChange={(e) => setContent(e.target.value)}
-                                onScroll={handleScroll}
-                                onKeyDown={handleKeyDown}
-                                placeholder="Write markdown notes or task items here..."
-                                spellCheck={false}
-                                style={{
-                                    flex: 1,
-                                    padding: "0.75rem 1rem",
-                                    backgroundColor: "transparent",
-                                    border: "none",
-                                    outline: "none",
-                                    resize: "none",
-                                    fontFamily: "var(--font-mono)",
-                                    fontSize: "0.84rem",
-                                    lineHeight: "1.5rem",
-                                    color: "var(--text-primary)",
-                                    whiteSpace: "pre",
-                                    overflowY: "auto",
-                                }}
-                            />
-                        </div>
-                    )}
+                    {/* Textarea Editor */}
+                    <textarea
+                        ref={textareaRef}
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        onScroll={handleScroll}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Write markdown notes or task items here..."
+                        spellCheck={false}
+                        style={{
+                            flex: 1,
+                            padding: "0.75rem 1rem",
+                            backgroundColor: "transparent",
+                            border: "none",
+                            outline: "none",
+                            resize: "none",
+                            fontFamily: "var(--font-mono)",
+                            fontSize: "0.84rem",
+                            lineHeight: "1.5rem",
+                            color: "var(--text-primary)",
+                            whiteSpace: "pre",
+                            overflowY: "auto",
+                        }}
+                    />
                 </div>
 
                 {/* Footer Bar */}

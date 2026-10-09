@@ -63,16 +63,16 @@ All skills are documented with specifications under [`.agents/skills/`](.agents/
 
 Slash commands can be used at the beginning of any prompt. Typing `/` automatically opens a Discord-style interactive autocomplete popup to filter and select commands using arrow keys or Tab.
 
-| Command         | Usage / Arguments                                        | Description                                                                                                            |
-|-----------------|----------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| `/elim5`        | `/elim5 [question]`                                      | Explains like you're five years old, simplifying technical jargon into bite-sized analogies and plain language.        |
-| `/btw`          | `/btw <question>`                                        | Asks a side question referencing conversation background without breaking, altering, or polluting conversation history. |
-| `/fork`         | `/fork [new-title]`                                      | Branches the current conversation into a new independent thread with historical continuity preserved.                 |
-| `/title`        | `/title <new-title>`                                     | Sets or updates the active window and conversation title across the interface and database.                            |
-| `/compact`      | `/compact`                                               | Summarizes previous conversation turns to free up the model context window while preserving critical context.           |
-| `/output-style` | `/output-style [standard\|concise\|bullet-points\|technical\|creative]` | Customizes how AI responses are rendered; opens an interactive style picker or sets the style directly.                 |
+| Command                  | Description                                                                                                            |
+|--------------------------|------------------------------------------------------------------------------------------------------------------------|
+| `/elim5 [question]`      | Explains like you're five years old, simplifying technical jargon into bite-sized analogies and plain language         |
+| `/btw <question>`        | Asks a side question referencing conversation background without breaking, altering, or polluting conversation history |
+| `/fork [new-title]`      | Branches the current conversation into a new independent thread with historical continuity preserved                   |
+| `/title <new-title>`     | Sets or updates the active window and conversation title across the interface and database                             |
+| `/compact`               | Summarizes previous conversation turns to free up the model context window while preserving critical context           |
+| `/output-style [style]`  | Customizes how AI responses are rendered; opens an interactive style picker or sets the style directly                 |
 
-
+> Output styles: standard | concise | technical | creative | bullet-points
 
 ## Supported LLM Sources
 - [x] Ollama
