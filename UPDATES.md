@@ -10,6 +10,12 @@
 - Notes not being updated bug fixed
 - Implementing slash commands
 - `/elim5` Slash command added. It injects a prompt to explain a hard subject or topic like the user is 5 years old
+- `/btw` can be used to send a message without contributing in context
+- Some other slash commands were added full list in README.md
+- Bug fix: Previously researched reports cannot be deleted. Fixed
+- Instructs the AI to use less emojis
+- UI upgrade
+- Several minor bug fixes
 
 ## Updates on 0.3.x
 - Updated research report page

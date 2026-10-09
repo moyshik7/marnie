@@ -150,10 +150,13 @@ export default function DeepResearchView({
         e?.stopPropagation();
         if (!confirm("Are you sure you want to delete this research?")) return;
         try {
+            // Optimistically remove from state immediately
+            setResearches((prev) => prev.filter((r) => r.id !== id));
             await deleteDeepResearch(id);
             await fetchResearches();
         } catch (err) {
             alert(`Failed to delete research: ${err.message}`);
+            await fetchResearches();
         }
     };
 
@@ -783,8 +786,8 @@ export default function DeepResearchView({
                                                         {copiedId === r.id ? <Check size={15} color="#22c55e" /> : <Copy size={15} />}
                                                     </button>
 
-                                                    {/* Cancel / Close */}
-                                                    {r.status === "in_progress" ? (
+                                                    {/* Cancel research if still in progress */}
+                                                    {r.status === "in_progress" && (
                                                         <button
                                                             onClick={(e) => handleCancel(r.id, e)}
                                                             title="Stop research"
@@ -797,24 +800,6 @@ export default function DeepResearchView({
                                                                 alignItems: "center",
                                                                 padding: "4px",
                                                             }}
-                                                        >
-                                                            <X size={15} />
-                                                        </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={(e) => handleDelete(r.id, e)}
-                                                            title="Dismiss"
-                                                            style={{
-                                                                background: "none",
-                                                                border: "none",
-                                                                color: "#8e8e93",
-                                                                cursor: "pointer",
-                                                                display: "flex",
-                                                                alignItems: "center",
-                                                                padding: "4px",
-                                                            }}
-                                                            onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}
-                                                            onMouseLeave={(e) => (e.currentTarget.style.color = "#8e8e93")}
                                                         >
                                                             <X size={15} />
                                                         </button>

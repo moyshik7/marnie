@@ -1,20 +1,15 @@
-# ==========================================
-# Marnie — Git Ignore Configuration
-# ==========================================
-
-# ── Dependencies ──────────────────────────
 node_modules/
 frontend/node_modules/
 .pnp
 .pnp.js
 
-# ── Production Builds & Outputs ───────────
+
 dist/
 build/
 frontend/dist/
 *.tsbuildinfo
 
-# ── SQLite Databases & Storage ───────────
+
 data/*.db
 data/*.db-shm
 data/*.db-wal
@@ -26,15 +21,14 @@ data/*.sqlite3
 *.sqlite
 *.sqlite3
 
-# Preserve data directory structure
+
 !data/.gitkeep
 
-# ── Dynamic Agent Workspace ───────────────
+
 workspace/*
 !workspace/.gitkeep
 
-# ── Environment & Secrets ─────────────────
-.env
+
 .env.local
 .env.development.local
 .env.test.local
@@ -42,10 +36,10 @@ workspace/*
 frontend/.env
 frontend/.env.local
 
-# Preserve example template
+
 !.env.example
 
-# ── Logs & Debugging ──────────────────────
+
 logs/
 *.log
 npm-debug.log*
@@ -54,11 +48,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# ── Testing & Coverage ────────────────────
+
 coverage/
 .nyc_output/
 
-# ── Temporary & Cache Files ───────────────
 tmp/
 temp/
 scratch/
@@ -68,7 +61,7 @@ scratch/
 .vite/
 frontend/.vite/
 
-# ── OS & System Files ─────────────────────
+
 .DS_Store
 .DS_Store?
 ._*
@@ -77,7 +70,7 @@ frontend/.vite/
 ehthumbs.db
 Thumbs.db
 
-# ── Editor & IDE Configurations ───────────
+
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json

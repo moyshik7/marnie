@@ -128,23 +128,15 @@ The app is accessible at [http://localhost:3000](http://localhost:3000)
 <br />
 
 ## Installation (Docker)
-
 You can run Marnie using Docker Compose or standalone Docker.
-
-#### Option 1: Docker Compose (Recommended)
-
-1. Clone the repository:
+### Option 1: Docker Compose (Recommended)
+#### Clone the repository:
 ```bash
 git clone https://github.com/moyshik7/marnie.git
 cd marnie
 ```
 
-2. (Optional) Copy and customize environment variables:
-```bash
-cp .env.example .env
-```
-
-3. Build and start the container:
+#### Build and start the container:
 ```bash
 docker compose up -d --build
 ```
@@ -159,14 +151,14 @@ docker compose logs -f
 docker compose down
 ```
 
-#### Option 2: Docker CLI
+### Option 2: Docker CLI
 
-1. Build the Docker image:
+#### 1. Build the Docker image:
 ```bash
 docker build -t marnie .
 ```
 
-2. Run the container:
+#### 2. Run the container:
 ```bash
 docker run -d \
   --name marnie \
