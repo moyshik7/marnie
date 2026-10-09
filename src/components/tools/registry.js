@@ -211,18 +211,44 @@ const TOOLS = {
       };
     },
   },
-  update_notes: {
-    description: 'Update, replace, or append information in the persistent workspace/NOTES.md file. Use this to track multi-step tasks, update to-do checklists, or save reference notes.',
+  edit_notes: {
+    description: 'Edit, update, or append notes, tasks, directives, and reference information in workspace/NOTES.md. Always use this tool to persist important findings, user instructions, multi-step progress, or task checklists so they are not lost.',
     parameters: {
       content: { type: 'string', description: 'Full markdown content to overwrite workspace/NOTES.md with' },
-      text: { type: 'string', description: 'Text or task to append to workspace/NOTES.md (if content is not provided or append is true)' },
+      text: { type: 'string', description: 'Note, bullet point, or task item to append to workspace/NOTES.md (if content is omitted or append is true)' },
+      append: { type: 'boolean', description: 'Set to true to append text to the end of notes instead of overwriting (defaults to true if text is provided)' },
+      section: { type: 'string', description: 'Optional section header (e.g. "Active Tasks & Checklist") to append under' },
+    },
+    execute: async ({ content, text, append, section } = {}) => {
+      let ok = false;
+      const shouldAppend = append !== undefined ? append : (!content && Boolean(text));
+      if (shouldAppend) {
+        ok = notesManager.appendNotesContent(text || content || '', section || '');
+      } else if (content !== undefined) {
+        ok = notesManager.saveNotesContent(content);
+      }
+      const meta = notesManager.getNotesMetadata();
+      return {
+        success: ok,
+        filePath: 'workspace/NOTES.md',
+        totalLines: meta.lines,
+        message: 'Notes updated successfully in workspace/NOTES.md.',
+      };
+    },
+  },
+  update_notes: {
+    description: 'Update, replace, or append information in the persistent workspace/NOTES.md file. Use this to keep important things, track tasks, or save reference notes.',
+    parameters: {
+      content: { type: 'string', description: 'Full markdown content to overwrite workspace/NOTES.md with' },
+      text: { type: 'string', description: 'Text or task to append to workspace/NOTES.md (if content is omitted or append is true)' },
       append: { type: 'boolean', description: 'Set to true to append text instead of overwriting' },
       section: { type: 'string', description: 'Optional section header to append under' },
     },
     execute: async ({ content, text, append, section } = {}) => {
       let ok = false;
-      if (append || (!content && text)) {
-        ok = notesManager.appendNotesContent(text || '', section || '');
+      const shouldAppend = append !== undefined ? append : (!content && Boolean(text));
+      if (shouldAppend) {
+        ok = notesManager.appendNotesContent(text || content || '', section || '');
       } else if (content !== undefined) {
         ok = notesManager.saveNotesContent(content);
       }
@@ -295,6 +321,10 @@ async function executeTool(name, args = {}) {
     notes: 'fetch_notes',
     notes_read: 'fetch_notes',
     notes_fetch: 'fetch_notes',
+    edit_notes: 'edit_notes',
+    notes_edit: 'edit_notes',
+    add_note: 'edit_notes',
+    add_notes: 'edit_notes',
     update_notes: 'update_notes',
     save_notes: 'update_notes',
     append_notes: 'update_notes',
@@ -366,7 +396,7 @@ TOOL USAGE GUIDELINES:
 - For reading files before making edits, call \`read_file\` first, then \`write_file\`.
 - For saving user tasks and to-dos, call \`create_task\`.
 - PERSISTENT BRAIN MEMORY: You have a persistent memory in \`workspace/BRAIN.md\` which stores user context, preferences, and projects. It is injected into your prompt and auto-consolidated after every 5 conversation messages. You can also explicitly inspect or update it using \`read_brain_memory\` or \`update_brain_memory\` if the user instructs you to remember something specific.
-- NOTES & WORKING TASKS (fetch_notes / update_notes): You have a dedicated working notebook and task list stored at \`workspace/NOTES.md\`. Unlike BRAIN.md, this file is NOT injected into your prompt by default because it is designed to hold larger reference notes, checklists, and working context. When you need extra reference details about the user, active tasks, or project specifications, invoke the \`fetch_notes\` tool. To add tasks, update checklists, or store long-term project notes, invoke \`update_notes\`.
+- KEEPING IMPORTANT THINGS IN NOTES (update_notes / edit_notes / fetch_notes): You have a separate dedicated working notebook and task list stored at \`workspace/NOTES.md\`. You can keep important things, user preferences, tasks, multi-step plans, research summaries, and architectural decisions in notes using \`update_notes\` (or \`edit_notes\`), and \`fetch_notes\` can be used to fetch notes whenever you need additional context. Unlike BRAIN.md, this file is NOT automatically injected into your prompt by default to preserve context window space, so proactively use \`update_notes\` (or \`edit_notes\`) to record important things and \`fetch_notes\` to retrieve them.
 - MERMAID & DIAGRAMS INSTRUCTION: Whenever illustrating workflows, systems, architectures, timelines, state diagrams, or schemas, ALWAYS provide clear, valid Mermaid diagrams enclosed in \`\`\`mermaid code blocks. The workspace has built-in live preview for Mermaid diagrams.
 - LATEX MATH INSTRUCTION: For mathematical equations, proofs, and formulas, ALWAYS use LaTeX notation ($$...$$ for display block equations, $...$ for inline math). The workspace renders LaTeX with KaTeX.
 - NO EM DASHES INSTRUCTION: NEVER use em dashes (—). Always use standard hyphens or dashes (-) in your text.
@@ -433,6 +463,7 @@ function parseToolCalls(text) {
           'read_brain_memory', 'read_brain', 'update_brain_memory', 'update_brain',
           'read_memory', 'save_memory', 'write_brain', 'save_brain',
           'fetch_notes', 'read_notes', 'get_notes', 'notes', 'update_notes',
+          'edit_notes', 'notes_edit', 'add_note', 'add_notes',
           'save_notes', 'append_notes', 'write_notes'
         ];
         if (knownTools.includes(toolName.toLowerCase()) && !calls.some(c => c.raw === match[0])) {

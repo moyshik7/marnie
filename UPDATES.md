@@ -7,6 +7,7 @@
 - Notes can now be viewed and edited by the user.
 - Added fetch notes skill
 - Note viewer UI Bug fixed
+- Notes not being updated bug fixed.
 
 ## Updates on 0.3.x
 - Updated research report page

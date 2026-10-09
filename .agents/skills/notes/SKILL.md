@@ -6,8 +6,8 @@ description: >-
 
 # Notes Skill
 
-See [fetch-notes](../fetch-notes/SKILL.md) for full documentation on `fetch_notes` and `update_notes`.
+See [fetch-notes](../fetch-notes/SKILL.md) and [edit-notes](../edit-notes/SKILL.md) for full documentation on `fetch_notes`, `update_notes`, and `edit_notes`.
 
 - **File**: `workspace/NOTES.md`
-- **Tools**: `fetch_notes`, `update_notes`
+- **Tools**: `fetch_notes`, `update_notes`, `edit_notes`
 - **UI Access**: Sidebar "Notes" button above Deep Research and Claude-style Artifact panel.

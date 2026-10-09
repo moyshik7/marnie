@@ -22,19 +22,19 @@
 
 ## Features
 
-> **Brain (memory)**
+> **Brain (memory)**  
 > Persistent brain memory stored in `workspace/BRAIN.md`. A background process consolidates recent conversation messages (every 5 messages) with existing memory using an LLM. This consolidated memory is then automatically passed into every chat or agentic conversation unless otherwise specified.
 
-> **Notes**
+> **Notes**  
 >  The Notes feature offers persistent storage separate from the primary brain, enabling on-demand retrieval and modification via `fetch_notes`. This contrasts with the main brain, which is injected directly into prompts.
 
-> **Task scheduling and repeating tasks**
+> **Task scheduling and repeating tasks**  
 
-> **Multi-Step Deep Research**
+> **Multi-Step Deep Research**  
 
-> **A buttload of built in tools and skills**
+> **A buttload of built in tools and skills**  
 
-> **Math and flowchart generation and preiew**
+> **Math and flowchart generation and preiew**  
 > Using latex for math equation preview and mermaid for flowchart preview.
 
 ### Skills Reference
@@ -47,6 +47,7 @@ All skills are documented with specifications under [`.agents/skills/`](.agents/
 | `cron-scheduler`     | Schedule and manage recurring background cron jobs stored persistently in SQLite with command, Discord, or webhook triggers  |
 | `deep-research`      | Autonomous multi-turn web research and iterative synthesis engine producing comprehensive markdown dossiers with citations   |
 | `discord-alerts`     | Dispatch rich embed alert notifications to configured Discord webhook channels                                               |
+| `edit-notes`         | Edit, update, and append tasks, checklists, and working notes in `workspace/NOTES.md`                                        |
 | `fetch-notes`        | Fetch and update persistent user notes, task checklists, and reference data in `workspace/NOTES.md` on demand                |
 | `file-operations`    | Read, create, write, and patch local files on disk with precise line range replacements                                      |
 | `filesystem-search`  | Recursively search files and directories matching a pattern, substring, or regular expression                                |

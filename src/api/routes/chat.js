@@ -83,7 +83,7 @@ async function runToolCallsAndFormat(toolCalls) {
           callOutput += `\n**Persistent Memory Updated:** \`workspace/BRAIN.md\`\n`;
         } else if (call.name === 'fetch_notes' || call.name === 'get_notes' || call.name === 'read_notes' || call.name === 'notes') {
           callOutput += `\n**AI Notes & Tasks (workspace/NOTES.md):**\n\n${res.content || '(Empty notes)'}\n`;
-        } else if (call.name === 'update_notes' || call.name === 'save_notes' || call.name === 'append_notes' || call.name === 'write_notes') {
+        } else if (call.name === 'update_notes' || call.name === 'edit_notes' || call.name === 'notes_edit' || call.name === 'add_note' || call.name === 'add_notes' || call.name === 'save_notes' || call.name === 'append_notes' || call.name === 'write_notes') {
           callOutput += `\n<!-- file-artifact:{"path":"NOTES.md","name":"NOTES.md","action":"edited"} -->\n`;
           callOutput += `\n**AI Notes Updated:** \`workspace/NOTES.md\`\n`;
         } else if (res.stdout !== undefined || res.stderr !== undefined) {
