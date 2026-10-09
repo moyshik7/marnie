@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const db = require('../../db/index');
 const ollama = require('../../components/providers/ollama/interact');
 const { executeTool, buildSystemPrompt, parseToolCalls, OLLAMA_TOOLS } = require('../../components/tools/registry');
-const { filterEmDashes } = require('../../components/tools/emDashFilter');
+const { filterEmDashes, filterEmojis, normalizeAssistantText } = require('../../components/tools/emDashFilter');
 const brain = require('../../components/tools/brainMemory');
 
 function getEffectiveSystemPrompt(customSystem = '', options = {}) {
@@ -130,7 +130,7 @@ function touchConv(id) {
 function insertMsg(convId, role, content, toolCalls = null, toolCallId = null) {
   const id = uuidv4();
   const filteredContent = role === 'assistant' && typeof content === 'string'
-    ? filterEmDashes(content)
+    ? normalizeAssistantText(content)
     : content;
   stmtMsgInsert.run({
     id,
@@ -851,7 +851,7 @@ router.post('/complete', async (req, res) => {
       const finalContent = thinkingContent
         ? `<think>\n${thinkingContent.trim()}\n</think>\n\n${assistantContent.trim()}`
         : assistantContent.trim();
-      res.json({ message: { role: 'assistant', content: filterEmDashes(finalContent) }, usage: lastUsage });
+      res.json({ message: { role: 'assistant', content: normalizeAssistantText(finalContent) }, usage: lastUsage });
     }
   } catch (err) {
     if (!res.headersSent) {

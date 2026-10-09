@@ -191,35 +191,8 @@ export default function NotesModal({
                         <div>
                             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                                 <span style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                                    AI Notes &amp; Tasks
+                                    Notes (For Agent)
                                 </span>
-                                <span
-                                    style={{
-                                        fontSize: "0.72rem",
-                                        fontFamily: "var(--font-mono)",
-                                        padding: "0.15rem 0.45rem",
-                                        borderRadius: "4px",
-                                        backgroundColor: "var(--bg-tertiary)",
-                                        color: "var(--text-secondary)",
-                                        border: "1px solid var(--border-subtle)",
-                                    }}
-                                >
-                                    workspace/NOTES.md
-                                </span>
-                            </div>
-                            <div
-                                style={{
-                                    fontSize: "0.76rem",
-                                    color: "var(--text-muted)",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.5rem",
-                                    marginTop: "0.15rem",
-                                }}
-                            >
-                                <span>Agent accessible via <code>fetch_notes</code> &amp; <code>update_notes</code></span>
-                                <span>&bull;</span>
-                                <span>Not in default prompt</span>
                             </div>
                         </div>
                     </div>
