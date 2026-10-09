@@ -180,8 +180,17 @@ export default function App() {
                     }
                 }
             } else {
-                setActiveConversation(null);
-                setActiveConversationId(null);
+                // If there are no conversations at all, automatically create one so user can type immediately
+                try {
+                    const modelToUse = fallbackModel || (availableModels.length > 0 ? availableModels[0] : "llama3.2");
+                    const initialConv = await createConversation("New conversation", modelToUse);
+                    setConversations([initialConv]);
+                    selectConversation(initialConv.id, initialConv);
+                } catch (createErr) {
+                    console.warn("Failed to create initial conversation:", createErr);
+                    setActiveConversation(null);
+                    setActiveConversationId(null);
+                }
             }
         } catch (err) {
             console.warn("Failed to load conversations:", err);

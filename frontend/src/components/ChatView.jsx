@@ -48,6 +48,7 @@ import {
     forkConversation,
     compactConversation,
     renameConversation,
+    createConversation,
 } from "../services/api";
 import ThemeToggle from "./ThemeToggle";
 import ArtifactPanel from "./ArtifactPanel";
@@ -967,13 +968,37 @@ export default function ChatView({
         scrollToBottom();
     }, [messages, streamingContent]);
 
-    const handleSend = async (customPrompt, extraSystem = "") => {
+    const ensureConversation = async () => {
+        if (conversation?.id) return conversation;
+        const modelToUse =
+            activeModel ||
+            (availableModels.length > 0 ? availableModels[0] : "llama3.2");
+        const newConv = await createConversation("New conversation", modelToUse);
+        if (onSelectConversation) {
+            onSelectConversation(newConv.id, newConv);
+        }
+        if (onRefreshConversations) {
+            onRefreshConversations();
+        }
+        return newConv;
+    };
+
+    const handleSend = async (customPrompt, extraSystem = "", targetConversation = null) => {
         const textToSend = (
             typeof customPrompt === "string" ? customPrompt : input
         ).trim();
         if (!textToSend || isStreaming) return;
 
-        if (!conversation?.id) return;
+        let activeConv = targetConversation || conversation;
+        if (!activeConv?.id) {
+            try {
+                activeConv = await ensureConversation();
+            } catch (err) {
+                console.error("Failed to initialize conversation:", err);
+                return;
+            }
+        }
+        if (!activeConv?.id) return;
 
         // Check if message starts with a slash command (slash commands can only be used at the beginning)
         if (textToSend.startsWith("/")) {
@@ -989,7 +1014,7 @@ export default function ChatView({
                     return;
                 }
                 setInput("");
-                await handleSend(question, elim5Instruction);
+                await handleSend(question, elim5Instruction, activeConv);
                 return;
             }
 
@@ -999,13 +1024,13 @@ export default function ChatView({
                     return;
                 }
                 setInput("");
-                await handleSideQuestion(cmdArg);
+                await handleSideQuestion(cmdArg, activeConv);
                 return;
             }
 
             if (cmdName === "/fork") {
                 setInput("");
-                await handleForkConversation(cmdArg);
+                await handleForkConversation(cmdArg, activeConv);
                 return;
             }
 
@@ -1015,13 +1040,13 @@ export default function ChatView({
                     return;
                 }
                 setInput("");
-                await handleSetTitle(cmdArg);
+                await handleSetTitle(cmdArg, activeConv);
                 return;
             }
 
             if (cmdName === "/compact") {
                 setInput("");
-                await handleCompactConversation();
+                await handleCompactConversation(activeConv);
                 return;
             }
 
@@ -1039,7 +1064,7 @@ export default function ChatView({
                             {
                                 id: `style-update-${Date.now()}`,
                                 role: "assistant",
-                                content: `🎨 **Output Style Updated:** Response style set to **${matchedStyle.name}**.\n\n*${matchedStyle.desc}*`,
+                                content: `**Output Style Updated:** Response style set to **${matchedStyle.name}**.\n\n*${matchedStyle.desc}*`,
                                 created_at: Math.floor(Date.now() / 1000),
                             },
                         ]);
@@ -1092,7 +1117,7 @@ export default function ChatView({
 
         try {
             await sendMessageStream({
-                conversationId: conversation.id,
+                conversationId: activeConv.id,
                 message: textToSend,
                 model: activeModel,
                 system: augmentedSystem || undefined,
@@ -1147,8 +1172,17 @@ export default function ChatView({
     };
 
     // Slash command: /btw Ask a side question without altering conversation history
-    const handleSideQuestion = async (question) => {
-        if (!conversation?.id || !question.trim()) return;
+    const handleSideQuestion = async (question, targetConv = null) => {
+        let activeConv = targetConv || conversation;
+        if (!activeConv?.id) {
+            try {
+                activeConv = await ensureConversation();
+            } catch (err) {
+                console.error("Failed to initialize conversation for /btw:", err);
+                return;
+            }
+        }
+        if (!activeConv?.id || !question.trim()) return;
 
         const sideId = `side-${Date.now()}`;
         setMessages((prev) => [
@@ -1156,7 +1190,7 @@ export default function ChatView({
             {
                 id: `user-${sideId}`,
                 role: "user",
-                content: `💬 /btw ${question}`,
+                content: `[Side Question /btw]: ${question}`,
                 created_at: Math.floor(Date.now() / 1000),
             },
         ]);
@@ -1167,14 +1201,14 @@ export default function ChatView({
 
         // Build brief side prompt referencing conversation context without storing it permanently in DB
         const recentContext = messages.slice(-6).map(m => `${m.role.toUpperCase()}: ${(m.content || '').slice(0, 300)}`).join("\n\n");
-        const sideSystemPrompt = `You are answering a quick side-question ("/btw") for the user. Here is the background conversation context for reference only:\n\n${recentContext}\n\nProvide a direct, helpful, and concise answer to the side question without altering previous tasks.`;
+        const sideSystemPrompt = `You are answering a quick side-question ("/btw") for the user. Here is the background conversation context for reference only:\n\n${recentContext}\n\nProvide a direct, helpful, and concise answer to the side question without altering previous tasks. ZERO EMOJIS POLICY: Absolutely DO NOT use any emojis.`;
 
         const abortController = new AbortController();
         abortControllerRef.current = abortController;
 
         try {
             await sendMessageStream({
-                conversationId: conversation.id,
+                conversationId: activeConv.id,
                 message: `[Side Question /btw]: ${question}`,
                 model: activeModel,
                 system: sideSystemPrompt,
@@ -1208,7 +1242,7 @@ export default function ChatView({
                     {
                         id: `err-${sideId}`,
                         role: "assistant",
-                        content: `⚠️ Error executing /btw: ${err.message}`,
+                        content: `Error executing /btw: ${err.message}`,
                         created_at: Math.floor(Date.now() / 1000),
                     },
                 ]);
@@ -1222,12 +1256,21 @@ export default function ChatView({
     };
 
     // Slash command: /fork Branches conversation into a new thread
-    const handleForkConversation = async (customTitle) => {
-        if (!conversation?.id || isForking) return;
+    const handleForkConversation = async (customTitle, targetConv = null) => {
+        let activeConv = targetConv || conversation;
+        if (!activeConv?.id) {
+            try {
+                activeConv = await ensureConversation();
+            } catch (err) {
+                console.error("Failed to initialize conversation for /fork:", err);
+                return;
+            }
+        }
+        if (!activeConv?.id || isForking) return;
         setIsForking(true);
         try {
-            const forkTitle = customTitle || `Fork of ${conversation.title || 'Conversation'}`;
-            const newConv = await forkConversation(conversation.id, { title: forkTitle });
+            const forkTitle = customTitle || `Fork of ${activeConv.title || 'Conversation'}`;
+            const newConv = await forkConversation(activeConv.id, { title: forkTitle });
             if (newConv && newConv.id) {
                 if (onRefreshConversations) await onRefreshConversations();
                 if (onSelectConversation) {
@@ -1242,12 +1285,21 @@ export default function ChatView({
     };
 
     // Slash command: /title Sets or updates window title
-    const handleSetTitle = async (newTitle) => {
-        if (!conversation?.id || !newTitle.trim()) return;
+    const handleSetTitle = async (newTitle, targetConv = null) => {
+        let activeConv = targetConv || conversation;
+        if (!activeConv?.id) {
+            try {
+                activeConv = await ensureConversation();
+            } catch (err) {
+                console.error("Failed to initialize conversation for /title:", err);
+                return;
+            }
+        }
+        if (!activeConv?.id || !newTitle.trim()) return;
         try {
-            const updated = await renameConversation(conversation.id, newTitle.trim());
+            const updated = await renameConversation(activeConv.id, newTitle.trim());
             if (onConversationUpdated) {
-                onConversationUpdated({ ...conversation, title: newTitle.trim() });
+                onConversationUpdated({ ...activeConv, title: newTitle.trim() });
             } else if (onRefreshConversations) {
                 onRefreshConversations();
             }
@@ -1256,7 +1308,7 @@ export default function ChatView({
                 {
                     id: `title-update-${Date.now()}`,
                     role: "assistant",
-                    content: `🏷️ **Window Title Updated:** Conversation title changed to **"${newTitle.trim()}"**.`,
+                    content: `**Window Title Updated:** Conversation title changed to **"${newTitle.trim()}"**.`,
                     created_at: Math.floor(Date.now() / 1000),
                 },
             ]);
@@ -1266,11 +1318,20 @@ export default function ChatView({
     };
 
     // Slash command: /compact Summarizes conversation history
-    const handleCompactConversation = async () => {
-        if (!conversation?.id || isCompacting) return;
+    const handleCompactConversation = async (targetConv = null) => {
+        let activeConv = targetConv || conversation;
+        if (!activeConv?.id) {
+            try {
+                activeConv = await ensureConversation();
+            } catch (err) {
+                console.error("Failed to initialize conversation for /compact:", err);
+                return;
+            }
+        }
+        if (!activeConv?.id || isCompacting) return;
         setIsCompacting(true);
         try {
-            const res = await compactConversation(conversation.id);
+            const res = await compactConversation(activeConv.id);
             if (res?.conversation) {
                 if (onConversationUpdated) {
                     onConversationUpdated(res.conversation);
