@@ -1,6 +1,6 @@
 {
     "name": "marnie",
-    "version": "0.5.1",
+    "version": "0.5.2",
     "description": "The local AI workspace with built-in tools. Run deep research, scrape websites, interact with local files, and trigger webhooks with zero extra microservices required.",
     "main": "src/main.js",
     "scripts": {

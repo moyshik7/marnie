@@ -15,6 +15,7 @@
     - + Upload files file picker and Copied text modal to paste text snippets directly
     - Grid of rounded reference cards styled like the screenshot with file type badges (< > code badge for markdown and text document badge for plain text)
     - Read-only preview modal (not editable) and file deletion
+- Added the Search in chats feature to Marnie, integrated into the left sidebar and displayed in a full tab view
 
 
 ## Updates on 0.4.x

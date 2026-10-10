@@ -456,4 +456,15 @@ export async function searchCapacityDocuments(query) {
   return request(`/capacity/search?q=${encodeURIComponent(query)}`);
 }
 
+// ── Search Chats ────────────────────────────────────────────
+export async function searchChats(query = '', { role = '', model = '', limit = 50 } = {}) {
+  const params = new URLSearchParams();
+  if (query) params.append('q', query);
+  if (role) params.append('role', role);
+  if (model) params.append('model', model);
+  if (limit) params.append('limit', String(limit));
+  return request(`/chat/search?${params.toString()}`);
+}
+
+
 
