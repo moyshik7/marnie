@@ -93,63 +93,76 @@ Slash commands can be used at the beginning of any prompt. Typing `/` automatica
 ---
 
 ## Installation (Manually)
-### Requirements:
-- NodeJS 24.x or higher
+
+Use this option if you want to run Marnie directly on your machine.
+
+### Requirements
+- Node.js 24 or newer
 - Git
 - Curl
 
-### Linux and MacOS
-Run this in a terminal
+### 1. Open a terminal
 
+### 2. Run the installer
+
+#### Linux and macOS
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/moyshik7/marnie/main/install.sh)
 ```
 
-<br />
-<br />
-
-### Windows
-Run this in **powershell** (NOT COMMAND PROMPT)
+#### Windows
+Run this in PowerShell, not Command Prompt:
 
 ```ps1
 irm https://raw.githubusercontent.com/moyshik7/marnie/main/install.ps1 | iex
 ```
 
-#### Start the server (Later without rebuilding the entire app)
+### 3. Start the app
+
+After installation, start the server with:
 
 ```bash
 npm run nobuild
 ```
 
-> If you encounter any UI glitch try rebuilding the app with `npm run build`
+This starts the app without rebuilding everything first.
 
-The app is accessible at [http://localhost:3000](http://localhost:3000)
+### 4. Open the app
 
-> If port 3000 is in use, it will use 3001 then 3002, 3003 ....
+Visit:
+
+[http://localhost:3000](http://localhost:3000)
+
+If port 3000 is already in use, Marnie will automatically try 3001, 3002, 3003, and so on.
+
+> If you run into a UI problem, rebuild the app with `npm run build`.
 
 <br />
 <br />
 <br />
 
 ## Installation (Docker)
-You can run Marnie using Docker Compose or standalone Docker.
+
+Use Docker if you want a containerized setup instead of a local install.
+
 ### Option 1: Docker Compose (Recommended)
-#### Clone the repository:
+
+#### 1. Clone the repository
 ```bash
 git clone https://github.com/moyshik7/marnie.git
 cd marnie
 ```
 
-#### Build and start the container:
+#### 2. Start the container
 ```bash
 docker compose up -d --build
 ```
 
-> The container automatically maps host ports and points `OLLAMA_BASE_URL` to `http://host.docker.internal:11434` so it can communicate with Ollama running on your host machine.
+This sets up the app and mounts persistent data in `./data` and `./workspace`.
 
-> Persistent database data and workspace files are mounted to `./data` and `./workspace`.
+The container also points `OLLAMA_BASE_URL` to `http://host.docker.internal:11434` so it can talk to Ollama running on your host machine.
 
-To view logs or stop the service:
+#### 3. Check logs or stop the container
 ```bash
 docker compose logs -f
 docker compose down
@@ -157,12 +170,12 @@ docker compose down
 
 ### Option 2: Docker CLI
 
-#### 1. Build the Docker image:
+#### 1. Build the image
 ```bash
 docker build -t marnie .
 ```
 
-#### 2. Run the container:
+#### 2. Run the container
 ```bash
 docker run -d \
   --name marnie \
@@ -173,6 +186,8 @@ docker run -d \
   -v $(pwd)/workspace:/app/workspace \
   marnie
 ```
+
+This exposes the app on port 3000 and keeps data and workspace files in local folders on your machine.
 ---
 
 
