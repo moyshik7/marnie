@@ -1,6 +1,6 @@
 {
     "name": "marnie",
-    "version": "0.4.7",
+    "version": "0.5.1",
     "description": "The local AI workspace with built-in tools. Run deep research, scrape websites, interact with local files, and trigger webhooks with zero extra microservices required.",
     "main": "src/main.js",
     "scripts": {
@@ -32,7 +32,7 @@
     ],
     "license": "MIT",
     "allowScripts": {
-        "better-sqlite3@11.10.0": true
+        "better-sqlite3@13.0.3": true
     },
     "repository": {
         "type": "git",

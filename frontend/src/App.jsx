@@ -6,6 +6,7 @@ import SettingsModal from "./components/SettingsModal";
 import ToolsPanel from "./components/ToolsPanel";
 import ReportViewer from "./components/ReportViewer";
 import NotesModal from "./components/NotesModal";
+import ExpandedCapacityView from "./components/ExpandedCapacityView";
 import {
     listConversations,
     createConversation,
@@ -352,6 +353,7 @@ export default function App() {
                 onOpenSettings={() => setIsSettingsOpen(true)}
                 onOpenTools={() => setIsToolsOpen(true)}
                 onOpenNotes={() => setIsNotesOpen(true)}
+                onOpenExpandedCapacity={() => setActiveSection("capacity")}
                 onOpenDeepResearch={() => setActiveSection("research")}
                 onOpenArtifacts={() => {
                     setActiveSection("chat");
@@ -368,7 +370,7 @@ export default function App() {
                 onToggleCollapse={toggleSidebar}
             />
 
-            {/* Main View Area: Chat vs Deep Research */}
+            {/* Main View Area: Chat vs Deep Research vs Expanded Capacity */}
             <main style={{ flex: 1, display: "flex", overflow: "hidden" }}>
                 {activeSection === "research" ? (
                     <DeepResearchView
@@ -377,6 +379,10 @@ export default function App() {
                         onClose={() => setActiveSection("chat")}
                         onDiscuss={handleDiscussResearch}
                         onResearchCountChange={(hasOngoing) => setIsResearchOngoing(hasOngoing)}
+                    />
+                ) : activeSection === "capacity" ? (
+                    <ExpandedCapacityView
+                        onClose={() => setActiveSection("chat")}
                     />
                 ) : (
                     <ChatView

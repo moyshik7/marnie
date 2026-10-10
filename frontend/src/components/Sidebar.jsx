@@ -16,6 +16,7 @@ import {
     ChevronRight,
     FileCode,
     FileText,
+    Database,
 } from "lucide-react";
 
 export default function Sidebar({
@@ -28,6 +29,7 @@ export default function Sidebar({
     onOpenSettings,
     onOpenTools,
     onOpenNotes,
+    onOpenExpandedCapacity,
     onOpenDeepResearch,
     onOpenArtifacts,
     isArtifactOpen = false,
@@ -575,6 +577,51 @@ export default function Sidebar({
                 >
                     <FileText size={16} style={{ flexShrink: 0 }} />
                     {!isCollapsed && <span>Notes</span>}
+                </button>
+
+                {/* Expanded Capacity local RAG trigger - above Deep Research */}
+                <button
+                    onClick={onOpenExpandedCapacity}
+                    title={isCollapsed ? "Expanded Capacity" : undefined}
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.65rem",
+                        padding: isCollapsed ? "0.55rem 0" : "0.55rem 0.65rem",
+                        borderRadius: "var(--radius-sm)",
+                        color: "var(--text-secondary)",
+                        backgroundColor: activeSection === "capacity"
+                            ? "var(--bg-card)"
+                            : "transparent",
+                        border: activeSection === "capacity"
+                            ? "1px solid var(--border-subtle)"
+                            : "1px solid transparent",
+                        fontSize: "0.85rem",
+                        width: "100%",
+                        textAlign: isCollapsed ? "center" : "left",
+                        justifyContent: isCollapsed ? "center" : "flex-start",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                        if (activeSection !== "capacity") {
+                            e.currentTarget.style.backgroundColor = "var(--bg-tertiary)";
+                            e.currentTarget.style.color = "var(--text-primary)";
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (activeSection !== "capacity") {
+                            e.currentTarget.style.backgroundColor = "transparent";
+                            e.currentTarget.style.color = "var(--text-secondary)";
+                        }
+                    }}
+                >
+                    <Database size={16} style={{ color: "var(--text-secondary)", flexShrink: 0 }} />
+                    {!isCollapsed && (
+                        <span style={{ fontWeight: activeSection === "capacity" ? 600 : 400 }}>
+                            Expanded Capacity
+                        </span>
+                    )}
                 </button>
 
                 {/* Deep Research view trigger - matching grayish color */}

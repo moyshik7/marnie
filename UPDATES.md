@@ -1,3 +1,22 @@
+## Updates on 0.5.x
+- Dedicated SQLite Database (better-sqlite3):
+    - Created capacity.js managing ./data/capacity.db separately from marnie.db.
+    - Built a documents schema with automatic SQLite fts5 virtual indexing and synchronization triggers for sub-millisecond keyword and semantic search
+- Express API Routes:
+    - Created capacity.js and mounted it at /api/capacity in main.js
+    - Supports listing all documents (GET /api/capacity/documents), fetching document details (GET /api/capacity/documents/:id), uploading single/multiple files (POST /api/capacity/documents), deleting files (DELETE /api/capacity/documents/:id), and FTS querying (GET /api/capacity/search)
+- AI Agent Tool & Skill:
+    - Implemented expandedCapacity.js and registered retrieve_expanded_capacity (with aliases expanded_capacity, search_expanded_capacity, query_expanded_capacity, retrieve_capacity) in registry.js
+    - Enabled tool formatting in chat.js
+    - Injected tool instructions into the AI agent's system prompt in registry.js and index.js
+- Added the Expanded Capacity button with a database icon (Database) immediately above Deep Research in Sidebar.jsx with styling matching the other sidebar buttons
+- Created ExpandedCapacityView.jsx rendering in the main view area (just like ChatView and DeepResearchView)
+    - Drag-and-drop listener across the window for .md and .txt files with visual drag state
+    - + Upload files file picker and Copied text modal to paste text snippets directly
+    - Grid of rounded reference cards styled like the screenshot with file type badges (< > code badge for markdown and text document badge for plain text)
+    - Read-only preview modal (not editable) and file deletion
+
+
 ## Updates on 0.4.x
 - Added a text editor with markdown, latex, mermaid preview and edit mode
 - Edited / Created files can be viewed and edited in the browser

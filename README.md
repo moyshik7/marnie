@@ -29,6 +29,9 @@
 > **Notes**  
 >  The Notes feature offers persistent storage separate from the primary brain, enabling on-demand retrieval and modification via `fetch_notes`. This contrasts with the main brain, which is injected directly into prompts.
 
+> **Expanded Capacity (Local RAG)**  
+> A Gemini Notebook-style local RAG system backed by a dedicated SQLite database with full-text search (FTS5). Drag and drop markdown (`.md`) and text (`.txt`) files into notebook cards for previewing, referencing, and retrieval. The AI agent can query and retrieve information on-demand via the `retrieve_expanded_capacity` skill.
+
 > **Task scheduling and repeating tasks**  
 
 > **Multi-Step Deep Research**  
@@ -49,6 +52,7 @@ All skills are documented with specifications under [`.agents/skills/`](.agents/
 | `deep-research`      | Autonomous multi-turn web research and iterative synthesis engine producing comprehensive markdown dossiers with citations   |
 | `discord-alerts`     | Dispatch rich embed alert notifications to configured Discord webhook channels                                               |
 | `edit-notes`         | Edit, update, and append tasks, checklists, and working notes in `workspace/NOTES.md`                                        |
+| `expanded-capacity`  | Retrieve and search reference documents from the local Expanded Capacity database (local RAG) using full-text search         |
 | `fetch-notes`        | Fetch and update persistent user notes, task checklists, and reference data in `workspace/NOTES.md` on demand                |
 | `file-operations`    | Read, create, write, and patch local files on disk with precise line range replacements                                      |
 | `filesystem-search`  | Recursively search files and directories matching a pattern, substring, or regular expression                                |

@@ -86,6 +86,24 @@ async function runToolCallsAndFormat(toolCalls) {
         } else if (call.name === 'update_notes' || call.name === 'edit_notes' || call.name === 'notes_edit' || call.name === 'add_note' || call.name === 'add_notes' || call.name === 'save_notes' || call.name === 'append_notes' || call.name === 'write_notes') {
           callOutput += `\n<!-- file-artifact:{"path":"NOTES.md","name":"NOTES.md","action":"edited"} -->\n`;
           callOutput += `\n**AI Notes Updated:** \`workspace/NOTES.md\`\n`;
+        } else if (call.name === 'retrieve_expanded_capacity' || call.name === 'expanded_capacity' || call.name === 'query_expanded_capacity' || call.name === 'search_expanded_capacity') {
+          if (res.document) {
+            callOutput += `\n**Expanded Capacity Document (${res.document.name}):**\n\n${res.document.content}\n`;
+          } else if (Array.isArray(res.results)) {
+            callOutput += `\n**Expanded Capacity Search Results (${res.results.length} found):**\n\n`;
+            for (let i = 0; i < res.results.length; i++) {
+              const doc = res.results[i];
+              callOutput += `${i + 1}. **${doc.name}** (${doc.wordCount || 0} words)\n   ${doc.matchSnippet ? `> Excerpt: ${doc.matchSnippet}\n` : ''}\n`;
+            }
+          } else if (Array.isArray(res.documents)) {
+            callOutput += `\n**Expanded Capacity Documents (${res.documents.length} available):**\n\n`;
+            for (let i = 0; i < res.documents.length; i++) {
+              const doc = res.documents[i];
+              callOutput += `${i + 1}. **${doc.name}** (${doc.wordCount || 0} words, ${doc.size || 0} bytes)\n`;
+            }
+          } else {
+            callOutput += `\n${res.message || 'Expanded Capacity query executed.'}\n`;
+          }
         } else if (res.stdout !== undefined || res.stderr !== undefined) {
           if (res.stdout) callOutput += `\`\`\`\n${res.stdout.trimEnd()}\n\`\`\`\n`;
           if (res.stderr) callOutput += `\`\`\`stderr\n${res.stderr.trimEnd()}\n\`\`\`\n`;

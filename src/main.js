@@ -52,6 +52,7 @@ app.use('/api/research',  require('./api/routes/research'));
 app.use('/api/workspace', require('./api/routes/workspace'));
 app.use('/api/brain',     require('./api/routes/brain'));
 app.use('/api/notes',     require('./api/routes/notes'));
+app.use('/api/capacity',  require('./api/routes/capacity'));
 
 
 app.get('/health', (_req, res) => {

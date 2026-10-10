@@ -430,3 +430,30 @@ export async function appendNote(text, section = '') {
   });
 }
 
+// ── Expanded Capacity (Local RAG) ───────────────────────────
+export async function listCapacityDocuments() {
+  return request('/capacity/documents');
+}
+
+export async function getCapacityDocument(id) {
+  return request(`/capacity/documents/${id}`);
+}
+
+export async function uploadCapacityDocuments(docs) {
+  return request('/capacity/documents', {
+    method: 'POST',
+    body: JSON.stringify(docs),
+  });
+}
+
+export async function deleteCapacityDocument(id) {
+  return request(`/capacity/documents/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function searchCapacityDocuments(query) {
+  return request(`/capacity/search?q=${encodeURIComponent(query)}`);
+}
+
+
