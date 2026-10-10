@@ -14,6 +14,7 @@ const webSearch = require('./webSearch');
 const apiCall = require('./apiCall');
 const brainMemory = require('./brainMemory');
 const notesManager = require('./notesManager');
+const expandedCapacity = require('./expandedCapacity');
 
 const TOOLS = {
   run_javascript: {
@@ -261,6 +262,16 @@ const TOOLS = {
       };
     },
   },
+  retrieve_expanded_capacity: {
+    description: 'Retrieve or search reference documents from the local Expanded Capacity database (local RAG knowledge base). Use this to query uploaded markdown or text files, search for topics, inspect document lists, or fetch full file content.',
+    parameters: {
+      query: { type: 'string', description: 'Search keywords, questions, or topics to look up in Expanded Capacity' },
+      document_name: { type: 'string', description: 'Specific filename to retrieve in full (e.g. "notes.txt" or "api.md")' },
+      list_only: { type: 'boolean', description: 'Set to true to list all documents available in Expanded Capacity' },
+      limit: { type: 'number', description: 'Maximum matching results to return (default 5)' },
+    },
+    execute: async (args) => expandedCapacity.retrieveCapacity(args),
+  },
 };
 
 /**
@@ -331,6 +342,17 @@ async function executeTool(name, args = {}) {
     write_notes: 'update_notes',
     notes_update: 'update_notes',
     notes_append: 'update_notes',
+    retrieve_expanded_capacity: 'retrieve_expanded_capacity',
+    expanded_capacity: 'retrieve_expanded_capacity',
+    query_expanded_capacity: 'retrieve_expanded_capacity',
+    search_expanded_capacity: 'retrieve_expanded_capacity',
+    capacity_retrieve: 'retrieve_expanded_capacity',
+    capacity_search: 'retrieve_expanded_capacity',
+    capacity_query: 'retrieve_expanded_capacity',
+    retrieve_capacity: 'retrieve_expanded_capacity',
+    rag_search: 'retrieve_expanded_capacity',
+    rag_query: 'retrieve_expanded_capacity',
+    expanded_capacity_query: 'retrieve_expanded_capacity',
   };
 
   const toolName = aliasMap[name] || name;
@@ -397,6 +419,7 @@ TOOL USAGE GUIDELINES:
 - For saving user tasks and to-dos, call \`create_task\`.
 - PERSISTENT BRAIN MEMORY: You have a persistent memory in \`workspace/BRAIN.md\` which stores user context, preferences, and projects. It is injected into your prompt and auto-consolidated after every 5 conversation messages. You can also explicitly inspect or update it using \`read_brain_memory\` or \`update_brain_memory\` if the user instructs you to remember something specific.
 - KEEPING IMPORTANT THINGS IN NOTES (update_notes / edit_notes / fetch_notes): You have a separate dedicated working notebook and task list stored at \`workspace/NOTES.md\`. You can keep important things, user preferences, tasks, multi-step plans, research summaries, and architectural decisions in notes using \`update_notes\` (or \`edit_notes\`), and \`fetch_notes\` can be used to fetch notes whenever you need additional context. Unlike BRAIN.md, this file is NOT automatically injected into your prompt by default to preserve context window space, so proactively use \`update_notes\` (or \`edit_notes\`) to record important things and \`fetch_notes\` to retrieve them.
+- EXPANDED CAPACITY (LOCAL RAG SYSTEM): You have access to a local knowledge base called Expanded Capacity stored in a dedicated SQLite database. When the user asks questions about their uploaded reference files, notebook documents, notes, or uploaded knowledge, use \`retrieve_expanded_capacity\` to search for relevant information (\`query\`), list available documents (\`list_only: true\`), or retrieve a specific document (\`document_name\`). Synthesize the retrieved knowledge into your responses.
 - MERMAID & DIAGRAMS INSTRUCTION: Whenever illustrating workflows, systems, architectures, timelines, state diagrams, or schemas, ALWAYS provide clear, valid Mermaid diagrams enclosed in \`\`\`mermaid code blocks. The workspace has built-in live preview for Mermaid diagrams.
 - LATEX MATH INSTRUCTION: For mathematical equations, proofs, and formulas, ALWAYS use LaTeX notation ($$...$$ for display block equations, $...$ for inline math). The workspace renders LaTeX with KaTeX.
 - NO EM DASHES INSTRUCTION: NEVER use em dashes (—). Always use standard hyphens or dashes (-) in your text.
@@ -464,7 +487,9 @@ function parseToolCalls(text) {
           'read_memory', 'save_memory', 'write_brain', 'save_brain',
           'fetch_notes', 'read_notes', 'get_notes', 'notes', 'update_notes',
           'edit_notes', 'notes_edit', 'add_note', 'add_notes',
-          'save_notes', 'append_notes', 'write_notes'
+          'save_notes', 'append_notes', 'write_notes',
+          'retrieve_expanded_capacity', 'expanded_capacity', 'query_expanded_capacity',
+          'search_expanded_capacity', 'retrieve_capacity', 'capacity_search'
         ];
         if (knownTools.includes(toolName.toLowerCase()) && !calls.some(c => c.raw === match[0])) {
           calls.push({

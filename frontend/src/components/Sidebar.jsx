@@ -16,6 +16,8 @@ import {
     ChevronRight,
     FileCode,
     FileText,
+    Database,
+    Search,
 } from "lucide-react";
 
 export default function Sidebar({
@@ -28,6 +30,8 @@ export default function Sidebar({
     onOpenSettings,
     onOpenTools,
     onOpenNotes,
+    onOpenExpandedCapacity,
+    onOpenSearchChats,
     onOpenDeepResearch,
     onOpenArtifacts,
     isArtifactOpen = false,
@@ -177,8 +181,8 @@ export default function Sidebar({
                 )}
             </div>
 
-            {/* New Chat Button */}
-            <div style={{ padding: isCollapsed ? "0 0.5rem 0.75rem 0.5rem" : "0 1rem 0.75rem 1rem" }}>
+            {/* Action Buttons: New Chat & Search in chats */}
+            <div style={{ padding: isCollapsed ? "0 0.5rem 0.75rem 0.5rem" : "0 1rem 0.75rem 1rem", display: "flex", flexDirection: "column", gap: "0.45rem" }}>
                 <button
                     onClick={onNewConversation}
                     title={isCollapsed ? "New Chat" : undefined}
@@ -196,6 +200,7 @@ export default function Sidebar({
                         fontWeight: 500,
                         fontSize: "0.9rem",
                         boxShadow: "var(--shadow-sm)",
+                        cursor: "pointer",
                         transition: "all 0.15s ease",
                     }}
                     onMouseEnter={(e) => {
@@ -213,6 +218,47 @@ export default function Sidebar({
                 >
                     <Plus size={16} color="var(--accent-terracotta)" />
                     {!isCollapsed && <span>New Chat</span>}
+                </button>
+
+                <button
+                    onClick={onOpenSearchChats}
+                    title={isCollapsed ? "Search in chats" : undefined}
+                    style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "0.5rem",
+                        padding: isCollapsed ? "0.65rem 0" : "0.7rem 1rem",
+                        backgroundColor: activeSection === "search" ? "var(--bg-card-hover)" : "var(--bg-card)",
+                        color: activeSection === "search" ? "var(--accent-terracotta)" : "var(--text-primary)",
+                        border: activeSection === "search" ? "1px solid var(--accent-terracotta)" : "1px solid var(--border-subtle)",
+                        borderRadius: "var(--radius-md)",
+                        fontWeight: 500,
+                        fontSize: "0.9rem",
+                        boxShadow: "var(--shadow-sm)",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                        if (activeSection !== "search") {
+                            e.currentTarget.style.borderColor =
+                                "var(--accent-terracotta)";
+                            e.currentTarget.style.backgroundColor =
+                                "var(--bg-card-hover)";
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (activeSection !== "search") {
+                            e.currentTarget.style.borderColor =
+                                "var(--border-subtle)";
+                            e.currentTarget.style.backgroundColor =
+                                "var(--bg-card)";
+                        }
+                    }}
+                >
+                    <Search size={16} color="var(--accent-terracotta)" />
+                    {!isCollapsed && <span>Search in chats</span>}
                 </button>
             </div>
 
@@ -237,9 +283,30 @@ export default function Sidebar({
                             padding: "0.4rem 0.5rem",
                             textTransform: "uppercase",
                             letterSpacing: "0.05em",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
                         }}
                     >
-                        Conversations
+                        <span>Conversations</span>
+                        <button
+                            onClick={onOpenSearchChats}
+                            title="Search in chats"
+                            style={{
+                                background: "none",
+                                border: "none",
+                                color: activeSection === "search" ? "var(--accent-terracotta)" : "var(--text-muted)",
+                                cursor: "pointer",
+                                padding: "0.2rem",
+                                display: "flex",
+                                alignItems: "center",
+                                borderRadius: "4px",
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+                            onMouseLeave={(e) => (e.currentTarget.style.color = activeSection === "search" ? "var(--accent-terracotta)" : "var(--text-muted)")}
+                        >
+                            <Search size={13} />
+                        </button>
                     </div>
                 )}
 
@@ -575,6 +642,51 @@ export default function Sidebar({
                 >
                     <FileText size={16} style={{ flexShrink: 0 }} />
                     {!isCollapsed && <span>Notes</span>}
+                </button>
+
+                {/* Expanded Capacity local RAG trigger - above Deep Research */}
+                <button
+                    onClick={onOpenExpandedCapacity}
+                    title={isCollapsed ? "Expanded Capacity" : undefined}
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.65rem",
+                        padding: isCollapsed ? "0.55rem 0" : "0.55rem 0.65rem",
+                        borderRadius: "var(--radius-sm)",
+                        color: "var(--text-secondary)",
+                        backgroundColor: activeSection === "capacity"
+                            ? "var(--bg-card)"
+                            : "transparent",
+                        border: activeSection === "capacity"
+                            ? "1px solid var(--border-subtle)"
+                            : "1px solid transparent",
+                        fontSize: "0.85rem",
+                        width: "100%",
+                        textAlign: isCollapsed ? "center" : "left",
+                        justifyContent: isCollapsed ? "center" : "flex-start",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                        if (activeSection !== "capacity") {
+                            e.currentTarget.style.backgroundColor = "var(--bg-tertiary)";
+                            e.currentTarget.style.color = "var(--text-primary)";
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        if (activeSection !== "capacity") {
+                            e.currentTarget.style.backgroundColor = "transparent";
+                            e.currentTarget.style.color = "var(--text-secondary)";
+                        }
+                    }}
+                >
+                    <Database size={16} style={{ color: "var(--text-secondary)", flexShrink: 0 }} />
+                    {!isCollapsed && (
+                        <span style={{ fontWeight: activeSection === "capacity" ? 600 : 400 }}>
+                            Expanded Capacity
+                        </span>
+                    )}
                 </button>
 
                 {/* Deep Research view trigger - matching grayish color */}

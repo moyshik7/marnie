@@ -6,6 +6,8 @@ import SettingsModal from "./components/SettingsModal";
 import ToolsPanel from "./components/ToolsPanel";
 import ReportViewer from "./components/ReportViewer";
 import NotesModal from "./components/NotesModal";
+import ExpandedCapacityView from "./components/ExpandedCapacityView";
+import SearchChatsView from "./components/SearchChatsView";
 import {
     listConversations,
     createConversation,
@@ -56,7 +58,7 @@ export default function App() {
     const [backendConnected, setBackendConnected] = useState(false);
 
     // Modals & Navigation state
-    const [activeSection, setActiveSection] = useState("chat"); // 'chat' | 'research'
+    const [activeSection, setActiveSection] = useState("chat"); // 'chat' | 'research' | 'capacity' | 'search'
     const [isResearchOngoing, setIsResearchOngoing] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isToolsOpen, setIsToolsOpen] = useState(false);
@@ -66,6 +68,18 @@ export default function App() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
         return localStorage.getItem("marnie_sidebar_collapsed") === "true";
     });
+
+    // Global keyboard shortcut for quick Search in chats (Ctrl+K or Cmd+K)
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+                e.preventDefault();
+                setActiveSection((prev) => (prev === "search" ? "chat" : "search"));
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
 
     const toggleSidebar = () => {
         setIsSidebarCollapsed((prev) => {
@@ -352,6 +366,8 @@ export default function App() {
                 onOpenSettings={() => setIsSettingsOpen(true)}
                 onOpenTools={() => setIsToolsOpen(true)}
                 onOpenNotes={() => setIsNotesOpen(true)}
+                onOpenExpandedCapacity={() => setActiveSection("capacity")}
+                onOpenSearchChats={() => setActiveSection("search")}
                 onOpenDeepResearch={() => setActiveSection("research")}
                 onOpenArtifacts={() => {
                     setActiveSection("chat");
@@ -368,7 +384,7 @@ export default function App() {
                 onToggleCollapse={toggleSidebar}
             />
 
-            {/* Main View Area: Chat vs Deep Research */}
+            {/* Main View Area: Chat vs Deep Research vs Expanded Capacity vs Search */}
             <main style={{ flex: 1, display: "flex", overflow: "hidden" }}>
                 {activeSection === "research" ? (
                     <DeepResearchView
@@ -377,6 +393,16 @@ export default function App() {
                         onClose={() => setActiveSection("chat")}
                         onDiscuss={handleDiscussResearch}
                         onResearchCountChange={(hasOngoing) => setIsResearchOngoing(hasOngoing)}
+                    />
+                ) : activeSection === "capacity" ? (
+                    <ExpandedCapacityView
+                        onClose={() => setActiveSection("chat")}
+                    />
+                ) : activeSection === "search" ? (
+                    <SearchChatsView
+                        availableModels={availableModels}
+                        onClose={() => setActiveSection("chat")}
+                        onSelectConversation={handleSelectConversation}
                     />
                 ) : (
                     <ChatView

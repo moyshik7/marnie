@@ -86,6 +86,24 @@ async function runToolCallsAndFormat(toolCalls) {
         } else if (call.name === 'update_notes' || call.name === 'edit_notes' || call.name === 'notes_edit' || call.name === 'add_note' || call.name === 'add_notes' || call.name === 'save_notes' || call.name === 'append_notes' || call.name === 'write_notes') {
           callOutput += `\n<!-- file-artifact:{"path":"NOTES.md","name":"NOTES.md","action":"edited"} -->\n`;
           callOutput += `\n**AI Notes Updated:** \`workspace/NOTES.md\`\n`;
+        } else if (call.name === 'retrieve_expanded_capacity' || call.name === 'expanded_capacity' || call.name === 'query_expanded_capacity' || call.name === 'search_expanded_capacity') {
+          if (res.document) {
+            callOutput += `\n**Expanded Capacity Document (${res.document.name}):**\n\n${res.document.content}\n`;
+          } else if (Array.isArray(res.results)) {
+            callOutput += `\n**Expanded Capacity Search Results (${res.results.length} found):**\n\n`;
+            for (let i = 0; i < res.results.length; i++) {
+              const doc = res.results[i];
+              callOutput += `${i + 1}. **${doc.name}** (${doc.wordCount || 0} words)\n   ${doc.matchSnippet ? `> Excerpt: ${doc.matchSnippet}\n` : ''}\n`;
+            }
+          } else if (Array.isArray(res.documents)) {
+            callOutput += `\n**Expanded Capacity Documents (${res.documents.length} available):**\n\n`;
+            for (let i = 0; i < res.documents.length; i++) {
+              const doc = res.documents[i];
+              callOutput += `${i + 1}. **${doc.name}** (${doc.wordCount || 0} words, ${doc.size || 0} bytes)\n`;
+            }
+          } else {
+            callOutput += `\n${res.message || 'Expanded Capacity query executed.'}\n`;
+          }
         } else if (res.stdout !== undefined || res.stderr !== undefined) {
           if (res.stdout) callOutput += `\`\`\`\n${res.stdout.trimEnd()}\n\`\`\`\n`;
           if (res.stderr) callOutput += `\`\`\`stderr\n${res.stderr.trimEnd()}\n\`\`\`\n`;
@@ -145,8 +163,117 @@ function insertMsg(convId, role, content, toolCalls = null, toolCallId = null) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Conversations CRUD
+// Conversations CRUD & Search
 // ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/chat/search
+ * Search across conversations and message history.
+ * Query: ?q=...&role=...&model=...&limit=...
+ */
+router.get('/search', (req, res) => {
+  const query = (req.query.q || '').trim();
+  const role = req.query.role; // 'user' | 'assistant'
+  const model = req.query.model;
+  const limit = parseInt(req.query.limit, 10) || 50;
+
+  try {
+    if (!query) {
+      // If no query, return recent conversations with message counts and last message preview
+      const recent = db.prepare(`
+        SELECT c.*,
+               (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id) as message_count,
+               (SELECT content FROM messages WHERE conversation_id = c.id AND role != 'system' ORDER BY created_at DESC LIMIT 1) as last_message,
+               (SELECT role FROM messages WHERE conversation_id = c.id AND role != 'system' ORDER BY created_at DESC LIMIT 1) as last_role
+        FROM conversations c
+        ORDER BY c.updated_at DESC
+        LIMIT @limit
+      `).all({ limit });
+
+      return res.json({
+        success: true,
+        query: '',
+        totalResults: recent.length,
+        conversations: recent,
+        messages: [],
+      });
+    }
+
+    // 1. Search matching conversations by title
+    let convSql = `
+      SELECT c.*,
+             (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id) as message_count,
+             (SELECT content FROM messages WHERE conversation_id = c.id AND role != 'system' ORDER BY created_at DESC LIMIT 1) as last_message
+      FROM conversations c
+      WHERE c.title LIKE '%' || @query || '%'
+    `;
+    if (model) convSql += ` AND c.model = @model`;
+    convSql += ` ORDER BY c.updated_at DESC LIMIT 20`;
+
+    const convMatches = db.prepare(convSql).all({ query, model });
+
+    // 2. Search matching messages
+    let msgSql = `
+      SELECT m.id, m.conversation_id, m.role, m.content, m.created_at,
+             c.title as conversation_title, c.model as conversation_model
+      FROM messages m
+      JOIN conversations c ON m.conversation_id = c.id
+      WHERE m.role != 'system' AND m.content LIKE '%' || @query || '%'
+    `;
+    if (role && (role === 'user' || role === 'assistant')) {
+      msgSql += ` AND m.role = @role`;
+    }
+    if (model) {
+      msgSql += ` AND c.model = @model`;
+    }
+    msgSql += ` ORDER BY m.created_at DESC LIMIT @limit`;
+
+    const msgMatches = db.prepare(msgSql).all({ query, role, model, limit });
+
+    // Format message snippets (strip <think> tags and tool markup for clean display)
+    const formattedMessages = msgMatches.map((m) => {
+      let cleanContent = (m.content || '')
+        .replace(/<think>[\s\S]*?<\/think>/gi, '')
+        .replace(/<!--[\s\S]*?-->/gi, '')
+        .trim();
+
+      // Find excerpt around query term
+      const lower = cleanContent.toLowerCase();
+      const qLower = query.toLowerCase();
+      const idx = lower.indexOf(qLower);
+
+      let excerpt = cleanContent;
+      if (idx !== -1 && cleanContent.length > 250) {
+        const start = Math.max(0, idx - 80);
+        const end = Math.min(cleanContent.length, idx + query.length + 150);
+        excerpt = (start > 0 ? '...' : '') + cleanContent.slice(start, end) + (end < cleanContent.length ? '...' : '');
+      } else if (cleanContent.length > 250) {
+        excerpt = cleanContent.slice(0, 250) + '...';
+      }
+
+      return {
+        id: m.id,
+        conversationId: m.conversation_id,
+        conversationTitle: m.conversation_title,
+        conversationModel: m.conversation_model,
+        role: m.role,
+        content: cleanContent,
+        excerpt,
+        createdAt: m.created_at,
+      };
+    });
+
+    res.json({
+      success: true,
+      query,
+      totalResults: formattedMessages.length + convMatches.length,
+      conversations: convMatches,
+      messages: formattedMessages,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 /**
  * GET /api/chat/conversations
