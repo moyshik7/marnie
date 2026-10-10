@@ -241,7 +241,10 @@ router.delete('/file', (req, res) => {
 // Serve raw file for direct browser opening and in-app preview iframes
 // ═══════════════════════════════════════════════════════════════════════════
 const serveRawFile = (req, res) => {
-  const target = req.params.filepath || req.params[0] || req.query.path;
+  let target = req.params.filepath || req.params[0] || req.query.path;
+  if (Array.isArray(target)) {
+    target = target.join('/');
+  }
   if (!target) return res.status(400).send('Path required');
 
   try {
@@ -268,6 +271,6 @@ const serveRawFile = (req, res) => {
 };
 
 router.get('/raw', serveRawFile);
-router.get('/raw/*', serveRawFile);
+router.get('/raw/*filepath', serveRawFile);
 
 module.exports = router;
