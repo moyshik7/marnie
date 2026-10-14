@@ -1,22 +1,22 @@
-'use strict';
+"use strict";
 
-const Database = require('better-sqlite3');
-const path = require('path');
-const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
+const Database = require("better-sqlite3");
+const path = require("path");
+const fs = require("fs");
+const { v4: uuidv4 } = require("uuid");
 
-const CAPACITY_DB_PATH = process.env.CAPACITY_DB_PATH || './data/capacity.db';
+const CAPACITY_DB_PATH = process.env.CAPACITY_DB_PATH || "./data/capacity.db";
 const dbDir = path.dirname(path.resolve(CAPACITY_DB_PATH));
 
 if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+    fs.mkdirSync(dbDir, { recursive: true });
 }
 
 const db = new Database(path.resolve(CAPACITY_DB_PATH));
 
 // Enable WAL mode for high concurrency & performance
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+db.pragma("journal_mode = WAL");
+db.pragma("foreign_keys = ON");
 
 // ────────────────────────────────────────
 // Schema bootstrap for Expanded Capacity
@@ -85,90 +85,90 @@ const stmtCount = db.prepare(`
 `);
 
 function calculateWordCount(text) {
-  if (!text || typeof text !== 'string') return 0;
-  return text.trim().split(/\s+/).filter(Boolean).length;
+    if (!text || typeof text !== "string") return 0;
+    return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
 /**
  * Add a new document to the Expanded Capacity database.
  */
-function addDocument({ name, content, type, category = 'General' }) {
-  if (!name || typeof name !== 'string') throw new Error('Document name is required');
-  if (content === undefined || content === null) throw new Error('Document content is required');
+function addDocument({ name, content, type, category = "General" }) {
+    if (!name || typeof name !== "string") throw new Error("Document name is required");
+    if (content === undefined || content === null) throw new Error("Document content is required");
 
-  const id = uuidv4();
-  const stringContent = String(content);
-  const size = Buffer.byteLength(stringContent, 'utf8');
-  const fileExt = path.extname(name).replace(/^\./, '').toLowerCase() || type || 'txt';
-  const word_count = calculateWordCount(stringContent);
+    const id = uuidv4();
+    const stringContent = String(content);
+    const size = Buffer.byteLength(stringContent, "utf8");
+    const fileExt = path.extname(name).replace(/^\./, "").toLowerCase() || type || "txt";
+    const word_count = calculateWordCount(stringContent);
 
-  stmtInsert.run({
-    id,
-    name: name.trim(),
-    content: stringContent,
-    size,
-    type: fileExt,
-    category: category || 'General',
-    word_count,
-  });
+    stmtInsert.run({
+        id,
+        name: name.trim(),
+        content: stringContent,
+        size,
+        type: fileExt,
+        category: category || "General",
+        word_count,
+    });
 
-  return stmtGetById.get(id);
+    return stmtGetById.get(id);
 }
 
 /**
  * List all documents metadata.
  */
 function listDocuments() {
-  return stmtList.all();
+    return stmtList.all();
 }
 
 /**
  * Get single document by ID.
  */
 function getDocumentById(id) {
-  return stmtGetById.get(id);
+    return stmtGetById.get(id);
 }
 
 /**
  * Get single document by Name.
  */
 function getDocumentByName(name) {
-  return stmtGetByName.get(name);
+    return stmtGetByName.get(name);
 }
 
 /**
  * Delete document by ID.
  */
 function deleteDocument(id) {
-  const existing = stmtGetById.get(id);
-  if (!existing) return false;
-  stmtDelete.run(id);
-  return true;
+    const existing = stmtGetById.get(id);
+    if (!existing) return false;
+    stmtDelete.run(id);
+    return true;
 }
 
 /**
  * Full-Text and semantic search across documents.
  */
 function searchDocuments(query, { limit = 5 } = {}) {
-  if (!query || typeof query !== 'string' || !query.trim()) {
-    return listDocuments().slice(0, limit);
-  }
+    if (!query || typeof query !== "string" || !query.trim()) {
+        return listDocuments().slice(0, limit);
+    }
 
-  const cleanQuery = query.trim();
+    const cleanQuery = query.trim();
 
-  // Try FTS5 first
-  try {
-    // Escape double quotes and prepare query tokens
-    const ftsQuery = cleanQuery
-      .replace(/[^\w\s-]/g, ' ')
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .map((term) => `"${term}"*`)
-      .join(' OR ');
+    // Try FTS5 first
+    try {
+        // Escape double quotes and prepare query tokens
+        const ftsQuery = cleanQuery
+            .replace(/[^\w\s-]/g, " ")
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .map((term) => `"${term}"*`)
+            .join(" OR ");
 
-    if (ftsQuery) {
-      const ftsStmt = db.prepare(`
+        if (ftsQuery) {
+            const ftsStmt = db.prepare(`
         SELECT d.id, d.name, d.size, d.type, d.category, d.word_count, d.created_at,
                snippet(documents_fts, 1, '«', '»', '...', 25) AS match_snippet,
                d.content
@@ -178,17 +178,17 @@ function searchDocuments(query, { limit = 5 } = {}) {
         ORDER BY rank
         LIMIT @limit
       `);
-      const results = ftsStmt.all({ ftsQuery, limit: limit || 5 });
-      if (results && results.length > 0) {
-        return results;
-      }
+            const results = ftsStmt.all({ ftsQuery, limit: limit || 5 });
+            if (results && results.length > 0) {
+                return results;
+            }
+        }
+    } catch (err) {
+        // If FTS fails on special query characters, gracefully fall back to LIKE
     }
-  } catch (err) {
-    // If FTS fails on special query characters, gracefully fall back to LIKE
-  }
 
-  // Fallback to substring LIKE query
-  const likeStmt = db.prepare(`
+    // Fallback to substring LIKE query
+    const likeStmt = db.prepare(`
     SELECT id, name, size, type, category, word_count, created_at, content,
            substr(content, 1, 300) AS match_snippet
     FROM documents
@@ -197,16 +197,16 @@ function searchDocuments(query, { limit = 5 } = {}) {
     LIMIT @limit
   `);
 
-  return likeStmt.all({ query: cleanQuery, limit: limit || 5 });
+    return likeStmt.all({ query: cleanQuery, limit: limit || 5 });
 }
 
 module.exports = {
-  db,
-  addDocument,
-  listDocuments,
-  getDocumentById,
-  getDocumentByName,
-  deleteDocument,
-  searchDocuments,
-  calculateWordCount,
+    db,
+    addDocument,
+    listDocuments,
+    getDocumentById,
+    getDocumentByName,
+    deleteDocument,
+    searchDocuments,
+    calculateWordCount,
 };

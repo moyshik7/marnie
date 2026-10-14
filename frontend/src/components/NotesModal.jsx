@@ -1,21 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-    X,
-    FileText,
-    Check,
-    Copy,
-    Save,
-    RotateCw,
-    Plus,
-    Clock,
-    Hash,
-} from "lucide-react";
+import { X, FileText, Check, Copy, Save, RotateCw, Plus, Clock, Hash } from "lucide-react";
 import { getNotes, saveNotes, appendNote } from "../services/api";
 
-export default function NotesModal({
-    isOpen,
-    onClose,
-}) {
+export default function NotesModal({ isOpen, onClose }) {
     const [content, setContent] = useState("");
     const [savedContent, setSavedContent] = useState("");
     const [metadata, setMetadata] = useState(null);
@@ -109,7 +96,6 @@ export default function NotesModal({
         }
     };
 
-
     // Sync editor scrolling
     const handleScroll = (e) => {
         if (lineNumbersRef.current) {
@@ -190,9 +176,7 @@ export default function NotesModal({
                         </div>
                         <div>
                             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                                <span style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                                    Notes (For Agent)
-                                </span>
+                                <span style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)" }}>Notes (For Agent)</span>
                             </div>
                         </div>
                     </div>
@@ -396,11 +380,7 @@ export default function NotesModal({
                                 Last saved: {new Date(metadata.lastModified).toLocaleTimeString()}
                             </span>
                         )}
-                        {isDirty && (
-                            <span style={{ color: "var(--accent-terracotta)", fontWeight: 500 }}>
-                                &bull; Unsaved changes
-                            </span>
-                        )}
+                        {isDirty && <span style={{ color: "var(--accent-terracotta)", fontWeight: 500 }}>&bull; Unsaved changes</span>}
                     </div>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>

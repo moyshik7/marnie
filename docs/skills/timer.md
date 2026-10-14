@@ -7,11 +7,13 @@ The `timer` skill enables the agent to configure countdown timers that notify Di
 ## 1. Capabilities & Triggers
 
 ### When to Activate
+
 - Setting reminders, tea or Pomodoro timers, and waiting periods.
 - Alerting users after background jobs, long downloads, or deployment intervals finish.
 - Dispatched when the user asks: "Remind me in 10 minutes", "Set a timer for 1 hour", etc.
 
 ### Underlying Tool
+
 - [`set_timer`](../tools/timer-and-alerts.md)
 
 ---
@@ -19,26 +21,28 @@ The `timer` skill enables the agent to configure countdown timers that notify Di
 ## 2. Invocation Patterns
 
 ### Setting a 15-Minute Timer
+
 ```json
 {
-  "name": "set_timer",
-  "arguments": {
-    "duration": "15m",
-    "message": "15 minutes are up! Check your build logs.",
-    "title": "Build Timer"
-  }
+    "name": "set_timer",
+    "arguments": {
+        "duration": "15m",
+        "message": "15 minutes are up! Check your build logs.",
+        "title": "Build Timer"
+    }
 }
 ```
 
 ### Setting a 60-Second Timer
+
 ```json
 {
-  "name": "set_timer",
-  "arguments": {
-    "seconds": 60,
-    "message": "1 minute timer complete.",
-    "title": "Quick Alert"
-  }
+    "name": "set_timer",
+    "arguments": {
+        "seconds": 60,
+        "message": "1 minute timer complete.",
+        "title": "Quick Alert"
+    }
 }
 ```
 

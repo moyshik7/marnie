@@ -7,12 +7,14 @@ The `api-caller` skill enables an autonomous agent to execute arbitrary HTTP/RES
 ## 1. Capabilities & Triggers
 
 ### When to Activate
+
 - Interacting with external or self-hosted REST API endpoints.
 - Verifying HTTP webhooks, local server routes, and health pings.
 - Inspecting JSON responses, authentication headers, or status codes.
 - Triggering network webhooks without invoking full bash curl processes.
 
 ### Underlying Tool
+
 - [`api_call`](../tools/api-call.md)
 
 ---
@@ -20,32 +22,34 @@ The `api-caller` skill enables an autonomous agent to execute arbitrary HTTP/RES
 ## 2. Invocation Patterns
 
 ### Fetching a Remote JSON Resource
+
 ```json
 {
-  "name": "api_call",
-  "arguments": {
-    "url": "https://jsonplaceholder.typicode.com/posts/1",
-    "method": "GET"
-  }
+    "name": "api_call",
+    "arguments": {
+        "url": "https://jsonplaceholder.typicode.com/posts/1",
+        "method": "GET"
+    }
 }
 ```
 
 ### Sending an Authenticated Webhook Payload
+
 ```json
 {
-  "name": "api_call",
-  "arguments": {
-    "url": "https://api.example.com/v1/events",
-    "method": "POST",
-    "headers": {
-      "Authorization": "Bearer s3cr3t-t0k3n",
-      "Content-Type": "application/json"
-    },
-    "data": {
-      "event": "build_success",
-      "timestamp": "2026-10-10T21:00:00Z"
+    "name": "api_call",
+    "arguments": {
+        "url": "https://api.example.com/v1/events",
+        "method": "POST",
+        "headers": {
+            "Authorization": "Bearer s3cr3t-t0k3n",
+            "Content-Type": "application/json"
+        },
+        "data": {
+            "event": "build_success",
+            "timestamp": "2026-10-10T21:00:00Z"
+        }
     }
-  }
 }
 ```
 

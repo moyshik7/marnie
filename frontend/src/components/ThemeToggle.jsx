@@ -45,12 +45,8 @@ export default function ThemeToggle({ theme, onToggle }) {
                     height: "26px",
                     borderRadius: "9999px",
                     backgroundColor: isDark ? "#141311" : "#E0D9CE",
-                    boxShadow: isDark
-                        ? "inset 0 2px 5px rgba(0, 0, 0, 0.7), inset 0 1px 2px rgba(0, 0, 0, 0.5)"
-                        : "inset 0 2px 5px rgba(0, 0, 0, 0.14), inset 0 1px 2px rgba(0, 0, 0, 0.08)",
-                    border: isDark
-                        ? "1px solid rgba(255, 255, 255, 0.06)"
-                        : "1px solid rgba(0, 0, 0, 0.06)",
+                    boxShadow: isDark ? "inset 0 2px 5px rgba(0, 0, 0, 0.7), inset 0 1px 2px rgba(0, 0, 0, 0.5)" : "inset 0 2px 5px rgba(0, 0, 0, 0.14), inset 0 1px 2px rgba(0, 0, 0, 0.08)",
+                    border: isDark ? "1px solid rgba(255, 255, 255, 0.06)" : "1px solid rgba(0, 0, 0, 0.06)",
                     transition: "all 0.25s ease",
                     padding: "2px",
                     display: "flex",
@@ -67,14 +63,9 @@ export default function ThemeToggle({ theme, onToggle }) {
                         height: "20px",
                         borderRadius: "50%",
                         backgroundColor: isDark ? "#423F38" : "#FFFFFF",
-                        boxShadow: isDark
-                            ? "0 2px 6px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.4)"
-                            : "0 2px 6px rgba(0, 0, 0, 0.18), 0 1px 2px rgba(0, 0, 0, 0.12)",
-                        transform: isDark
-                            ? "translateX(24px)"
-                            : "translateX(0px)",
-                        transition:
-                            "transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease, box-shadow 0.2s ease",
+                        boxShadow: isDark ? "0 2px 6px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.4)" : "0 2px 6px rgba(0, 0, 0, 0.18), 0 1px 2px rgba(0, 0, 0, 0.12)",
+                        transform: isDark ? "translateX(24px)" : "translateX(0px)",
+                        transition: "transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease, box-shadow 0.2s ease",
                     }}
                 />
             </div>

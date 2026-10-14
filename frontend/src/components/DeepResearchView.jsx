@@ -1,33 +1,6 @@
 import React, { useState, useEffect } from "react";
-import {
-    Microscope,
-    Plus,
-    Play,
-    Pause,
-    Trash2,
-    RefreshCw,
-    ExternalLink,
-    Clock,
-    Check,
-    Copy,
-    ChevronDown,
-    ChevronUp,
-    MessageSquare,
-    X,
-    Search,
-    BookOpen,
-    Layers,
-    FileText,
-    Sliders,
-} from "lucide-react";
-import {
-    listResearches,
-    startDeepResearch,
-    cancelDeepResearch,
-    deleteDeepResearch,
-    clearAllResearches,
-    getResearch,
-} from "../services/api";
+import { Microscope, Plus, Play, Pause, Trash2, RefreshCw, ExternalLink, Clock, Check, Copy, ChevronDown, ChevronUp, MessageSquare, X, Search, BookOpen, Layers, FileText, Sliders } from "lucide-react";
+import { listResearches, startDeepResearch, cancelDeepResearch, deleteDeepResearch, clearAllResearches, getResearch } from "../services/api";
 
 function slugify(text) {
     if (!text || typeof text !== "string") return `report-${Date.now()}`;
@@ -48,13 +21,7 @@ function formatDuration(duration) {
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
 }
 
-export default function DeepResearchView({
-    activeModel,
-    availableModels = [],
-    onClose,
-    onDiscuss,
-    onResearchCountChange,
-}) {
+export default function DeepResearchView({ activeModel, availableModels = [], onClose, onDiscuss, onResearchCountChange }) {
     const [researches, setResearches] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isPastResearchExpanded, setIsPastResearchExpanded] = useState(true);
@@ -63,9 +30,7 @@ export default function DeepResearchView({
 
     // Form inputs for new research
     const [topic, setTopic] = useState("");
-    const [model, setModel] = useState(
-        activeModel || (availableModels.length > 0 ? availableModels[0] : "qwen3.5:9b")
-    );
+    const [model, setModel] = useState(activeModel || (availableModels.length > 0 ? availableModels[0] : "qwen3.5:9b"));
     const [minRevisions, setMinRevisions] = useState(1);
     const [maxRevisions, setMaxRevisions] = useState(3);
     const [maxResults, setMaxResults] = useState(5);
@@ -74,10 +39,7 @@ export default function DeepResearchView({
     useEffect(() => {
         if (availableModels && availableModels.length > 0) {
             if (!model || model === "llama3.2" || !availableModels.includes(model)) {
-                const preferred =
-                    activeModel && availableModels.includes(activeModel)
-                        ? activeModel
-                        : availableModels[0];
+                const preferred = activeModel && availableModels.includes(activeModel) ? activeModel : availableModels[0];
                 setModel(preferred);
             }
         } else if (activeModel && activeModel !== "llama3.2") {
@@ -114,10 +76,7 @@ export default function DeepResearchView({
 
         setSubmitting(true);
         try {
-            const chosenModel =
-                model ||
-                activeModel ||
-                (availableModels.length > 0 ? availableModels[0] : "qwen3.5:9b");
+            const chosenModel = model || activeModel || (availableModels.length > 0 ? availableModels[0] : "qwen3.5:9b");
 
             await startDeepResearch({
                 topic: topic.trim(),
@@ -171,10 +130,7 @@ export default function DeepResearchView({
     };
 
     const handleVisualReport = (r) => {
-        const targetSlug =
-            r.slug ||
-            (r.error && r.error.endsWith(".md") ? r.error : null) ||
-            `${slugify(r.topic)}.md`;
+        const targetSlug = r.slug || (r.error && r.error.endsWith(".md") ? r.error : null) || `${slugify(r.topic)}.md`;
         window.open(`/report/${targetSlug}`, "_blank");
     };
 
@@ -239,9 +195,7 @@ export default function DeepResearchView({
                             >
                                 Deep Research
                             </h1>
-                            <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                                Autonomous multi-angle exploration, iterative review, and structured dossiers
-                            </div>
+                            <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Autonomous multi-angle exploration, iterative review, and structured dossiers</div>
                         </div>
                     </div>
 
@@ -316,9 +270,7 @@ export default function DeepResearchView({
                                 }}
                             >
                                 <div>
-                                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.3rem" }}>
-                                        Model
-                                    </label>
+                                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.3rem" }}>Model</label>
                                     <select
                                         value={model}
                                         onChange={(e) => setModel(e.target.value)}
@@ -342,9 +294,7 @@ export default function DeepResearchView({
                                 </div>
 
                                 <div>
-                                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.3rem" }}>
-                                        Min Revisions
-                                    </label>
+                                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.3rem" }}>Min Revisions</label>
                                     <input
                                         type="number"
                                         min={1}
@@ -365,9 +315,7 @@ export default function DeepResearchView({
                                 </div>
 
                                 <div>
-                                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.3rem" }}>
-                                        Max Revisions
-                                    </label>
+                                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.3rem" }}>Max Revisions</label>
                                     <input
                                         type="number"
                                         min={1}
@@ -388,9 +336,7 @@ export default function DeepResearchView({
                                 </div>
 
                                 <div>
-                                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.3rem" }}>
-                                        Sources per Query
-                                    </label>
+                                    <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.3rem" }}>Sources per Query</label>
                                     <input
                                         type="number"
                                         min={3}
@@ -454,9 +400,7 @@ export default function DeepResearchView({
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
                                 <span className="blinking-green-dot" style={{ width: "10px", height: "10px" }} />
-                                <span style={{ fontWeight: 600, fontSize: "0.92rem", color: "var(--text-primary)" }}>
-                                    Research in Progress: {ongoingResearch.topic}
-                                </span>
+                                <span style={{ fontWeight: 600, fontSize: "0.92rem", color: "var(--text-primary)" }}>Research in Progress: {ongoingResearch.topic}</span>
                             </div>
                             <button
                                 onClick={(e) => handleCancel(ongoingResearch.id, e)}
@@ -518,18 +462,13 @@ export default function DeepResearchView({
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
                         <div>
                             <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem" }}>
-                                <h2 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#ffffff", margin: 0 }}>
-                                    Past research
-                                </h2>
+                                <h2 style={{ fontSize: "1.05rem", fontWeight: 700, color: "#ffffff", margin: 0 }}>Past research</h2>
                                 <span style={{ fontSize: "0.82rem", color: "#8e8e93" }}>
                                     {researches.length} {researches.length === 1 ? "research" : "researches"}
                                 </span>
                             </div>
                             <div style={{ fontSize: "0.78rem", color: "#8e8e93", marginTop: "0.25rem" }}>
-                                All past research found in:{" "}
-                                <span style={{ textDecoration: "underline", color: "#a1a1aa", cursor: "pointer" }}>
-                                    Library, Research
-                                </span>
+                                All past research found in: <span style={{ textDecoration: "underline", color: "#a1a1aa", cursor: "pointer" }}>Library, Research</span>
                             </div>
                         </div>
 
@@ -592,16 +531,12 @@ export default function DeepResearchView({
                     {isPastResearchExpanded && (
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
                             {loading ? (
-                                <div style={{ padding: "2rem", textAlign: "center", color: "#8e8e93", fontSize: "0.85rem" }}>
-                                    Loading past research dossiers...
-                                </div>
+                                <div style={{ padding: "2rem", textAlign: "center", color: "#8e8e93", fontSize: "0.85rem" }}>Loading past research dossiers...</div>
                             ) : researches.length === 0 ? (
-                                <div style={{ padding: "2.5rem 1rem", textAlign: "center", color: "#8e8e93", fontSize: "0.85rem" }}>
-                                    No past research found. Launch your first deep research run above.
-                                </div>
+                                <div style={{ padding: "2.5rem 1rem", textAlign: "center", color: "#8e8e93", fontSize: "0.85rem" }}>No past research found. Launch your first deep research run above.</div>
                             ) : (
                                 researches.map((r) => {
-                                    const sourceCount = r.sources?.length || (r.urls_analyzed || 2);
+                                    const sourceCount = r.sources?.length || r.urls_analyzed || 2;
                                     const displayDuration = r.duration || "8:53";
 
                                     return (

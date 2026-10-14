@@ -7,11 +7,13 @@ The `web-search` skill searches the live web for up-to-date facts, current event
 ## 1. Capabilities & Triggers
 
 ### When to Activate
+
 - Finding recent news, current events, library releases, or benchmarks.
 - Searching for technical documentation, error solutions, or API specifications.
 - Discovering URLs and sources across the public internet.
 
 ### Underlying Tool
+
 - [`web_search`](../tools/web-search.md)
 
 ---
@@ -19,24 +21,26 @@ The `web-search` skill searches the live web for up-to-date facts, current event
 ## 2. Invocation Patterns
 
 ### Basic Search Query
+
 ```json
 {
-  "name": "web_search",
-  "arguments": {
-    "query": "nodejs 24 release notes",
-    "max_results": 5
-  }
+    "name": "web_search",
+    "arguments": {
+        "query": "nodejs 24 release notes",
+        "max_results": 5
+    }
 }
 ```
 
 ### Search with Provider Override
+
 ```json
 {
-  "name": "web_search",
-  "arguments": {
-    "query": "ollama tool calling support",
-    "provider": "searxng"
-  }
+    "name": "web_search",
+    "arguments": {
+        "query": "ollama tool calling support",
+        "provider": "searxng"
+    }
 }
 ```
 

@@ -1,32 +1,32 @@
-'use strict';
+"use strict";
 
-const axios = require('axios');
-const db = require('../../../db/index');
+const axios = require("axios");
+const db = require("../../../db/index");
 
 const getSetting = (key, fallback) => {
-  try {
-    const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
-    return (row && row.value) ? row.value : fallback;
-  } catch {
-    return fallback;
-  }
+    try {
+        const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key);
+        return row && row.value ? row.value : fallback;
+    } catch {
+        return fallback;
+    }
 };
 
-const BASE_URL = () => getSetting('ollama_base_url', process.env.OLLAMA_BASE_URL || 'http://localhost:11434');
-const DEFAULT_MODEL = () => getSetting('default_model', process.env.DEFAULT_MODEL || 'llama3.2');
+const BASE_URL = () => getSetting("ollama_base_url", process.env.OLLAMA_BASE_URL || "http://localhost:11434");
+const DEFAULT_MODEL = () => getSetting("default_model", process.env.DEFAULT_MODEL || "llama3.2");
 
 /**
  * List available models from Ollama.
  * @returns {Promise<string[]>} Array of model names.
  */
 async function listModels() {
-  try {
-    const res = await axios.get(`${BASE_URL()}/api/tags`, { timeout: 6000 });
-    return (res.data.models || []).map((m) => m.name);
-  } catch (err) {
-    console.warn('[ollama] Error fetching models:', err.message);
-    return [];
-  }
+    try {
+        const res = await axios.get(`${BASE_URL()}/api/tags`, { timeout: 6000 });
+        return (res.data.models || []).map((m) => m.name);
+    } catch (err) {
+        console.warn("[ollama] Error fetching models:", err.message);
+        return [];
+    }
 }
 
 /**
@@ -34,77 +34,77 @@ async function listModels() {
  * Otherwise fallback to DB default or first available model in Ollama.
  */
 async function resolveModel(requestedModel) {
-  try {
-    const models = await listModels();
-    if (requestedModel && typeof requestedModel === 'string' && requestedModel.trim()) {
-      const trimmed = requestedModel.trim();
-      if (models.includes(trimmed)) return trimmed;
-      const baseName = trimmed.split(':')[0];
-      const match = models.find((m) => m === trimmed || m.startsWith(baseName + ':') || m === baseName);
-      if (match) return match;
-    }
-    const configured = DEFAULT_MODEL();
-    if (models.includes(configured)) return configured;
-    if (models.length > 0) return models[0];
-  } catch {}
-  return requestedModel || DEFAULT_MODEL();
+    try {
+        const models = await listModels();
+        if (requestedModel && typeof requestedModel === "string" && requestedModel.trim()) {
+            const trimmed = requestedModel.trim();
+            if (models.includes(trimmed)) return trimmed;
+            const baseName = trimmed.split(":")[0];
+            const match = models.find((m) => m === trimmed || m.startsWith(baseName + ":") || m === baseName);
+            if (match) return match;
+        }
+        const configured = DEFAULT_MODEL();
+        if (models.includes(configured)) return configured;
+        if (models.length > 0) return models[0];
+    } catch {}
+    return requestedModel || DEFAULT_MODEL();
 }
 
 /**
  * Non-streaming chat completion.
  */
 async function chat({ model, messages, options = {}, tools = [] }) {
-  const chosenModel = await resolveModel(model);
-  const payload = {
-    model: chosenModel,
-    messages,
-    stream: false,
-    options,
-  };
-  if (tools.length > 0) payload.tools = tools;
+    const chosenModel = await resolveModel(model);
+    const payload = {
+        model: chosenModel,
+        messages,
+        stream: false,
+        options,
+    };
+    if (tools.length > 0) payload.tools = tools;
 
-  const res = await axios.post(`${BASE_URL()}/api/chat`, payload);
-  return res.data;
+    const res = await axios.post(`${BASE_URL()}/api/chat`, payload);
+    return res.data;
 }
 
 /**
  * Streaming chat completion. Calls onChunk for each streamed token.
  */
 async function chatStream({ model, messages, options = {}, tools = [], onChunk, onDone }) {
-  const chosenModel = await resolveModel(model);
-  const payload = {
-    model: chosenModel,
-    messages,
-    stream: true,
-    options,
-  };
-  if (tools && tools.length > 0) payload.tools = tools;
+    const chosenModel = await resolveModel(model);
+    const payload = {
+        model: chosenModel,
+        messages,
+        stream: true,
+        options,
+    };
+    if (tools && tools.length > 0) payload.tools = tools;
 
-  const res = await axios.post(`${BASE_URL()}/api/chat`, payload, {
-    responseType: 'stream',
-  });
-
-  return new Promise((resolve, reject) => {
-    let buffer = '';
-    res.data.on('data', (chunk) => {
-      buffer += chunk.toString();
-      const lines = buffer.split('\n');
-      buffer = lines.pop(); // keep incomplete last line
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        try {
-          const parsed = JSON.parse(trimmed);
-          onChunk(parsed);
-          if (parsed.done && onDone) onDone(parsed);
-        } catch (e) {
-          // ignore malformed chunks
-        }
-      }
+    const res = await axios.post(`${BASE_URL()}/api/chat`, payload, {
+        responseType: "stream",
     });
-    res.data.on('end', resolve);
-    res.data.on('error', reject);
-  });
+
+    return new Promise((resolve, reject) => {
+        let buffer = "";
+        res.data.on("data", (chunk) => {
+            buffer += chunk.toString();
+            const lines = buffer.split("\n");
+            buffer = lines.pop(); // keep incomplete last line
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed) continue;
+                try {
+                    const parsed = JSON.parse(trimmed);
+                    onChunk(parsed);
+                    if (parsed.done && onDone) onDone(parsed);
+                } catch (e) {
+                    // ignore malformed chunks
+                }
+            }
+        });
+        res.data.on("end", resolve);
+        res.data.on("error", reject);
+    });
 }
 
 /**
@@ -116,13 +116,13 @@ async function chatStream({ model, messages, options = {}, tools = [], onChunk, 
  * @returns {Promise<object>}
  */
 async function generate({ model, prompt, options = {} }) {
-  const res = await axios.post(`${BASE_URL()}/api/generate`, {
-    model: model || DEFAULT_MODEL(),
-    prompt,
-    stream: false,
-    options,
-  });
-  return res.data;
+    const res = await axios.post(`${BASE_URL()}/api/generate`, {
+        model: model || DEFAULT_MODEL(),
+        prompt,
+        stream: false,
+        options,
+    });
+    return res.data;
 }
 
 module.exports = { listModels, chat, chatStream, generate };

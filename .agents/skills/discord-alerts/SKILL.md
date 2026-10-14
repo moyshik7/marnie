@@ -1,8 +1,8 @@
 ---
 name: discord-alerts
 description: >-
-  Dispatch rich embed alert notifications to configured Discord webhook channels.
-  Use for sending immediate system notifications, error reports, status summaries, or broadcast alerts.
+    Dispatch rich embed alert notifications to configured Discord webhook channels.
+    Use for sending immediate system notifications, error reports, status summaries, or broadcast alerts.
 ---
 
 # Discord Alerts Skill
@@ -10,6 +10,7 @@ description: >-
 Sends formatted message embeds to the Discord webhook URL configured in Marnie's settings.
 
 ## When to Use
+
 - Sending notifications, reminders, build results, or urgent alerts to Discord.
 - Broadcasting updates from automated workflows or cron jobs.
 
@@ -29,9 +30,11 @@ Sends formatted message embeds to the Discord webhook URL configured in Marnie's
 ```
 
 ### Parameters
+
 - `message` (string, required): Message text body for the Discord embed.
 - `title` (string, optional): Title for the embed card.
 - `level` (string, optional): Level styling (`'info'`, `'success'`, `'warning'`, `'error'`). Default `'info'`.
 
 ### Aliases
+
 `discord_alert`

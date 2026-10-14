@@ -6,10 +6,10 @@ Executes arbitrary JavaScript/Node.js code snippets in a fresh, isolated Node.js
 
 ## 1. Parameters
 
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `code` | `string` | **Yes** | The JavaScript code snippet to execute. |
-| `timeout` | `number` | No | Maximum execution time in milliseconds. Defaults to 15,000 (15s). |
+| Parameter | Type     | Required | Description                                                       |
+| :-------- | :------- | :------- | :---------------------------------------------------------------- |
+| `code`    | `string` | **Yes**  | The JavaScript code snippet to execute.                           |
+| `timeout` | `number` | No       | Maximum execution time in milliseconds. Defaults to 15,000 (15s). |
 
 ---
 
@@ -26,10 +26,10 @@ Executes arbitrary JavaScript/Node.js code snippets in a fresh, isolated Node.js
 
 ```json
 {
-  "name": "run_javascript",
-  "arguments": {
-    "code": "const crypto = require('crypto'); console.log(crypto.randomUUID());"
-  }
+    "name": "run_javascript",
+    "arguments": {
+        "code": "const crypto = require('crypto'); console.log(crypto.randomUUID());"
+    }
 }
 ```
 
@@ -39,8 +39,8 @@ Executes arbitrary JavaScript/Node.js code snippets in a fresh, isolated Node.js
 
 ```json
 {
-  "stdout": "7d9b5e3c-8a12-4f9e-bc43-2a91f861e389\n",
-  "stderr": "",
-  "exitCode": 0
+    "stdout": "7d9b5e3c-8a12-4f9e-bc43-2a91f861e389\n",
+    "stderr": "",
+    "exitCode": 0
 }
 ```

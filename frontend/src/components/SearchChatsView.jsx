@@ -1,20 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-    Search,
-    X,
-    MessageSquare,
-    Clock,
-    User,
-    Bot,
-    ArrowRight,
-    Copy,
-    Check,
-    GitFork,
-    Sparkles,
-    Filter,
-    Calendar,
-    ChevronRight,
-} from "lucide-react";
+import { Search, X, MessageSquare, Clock, User, Bot, ArrowRight, Copy, Check, GitFork, Sparkles, Filter, Calendar, ChevronRight } from "lucide-react";
 import { searchChats, forkConversation } from "../services/api";
 
 function formatTimestamp(timestamp) {
@@ -56,17 +41,13 @@ function HighlightText({ text = "", highlight = "" }) {
                     </mark>
                 ) : (
                     <span key={i}>{part}</span>
-                )
+                ),
             )}
         </span>
     );
 }
 
-export default function SearchChatsView({
-    onClose,
-    onSelectConversation,
-    availableModels = [],
-}) {
+export default function SearchChatsView({ onClose, onSelectConversation, availableModels = [] }) {
     const [query, setQuery] = useState("");
     const [debouncedQuery, setDebouncedQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState("all"); // 'all' | 'user' | 'assistant'
@@ -181,9 +162,7 @@ export default function SearchChatsView({
                         >
                             Search in chats
                         </h1>
-                        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
-                            Search across all conversations, messages, code, and prompts
-                        </p>
+                        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>Search across all conversations, messages, code, and prompts</p>
                     </div>
                 </div>
 
@@ -245,11 +224,7 @@ export default function SearchChatsView({
                         transition: "border-color 0.15s ease",
                     }}
                 >
-                    <Search
-                        size={18}
-                        color="var(--accent-terracotta)"
-                        style={{ marginRight: "0.65rem", flexShrink: 0 }}
-                    />
+                    <Search size={18} color="var(--accent-terracotta)" style={{ marginRight: "0.65rem", flexShrink: 0 }} />
                     <input
                         ref={searchInputRef}
                         type="text"
@@ -325,15 +300,9 @@ export default function SearchChatsView({
                                         fontSize: "0.78rem",
                                         fontWeight: 500,
                                         cursor: "pointer",
-                                        border: isSelected
-                                            ? "1px solid var(--accent-terracotta)"
-                                            : "1px solid var(--border-subtle)",
-                                        backgroundColor: isSelected
-                                            ? "var(--accent-light)"
-                                            : "var(--bg-card)",
-                                        color: isSelected
-                                            ? "var(--accent-terracotta)"
-                                            : "var(--text-secondary)",
+                                        border: isSelected ? "1px solid var(--accent-terracotta)" : "1px solid var(--border-subtle)",
+                                        backgroundColor: isSelected ? "var(--accent-light)" : "var(--bg-card)",
+                                        color: isSelected ? "var(--accent-terracotta)" : "var(--text-secondary)",
                                         transition: "all 0.15s ease",
                                     }}
                                 >
@@ -596,12 +565,8 @@ export default function SearchChatsView({
                                                                 borderRadius: "4px",
                                                                 fontSize: "0.72rem",
                                                                 fontWeight: 600,
-                                                                backgroundColor: isUser
-                                                                    ? "rgba(200, 91, 56, 0.12)"
-                                                                    : "rgba(59, 130, 246, 0.12)",
-                                                                color: isUser
-                                                                    ? "var(--accent-terracotta)"
-                                                                    : "#2563EB",
+                                                                backgroundColor: isUser ? "rgba(200, 91, 56, 0.12)" : "rgba(59, 130, 246, 0.12)",
+                                                                color: isUser ? "var(--accent-terracotta)" : "#2563EB",
                                                             }}
                                                         >
                                                             {isUser ? <User size={11} /> : <Bot size={11} />}
@@ -617,16 +582,10 @@ export default function SearchChatsView({
                                                             {m.conversationTitle || "Untitled Chat"}
                                                         </span>
 
-                                                        {m.conversationModel && (
-                                                            <span style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>
-                                                                ({m.conversationModel})
-                                                            </span>
-                                                        )}
+                                                        {m.conversationModel && <span style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>({m.conversationModel})</span>}
                                                     </div>
 
-                                                    <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>
-                                                        {formatTimestamp(m.createdAt)}
-                                                    </span>
+                                                    <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>{formatTimestamp(m.createdAt)}</span>
                                                 </div>
 
                                                 {/* Excerpt Body with Highlight */}
@@ -714,12 +673,8 @@ export default function SearchChatsView({
                                 }}
                             >
                                 <Search size={36} color="var(--border-strong)" style={{ marginBottom: "0.75rem" }} />
-                                <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                                    No matches found
-                                </h3>
-                                <p style={{ fontSize: "0.82rem", marginTop: "0.25rem" }}>
-                                    No messages or conversation titles matched "{debouncedQuery}". Try a different keyword or filter.
-                                </p>
+                                <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)" }}>No matches found</h3>
+                                <p style={{ fontSize: "0.82rem", marginTop: "0.25rem" }}>No messages or conversation titles matched "{debouncedQuery}". Try a different keyword or filter.</p>
                             </div>
                         )}
                     </div>
@@ -819,7 +774,10 @@ export default function SearchChatsView({
                                                         }}
                                                     >
                                                         {c.last_role === "user" ? "You: " : "Marnie: "}
-                                                        {c.last_message.replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/<!--[\s\S]*?-->/gi, "").trim()}
+                                                        {c.last_message
+                                                            .replace(/<think>[\s\S]*?<\/think>/gi, "")
+                                                            .replace(/<!--[\s\S]*?-->/gi, "")
+                                                            .trim()}
                                                     </div>
                                                 )}
 

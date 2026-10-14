@@ -1,28 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-    Database,
-    Plus,
-    X,
-    Trash2,
-    Eye,
-    FileText,
-    Code,
-    Clipboard,
-    UploadCloud,
-    Search,
-    Copy,
-    Check,
-    CheckCircle2,
-    AlertCircle,
-    FileCode,
-} from "lucide-react";
-import {
-    listCapacityDocuments,
-    getCapacityDocument,
-    uploadCapacityDocuments,
-    deleteCapacityDocument,
-    searchCapacityDocuments,
-} from "../services/api";
+import { Database, Plus, X, Trash2, Eye, FileText, Code, Clipboard, UploadCloud, Search, Copy, Check, CheckCircle2, AlertCircle, FileCode } from "lucide-react";
+import { listCapacityDocuments, getCapacityDocument, uploadCapacityDocuments, deleteCapacityDocument, searchCapacityDocuments } from "../services/api";
 
 export default function ExpandedCapacityView({ onClose }) {
     const [documents, setDocuments] = useState([]);
@@ -204,11 +182,7 @@ export default function ExpandedCapacityView({ onClose }) {
     const filteredDocuments = documents.filter((doc) => {
         if (!searchQuery.trim()) return true;
         const q = searchQuery.toLowerCase();
-        return (
-            doc.name.toLowerCase().includes(q) ||
-            (doc.category && doc.category.toLowerCase().includes(q)) ||
-            (doc.snippet && doc.snippet.toLowerCase().includes(q))
-        );
+        return doc.name.toLowerCase().includes(q) || (doc.category && doc.category.toLowerCase().includes(q)) || (doc.snippet && doc.snippet.toLowerCase().includes(q));
     });
 
     const formatBytes = (bytes) => {
@@ -265,9 +239,7 @@ export default function ExpandedCapacityView({ onClose }) {
                     >
                         Drop Markdown (.md) or Text (.txt) files here
                     </div>
-                    <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                        Files will be indexed in Expanded Capacity SQLite
-                    </div>
+                    <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Files will be indexed in Expanded Capacity SQLite</div>
                 </div>
             )}
 
@@ -311,9 +283,7 @@ export default function ExpandedCapacityView({ onClose }) {
                         >
                             Expanded Capacity
                         </h1>
-                        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
-                            Add files to reference in your notebook
-                        </p>
+                        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>Add files to reference in your notebook</p>
                     </div>
                 </div>
 
@@ -328,25 +298,12 @@ export default function ExpandedCapacityView({ onClose }) {
                                 padding: "0.35rem 0.75rem",
                                 borderRadius: "6px",
                                 fontSize: "0.8rem",
-                                backgroundColor:
-                                    statusMessage.type === "error"
-                                        ? "rgba(239, 68, 68, 0.12)"
-                                        : "rgba(34, 197, 94, 0.12)",
-                                color:
-                                    statusMessage.type === "error"
-                                        ? "#DC2626"
-                                        : "#16A34A",
-                                border:
-                                    statusMessage.type === "error"
-                                        ? "1px solid rgba(239, 68, 68, 0.25)"
-                                        : "1px solid rgba(34, 197, 94, 0.25)",
+                                backgroundColor: statusMessage.type === "error" ? "rgba(239, 68, 68, 0.12)" : "rgba(34, 197, 94, 0.12)",
+                                color: statusMessage.type === "error" ? "#DC2626" : "#16A34A",
+                                border: statusMessage.type === "error" ? "1px solid rgba(239, 68, 68, 0.25)" : "1px solid rgba(34, 197, 94, 0.25)",
                             }}
                         >
-                            {statusMessage.type === "error" ? (
-                                <AlertCircle size={14} />
-                            ) : (
-                                <CheckCircle2 size={14} />
-                            )}
+                            {statusMessage.type === "error" ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}
                             <span>{statusMessage.text}</span>
                         </div>
                     )}
@@ -545,13 +502,9 @@ export default function ExpandedCapacityView({ onClose }) {
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between" }}>
                             <span>Indexed Words</span>
-                            <strong style={{ color: "var(--text-primary)" }}>
-                                {documents.reduce((acc, d) => acc + (d.word_count || 0), 0).toLocaleString()}
-                            </strong>
+                            <strong style={{ color: "var(--text-primary)" }}>{documents.reduce((acc, d) => acc + (d.word_count || 0), 0).toLocaleString()}</strong>
                         </div>
-                        <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.3rem" }}>
-                            Drag and drop .md or .txt files anywhere.
-                        </div>
+                        <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.3rem" }}>Drag and drop .md or .txt files anywhere.</div>
                     </div>
                 </aside>
 
@@ -656,11 +609,7 @@ export default function ExpandedCapacityView({ onClose }) {
                             }}
                         >
                             {filteredDocuments.map((doc) => {
-                                const isMarkdown =
-                                    doc.type === "md" ||
-                                    doc.type === "markdown" ||
-                                    doc.name.endsWith(".md") ||
-                                    doc.name.endsWith(".markdown");
+                                const isMarkdown = doc.type === "md" || doc.type === "markdown" || doc.name.endsWith(".md") || doc.name.endsWith(".markdown");
 
                                 return (
                                     <div
@@ -719,11 +668,7 @@ export default function ExpandedCapacityView({ onClose }) {
                                                     letterSpacing: "-0.05em",
                                                 }}
                                             >
-                                                {isMarkdown ? (
-                                                    <span>&lt;&gt;</span>
-                                                ) : (
-                                                    <FileText size={15} />
-                                                )}
+                                                {isMarkdown ? <span>&lt;&gt;</span> : <FileText size={15} />}
                                             </div>
 
                                             {/* Delete action button */}
@@ -783,9 +728,7 @@ export default function ExpandedCapacityView({ onClose }) {
                                                 }}
                                             >
                                                 <span>{formatBytes(doc.size)}</span>
-                                                {doc.word_count > 0 && (
-                                                    <span>{doc.word_count} words</span>
-                                                )}
+                                                {doc.word_count > 0 && <span>{doc.word_count} words</span>}
                                             </div>
                                         </div>
                                     </div>
@@ -846,10 +789,7 @@ export default function ExpandedCapacityView({ onClose }) {
                                         width: "32px",
                                         height: "32px",
                                         borderRadius: "8px",
-                                        backgroundColor:
-                                            previewDoc.type === "md" || previewDoc.name.endsWith(".md")
-                                                ? "#d9483b"
-                                                : "#2563eb",
+                                        backgroundColor: previewDoc.type === "md" || previewDoc.name.endsWith(".md") ? "#d9483b" : "#2563eb",
                                         color: "#ffffff",
                                         display: "flex",
                                         alignItems: "center",
@@ -859,11 +799,7 @@ export default function ExpandedCapacityView({ onClose }) {
                                         flexShrink: 0,
                                     }}
                                 >
-                                    {previewDoc.type === "md" || previewDoc.name.endsWith(".md") ? (
-                                        <span>&lt;&gt;</span>
-                                    ) : (
-                                        <FileText size={16} />
-                                    )}
+                                    {previewDoc.type === "md" || previewDoc.name.endsWith(".md") ? <span>&lt;&gt;</span> : <FileText size={16} />}
                                 </div>
                                 <div style={{ minWidth: 0 }}>
                                     <h2
@@ -879,9 +815,7 @@ export default function ExpandedCapacityView({ onClose }) {
                                         {previewDoc.name}
                                     </h2>
                                     <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                                        {formatBytes(previewDoc.size)} &bull;{" "}
-                                        {previewDoc.word_count ? `${previewDoc.word_count} words` : "Text"} &bull;{" "}
-                                        Read-Only Preview
+                                        {formatBytes(previewDoc.size)} &bull; {previewDoc.word_count ? `${previewDoc.word_count} words` : "Text"} &bull; Read-Only Preview
                                     </div>
                                 </div>
                             </div>
@@ -1042,9 +976,7 @@ export default function ExpandedCapacityView({ onClose }) {
                         >
                             <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
                                 <Clipboard size={18} color="var(--accent-terracotta)" />
-                                <h2 style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                                    Add Copied Text to Expanded Capacity
-                                </h2>
+                                <h2 style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)" }}>Add Copied Text to Expanded Capacity</h2>
                             </div>
                             <button
                                 onClick={() => setIsPasteModalOpen(false)}

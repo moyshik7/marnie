@@ -7,12 +7,14 @@ The `deep-research` skill guides autonomous, multi-turn investigations into comp
 ## 1. Capabilities & Triggers
 
 ### When to Activate
+
 - Conducting exhaustive, multi-source research investigations.
 - Comparing software libraries, architectures, frameworks, or security models.
 - Synthesizing large amounts of web evidence into a polished technical report.
 - Generating formal research papers with Executive Summaries, Trade-offs, and Citations.
 
 ### Architecture Pass
+
 1. **Decomposition**: Formulates 3 to 6 targeted research sub-angles.
 2. **Gathering**: Searches via DuckDuckGo/SearXNG and scrapes relevant URLs.
 3. **Drafting**: Generates structured Markdown with citations and comparison tables.
@@ -23,14 +25,14 @@ The `deep-research` skill guides autonomous, multi-turn investigations into comp
 ## 2. Recommended Usage Patterns
 
 - **Via REST API**: Trigger background execution via `POST /api/research` with parameters:
-  ```json
-  {
-    "topic": "Zero Trust Architecture implementation in Kubernetes",
-    "min_revisions": 1,
-    "max_revisions": 3,
-    "max_results": 5
-  }
-  ```
+    ```json
+    {
+        "topic": "Zero Trust Architecture implementation in Kubernetes",
+        "min_revisions": 1,
+        "max_revisions": 3,
+        "max_results": 5
+    }
+    ```
 - **Via UI**: Navigate to the **Deep Research** tab in the sidebar and enter the prompt.
 
 ---

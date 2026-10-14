@@ -7,12 +7,14 @@ The `expanded-capacity` skill allows the agent to search, query, and retrieve re
 ## 1. Capabilities & Triggers
 
 ### When to Activate
+
 - The user asks questions about their uploaded reference files, manuals, or notes.
 - Verifying code specifications, design documents, or API definitions against uploaded knowledge.
 - Searching for specific keywords or concepts across the local document repository.
 - Retrieving the full content of a known uploaded file by name.
 
 ### Underlying Tool
+
 - [`retrieve_expanded_capacity`](../tools/retrieve-expanded-capacity.md)
 
 ---
@@ -20,33 +22,36 @@ The `expanded-capacity` skill allows the agent to search, query, and retrieve re
 ## 2. Invocation Patterns
 
 ### Full-Text RAG Search
+
 ```json
 {
-  "name": "retrieve_expanded_capacity",
-  "arguments": {
-    "query": "rate limiting configuration",
-    "limit": 3
-  }
+    "name": "retrieve_expanded_capacity",
+    "arguments": {
+        "query": "rate limiting configuration",
+        "limit": 3
+    }
 }
 ```
 
 ### Retrieving a Document by Name
+
 ```json
 {
-  "name": "retrieve_expanded_capacity",
-  "arguments": {
-    "document_name": "api-spec.md"
-  }
+    "name": "retrieve_expanded_capacity",
+    "arguments": {
+        "document_name": "api-spec.md"
+    }
 }
 ```
 
 ### Listing Available Documents
+
 ```json
 {
-  "name": "retrieve_expanded_capacity",
-  "arguments": {
-    "list_only": true
-  }
+    "name": "retrieve_expanded_capacity",
+    "arguments": {
+        "list_only": true
+    }
 }
 ```
 

@@ -7,11 +7,13 @@ The `web-scraper` skill enables lightweight HTML extraction and text scraping us
 ## 1. Capabilities & Triggers
 
 ### When to Activate
+
 - Extracting readable body text from an external blog post, documentation page, or news article.
 - Fetching specific URLs cited in search results to verify details.
 - Cleaning noisy HTML (removing scripts, ads, headers, footers, stylesheets) into plain text without requiring heavy headless browsers like Puppeteer.
 
 ### Underlying Tool
+
 - [`fetch_webpage`](../tools/fetch-webpage.md)
 
 ---
@@ -19,13 +21,14 @@ The `web-scraper` skill enables lightweight HTML extraction and text scraping us
 ## 2. Invocation Patterns
 
 ### Scraping a Technical Article
+
 ```json
 {
-  "name": "fetch_webpage",
-  "arguments": {
-    "url": "https://nodejs.org/en/about",
-    "max_length": 2500
-  }
+    "name": "fetch_webpage",
+    "arguments": {
+        "url": "https://nodejs.org/en/about",
+        "max_length": 2500
+    }
 }
 ```
 

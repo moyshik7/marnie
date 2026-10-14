@@ -1,7 +1,7 @@
 ---
 name: notes
 description: >-
-  Manage and fetch persistent user notes, AI task lists, and reference documentation in workspace/NOTES.md.
+    Manage and fetch persistent user notes, AI task lists, and reference documentation in workspace/NOTES.md.
 ---
 
 # Notes Skill

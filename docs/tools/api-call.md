@@ -6,14 +6,14 @@ Makes raw HTTP/REST network requests with custom methods, headers, query paramet
 
 ## 1. Parameters
 
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `url` | `string` | **Yes** | Full HTTP or HTTPS endpoint URL. |
-| `method` | `string` | No | HTTP verb: `'GET'`, `'POST'`, `'PUT'`, `'PATCH'`, `'DELETE'`, `'HEAD'`. Defaults to `'GET'`. |
-| `headers` | `object` | No | Key-value dictionary of custom HTTP request headers. |
-| `params` | `object` | No | Key-value dictionary of URL search query parameters. |
-| `data` | `object` / `string` | No | Body payload (JSON object, string, or array) for mutation requests. |
-| `timeout` | `number` | No | Request timeout in milliseconds. Defaults to 15,000 (15s). |
+| Parameter | Type                | Required | Description                                                                                  |
+| :-------- | :------------------ | :------- | :------------------------------------------------------------------------------------------- |
+| `url`     | `string`            | **Yes**  | Full HTTP or HTTPS endpoint URL.                                                             |
+| `method`  | `string`            | No       | HTTP verb: `'GET'`, `'POST'`, `'PUT'`, `'PATCH'`, `'DELETE'`, `'HEAD'`. Defaults to `'GET'`. |
+| `headers` | `object`            | No       | Key-value dictionary of custom HTTP request headers.                                         |
+| `params`  | `object`            | No       | Key-value dictionary of URL search query parameters.                                         |
+| `data`    | `object` / `string` | No       | Body payload (JSON object, string, or array) for mutation requests.                          |
+| `timeout` | `number`            | No       | Request timeout in milliseconds. Defaults to 15,000 (15s).                                   |
 
 ---
 
@@ -30,19 +30,19 @@ Makes raw HTTP/REST network requests with custom methods, headers, query paramet
 
 ```json
 {
-  "name": "api_call",
-  "arguments": {
-    "url": "https://httpbin.org/post",
-    "method": "POST",
-    "headers": {
-      "Content-Type": "application/json",
-      "X-Custom-Header": "Marnie"
-    },
-    "data": {
-      "status": "active",
-      "count": 42
+    "name": "api_call",
+    "arguments": {
+        "url": "https://httpbin.org/post",
+        "method": "POST",
+        "headers": {
+            "Content-Type": "application/json",
+            "X-Custom-Header": "Marnie"
+        },
+        "data": {
+            "status": "active",
+            "count": 42
+        }
     }
-  }
 }
 ```
 
@@ -52,16 +52,16 @@ Makes raw HTTP/REST network requests with custom methods, headers, query paramet
 
 ```json
 {
-  "status": 200,
-  "statusText": "OK",
-  "data": {
-    "json": {
-      "status": "active",
-      "count": 42
+    "status": 200,
+    "statusText": "OK",
+    "data": {
+        "json": {
+            "status": "active",
+            "count": 42
+        }
+    },
+    "headers": {
+        "content-type": "application/json"
     }
-  },
-  "headers": {
-    "content-type": "application/json"
-  }
 }
 ```

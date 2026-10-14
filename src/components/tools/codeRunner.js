@@ -1,11 +1,11 @@
-'use strict';
+"use strict";
 
-const { spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { v4: uuidv4 } = require('uuid');
-const { WORKSPACE_DIR } = require('../../utils/workspace');
+const { spawn } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const { v4: uuidv4 } = require("uuid");
+const { WORKSPACE_DIR } = require("../../utils/workspace");
 
 /**
  * Execute a JavaScript code snippet in a fresh child Node.js process.
@@ -17,34 +17,42 @@ const { WORKSPACE_DIR } = require('../../utils/workspace');
  * @returns {Promise<{stdout:string, stderr:string, exitCode:number}>}
  */
 function runJS({ code, timeout = 15_000, env = {} }) {
-  return new Promise((resolve) => {
-    // Write code to a temp file so we avoid shell-escaping issues
-    const tmpFile = path.join(os.tmpdir(), `marnie_run_${uuidv4()}.js`);
-    fs.writeFileSync(tmpFile, code, 'utf8');
+    return new Promise((resolve) => {
+        // Write code to a temp file so we avoid shell-escaping issues
+        const tmpFile = path.join(os.tmpdir(), `marnie_run_${uuidv4()}.js`);
+        fs.writeFileSync(tmpFile, code, "utf8");
 
-    let stdout = '';
-    let stderr = '';
+        let stdout = "";
+        let stderr = "";
 
-    const child = spawn(process.execPath, [tmpFile], {
-      cwd: WORKSPACE_DIR,
-      env: { ...process.env, ...env },
-      timeout,
+        const child = spawn(process.execPath, [tmpFile], {
+            cwd: WORKSPACE_DIR,
+            env: { ...process.env, ...env },
+            timeout,
+        });
+
+        child.stdout.on("data", (d) => {
+            stdout += d.toString();
+        });
+        child.stderr.on("data", (d) => {
+            stderr += d.toString();
+        });
+
+        child.on("close", (exitCode) => {
+            // Clean up temp file
+            try {
+                fs.unlinkSync(tmpFile);
+            } catch {}
+            resolve({ stdout, stderr, exitCode: exitCode ?? -1 });
+        });
+
+        child.on("error", (err) => {
+            try {
+                fs.unlinkSync(tmpFile);
+            } catch {}
+            resolve({ stdout, stderr: err.message, exitCode: -1 });
+        });
     });
-
-    child.stdout.on('data', (d) => { stdout += d.toString(); });
-    child.stderr.on('data', (d) => { stderr += d.toString(); });
-
-    child.on('close', (exitCode) => {
-      // Clean up temp file
-      try { fs.unlinkSync(tmpFile); } catch {}
-      resolve({ stdout, stderr, exitCode: exitCode ?? -1 });
-    });
-
-    child.on('error', (err) => {
-      try { fs.unlinkSync(tmpFile); } catch {}
-      resolve({ stdout, stderr: err.message, exitCode: -1 });
-    });
-  });
 }
 
 module.exports = { runJS };

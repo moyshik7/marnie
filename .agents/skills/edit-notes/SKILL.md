@@ -1,8 +1,8 @@
 ---
 name: edit-notes
 description: >-
-  Edit, update, and append tasks, checklists, directives, and working notes in workspace/NOTES.md.
-  Use when persisting important context, user preferences, multi-step progress, checklists, or reference information.
+    Edit, update, and append tasks, checklists, directives, and working notes in workspace/NOTES.md.
+    Use when persisting important context, user preferences, multi-step progress, checklists, or reference information.
 ---
 
 # Edit Notes Skill
@@ -14,15 +14,18 @@ Unlike `BRAIN.md` (which is automatically injected into prompts and consolidated
 ## Tools Included
 
 ### 1. `edit_notes` / `update_notes`
+
 Edit, replace, or append markdown content to `workspace/NOTES.md`.
 
 #### Parameters
-- `content` (*string*, optional): Full markdown document to replace the contents of `workspace/NOTES.md`.
-- `text` (*string*, optional): Single note, task item, or checklist line to append to `workspace/NOTES.md`.
-- `append` (*boolean*, optional): Whether to append to notes instead of overwriting. Defaults to `true` if `text` is provided and `content` is omitted.
-- `section` (*string*, optional): Section header under which appended text should be placed (e.g. `"Active Tasks & Checklist"`).
+
+- `content` (_string_, optional): Full markdown document to replace the contents of `workspace/NOTES.md`.
+- `text` (_string_, optional): Single note, task item, or checklist line to append to `workspace/NOTES.md`.
+- `append` (_boolean_, optional): Whether to append to notes instead of overwriting. Defaults to `true` if `text` is provided and `content` is omitted.
+- `section` (_string_, optional): Section header under which appended text should be placed (e.g. `"Active Tasks & Checklist"`).
 
 #### Tool Aliases Supported
+
 - `edit_notes`
 - `update_notes`
 - `notes_edit`
@@ -38,6 +41,7 @@ Edit, replace, or append markdown content to `workspace/NOTES.md`.
 ## Usage Examples
 
 ### Appending a Task to the Checklist
+
 ```json
 <tool_call>
 {
@@ -52,6 +56,7 @@ Edit, replace, or append markdown content to `workspace/NOTES.md`.
 ```
 
 ### Appending Multiple Notes or Findings
+
 ```json
 <tool_call>
 {
@@ -65,6 +70,7 @@ Edit, replace, or append markdown content to `workspace/NOTES.md`.
 ```
 
 ### Overwriting Full Notes Document
+
 ```json
 <tool_call>
 {
@@ -79,5 +85,6 @@ Edit, replace, or append markdown content to `workspace/NOTES.md`.
 ---
 
 ## Related Skills
+
 - [fetch-notes](../fetch-notes/SKILL.md) - Retrieve notes and task lists on demand.
 - [notes](../notes/SKILL.md) - Notes management overview.

@@ -7,12 +7,14 @@ The `run-bash` skill enables the agent to execute shell and terminal commands (b
 ## 1. Capabilities & Triggers
 
 ### When to Activate
+
 - Running Git commands (`git status`, `git diff`, `git log`, `git checkout`).
 - Running system inspection commands (`uname -a`, `df -h`, `free -m`).
 - Package management and project builds (`npm test`, `npm run build`, `pip list`).
 - Starting or checking local background services and host automation tasks.
 
 ### Underlying Tool
+
 - [`run_bash`](../tools/run-bash.md)
 
 ---
@@ -20,23 +22,25 @@ The `run-bash` skill enables the agent to execute shell and terminal commands (b
 ## 2. Invocation Patterns
 
 ### Inspecting Git Status
+
 ```json
 {
-  "name": "run_bash",
-  "arguments": {
-    "command": "git status -s",
-    "cwd": "."
-  }
+    "name": "run_bash",
+    "arguments": {
+        "command": "git status -s",
+        "cwd": "."
+    }
 }
 ```
 
 ### Checking Node.js Version and Dependencies
+
 ```json
 {
-  "name": "run_bash",
-  "arguments": {
-    "command": "node --version && npm list --depth=0"
-  }
+    "name": "run_bash",
+    "arguments": {
+        "command": "node --version && npm list --depth=0"
+    }
 }
 ```
 

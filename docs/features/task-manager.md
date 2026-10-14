@@ -26,14 +26,14 @@ CREATE TABLE IF NOT EXISTS tasks (
 ## 2. Status Transitions & Priority
 
 - **Statuses**:
-  - `pending`: Newly created task awaiting action.
-  - `in_progress`: Task actively being worked on.
-  - `done`: Completed task.
-  - `cancelled`: Aborted or obsolete task.
+    - `pending`: Newly created task awaiting action.
+    - `in_progress`: Task actively being worked on.
+    - `done`: Completed task.
+    - `cancelled`: Aborted or obsolete task.
 - **Priorities**:
-  - `low`: Informational or non-blocking items.
-  - `medium`: Standard workflow tasks (default).
-  - `high`: Critical, blocking, or immediate-action requirements.
+    - `low`: Informational or non-blocking items.
+    - `medium`: Standard workflow tasks (default).
+    - `high`: Critical, blocking, or immediate-action requirements.
 
 ---
 
@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS tasks (
 - **Tools Panel**: View active tasks filtered by status, toggle completion with a checkbox, or create new tasks directly.
 - **Agent Tools (`create_task` & `list_tasks`)**: The AI agent can inspect remaining tasks or log action items as it completes work.
 - **REST API Endpoints**:
-  - `GET /api/tasks`: List tasks (optional `?status=` filter).
-  - `POST /api/tasks`: Create a new task `{ title, description, priority, due_at }`.
-  - `GET /api/tasks/:id`: Retrieve task details.
-  - `PATCH /api/tasks/:id`: Update status, title, description, or priority.
-  - `DELETE /api/tasks/:id`: Delete a task.
+    - `GET /api/tasks`: List tasks (optional `?status=` filter).
+    - `POST /api/tasks`: Create a new task `{ title, description, priority, due_at }`.
+    - `GET /api/tasks/:id`: Retrieve task details.
+    - `PATCH /api/tasks/:id`: Update status, title, description, or priority.
+    - `DELETE /api/tasks/:id`: Delete a task.

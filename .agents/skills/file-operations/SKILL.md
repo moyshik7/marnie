@@ -1,9 +1,9 @@
 ---
 name: file-operations
 description: >-
-  Read, create, write, and patch local files on disk.
-  Use when inspecting code files, creating new components, writing configurations,
-  appending lines, or replacing line ranges.
+    Read, create, write, and patch local files on disk.
+    Use when inspecting code files, creating new components, writing configurations,
+    appending lines, or replacing line ranges.
 ---
 
 # File Operations Skill
@@ -13,6 +13,7 @@ Provides precise file operations for reading file contents, creating new files, 
 ## Tools Included
 
 ### 1. `read_file`
+
 Read whole files or specific line ranges (1-indexed).
 
 ```json
@@ -27,9 +28,11 @@ Read whole files or specific line ranges (1-indexed).
 }
 </tool_call>
 ```
+
 Aliases: `file_read`
 
 ### 2. `create_file`
+
 Create a brand new file with initial content strictly inside the workspace directory (`workspace/`).
 
 ```json
@@ -44,9 +47,11 @@ Create a brand new file with initial content strictly inside the workspace direc
 }
 </tool_call>
 ```
+
 Aliases: `file_create`
 
 ### 3. `write_file`
+
 Overwrite, append, or replace specific line numbers in an existing workspace file. Reads current file content before modification.
 
 ```json
@@ -61,4 +66,5 @@ Overwrite, append, or replace specific line numbers in an existing workspace fil
 }
 </tool_call>
 ```
+
 Aliases: `file_write`

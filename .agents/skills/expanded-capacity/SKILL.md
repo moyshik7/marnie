@@ -1,9 +1,9 @@
 ---
 name: expanded-capacity
 description: >-
-  Retrieve and search reference documents from the local Expanded Capacity database (local RAG system).
-  Use when querying user notebook files, markdown documents, and text references, retrieving full files by name,
-  or listing available knowledge stored in SQLite.
+    Retrieve and search reference documents from the local Expanded Capacity database (local RAG system).
+    Use when querying user notebook files, markdown documents, and text references, retrieving full files by name,
+    or listing available knowledge stored in SQLite.
 ---
 
 # Expanded Capacity Skill (Local RAG)
@@ -74,13 +74,13 @@ Expanded Capacity provides a dedicated local Retrieval-Augmented Generation (RAG
 ## Programmatic Backend API
 
 ```javascript
-const capacityDb = require('./src/db/capacity');
+const capacityDb = require("./src/db/capacity");
 
 // Search documents
-const matches = capacityDb.searchDocuments('database schema', { limit: 5 });
+const matches = capacityDb.searchDocuments("database schema", { limit: 5 });
 
 // Retrieve by name
-const doc = capacityDb.getDocumentByName('schema.md');
+const doc = capacityDb.getDocumentByName("schema.md");
 
 // List all documents
 const allDocs = capacityDb.listDocuments();

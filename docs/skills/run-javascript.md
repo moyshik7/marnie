@@ -7,12 +7,14 @@ The `run-javascript` skill executes JavaScript/Node.js snippets in a fresh, isol
 ## 1. Capabilities & Triggers
 
 ### When to Activate
+
 - Performing mathematical calculations or data structure transformations.
 - Testing JavaScript algorithms, regex evaluations, or logic snippets.
 - Validating API response parsing or JSON schemas.
 - Running quick calculations without affecting the host server process.
 
 ### Underlying Tool
+
 - [`run_javascript`](../tools/run-javascript.md)
 
 ---
@@ -20,22 +22,24 @@ The `run-javascript` skill executes JavaScript/Node.js snippets in a fresh, isol
 ## 2. Invocation Patterns
 
 ### Validating a Regular Expression
+
 ```json
 {
-  "name": "run_javascript",
-  "arguments": {
-    "code": "const regex = /^([a-z0-9_.-]+)@([\\da-z.-]+)\\.([a-z.]{2,6})$/;\nconsole.log(regex.test('test@example.com'));"
-  }
+    "name": "run_javascript",
+    "arguments": {
+        "code": "const regex = /^([a-z0-9_.-]+)@([\\da-z.-]+)\\.([a-z.]{2,6})$/;\nconsole.log(regex.test('test@example.com'));"
+    }
 }
 ```
 
 ### Performing Complex Date Math
+
 ```json
 {
-  "name": "run_javascript",
-  "arguments": {
-    "code": "const d = new Date(); d.setDate(d.getDate() + 30); console.log(d.toISOString());"
-  }
+    "name": "run_javascript",
+    "arguments": {
+        "code": "const d = new Date(); d.setDate(d.getDate() + 30); console.log(d.toISOString());"
+    }
 }
 ```
 

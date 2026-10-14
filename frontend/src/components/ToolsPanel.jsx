@@ -1,32 +1,6 @@
 import React, { useState, useEffect } from "react";
-import {
-    X,
-    Terminal,
-    Code,
-    FolderSearch,
-    CheckSquare,
-    Clock,
-    Play,
-    Trash2,
-    Plus,
-    Pause,
-    RefreshCw,
-    AlertCircle,
-} from "lucide-react";
-import {
-    listTasks,
-    createTask,
-    updateTask,
-    deleteTask,
-    listCronJobs,
-    createCronJob,
-    pauseCronJob,
-    resumeCronJob,
-    deleteCronJob,
-    runBash,
-    runCode,
-    searchFiles,
-} from "../services/api";
+import { X, Terminal, Code, FolderSearch, CheckSquare, Clock, Play, Trash2, Plus, Pause, RefreshCw, AlertCircle } from "lucide-react";
+import { listTasks, createTask, updateTask, deleteTask, listCronJobs, createCronJob, pauseCronJob, resumeCronJob, deleteCronJob, runBash, runCode, searchFiles } from "../services/api";
 
 export default function ToolsPanel({ isOpen, onClose }) {
     const [activeTab, setActiveTab] = useState("tasks");
@@ -49,9 +23,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
     const [bashLoading, setBashLoading] = useState(false);
 
     // Code runner state
-    const [jsCode, setJsCode] = useState(
-        'console.log("Hello from Marnie sandbox!");\nconsole.log("Math:", Math.sqrt(144));',
-    );
+    const [jsCode, setJsCode] = useState('console.log("Hello from Marnie sandbox!");\nconsole.log("Math:", Math.sqrt(144));');
     const [jsOutput, setJsOutput] = useState(null);
     const [jsLoading, setJsLoading] = useState(false);
 
@@ -268,8 +240,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                 color: "var(--text-muted)",
                             }}
                         >
-                            Direct inspection for SQLite tasks, background
-                            scheduled jobs, terminal execution, and sandboxes.
+                            Direct inspection for SQLite tasks, background scheduled jobs, terminal execution, and sandboxes.
                         </p>
                     </div>
                     <button
@@ -318,12 +289,8 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                     padding: "0.7rem 0.85rem",
                                     fontSize: "0.84rem",
                                     fontWeight: isActive ? 600 : 400,
-                                    color: isActive
-                                        ? "var(--accent-terracotta)"
-                                        : "var(--text-secondary)",
-                                    borderBottom: isActive
-                                        ? "2px solid var(--accent-terracotta)"
-                                        : "2px solid transparent",
+                                    color: isActive ? "var(--accent-terracotta)" : "var(--text-secondary)",
+                                    borderBottom: isActive ? "2px solid var(--accent-terracotta)" : "2px solid transparent",
                                 }}
                             >
                                 <Icon size={14} />
@@ -350,9 +317,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                     type="text"
                                     placeholder="Add a new task..."
                                     value={newTaskTitle}
-                                    onChange={(e) =>
-                                        setNewTaskTitle(e.target.value)
-                                    }
+                                    onChange={(e) => setNewTaskTitle(e.target.value)}
                                     style={{
                                         flex: 1,
                                         padding: "0.55rem 0.75rem",
@@ -364,9 +329,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                 />
                                 <select
                                     value={newTaskPriority}
-                                    onChange={(e) =>
-                                        setNewTaskPriority(e.target.value)
-                                    }
+                                    onChange={(e) => setNewTaskPriority(e.target.value)}
                                     style={{
                                         padding: "0.55rem 0.75rem",
                                         borderRadius: "var(--radius-sm)",
@@ -386,8 +349,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                         alignItems: "center",
                                         gap: "0.35rem",
                                         padding: "0.55rem 1rem",
-                                        backgroundColor:
-                                            "var(--accent-terracotta)",
+                                        backgroundColor: "var(--accent-terracotta)",
                                         color: "#fff",
                                         borderRadius: "var(--radius-sm)",
                                         fontSize: "0.85rem",
@@ -425,13 +387,10 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                                 style={{
                                                     display: "flex",
                                                     alignItems: "center",
-                                                    justifyContent:
-                                                        "space-between",
+                                                    justifyContent: "space-between",
                                                     padding: "0.65rem 0.85rem",
-                                                    backgroundColor:
-                                                        "var(--bg-card)",
-                                                    borderRadius:
-                                                        "var(--radius-sm)",
+                                                    backgroundColor: "var(--bg-card)",
+                                                    borderRadius: "var(--radius-sm)",
                                                     border: "1px solid var(--border-subtle)",
                                                 }}
                                             >
@@ -445,27 +404,17 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                                     <input
                                                         type="checkbox"
                                                         checked={isDone}
-                                                        onChange={() =>
-                                                            handleToggleTaskStatus(
-                                                                task,
-                                                            )
-                                                        }
+                                                        onChange={() => handleToggleTaskStatus(task)}
                                                         style={{
                                                             cursor: "pointer",
-                                                            accentColor:
-                                                                "var(--accent-terracotta)",
+                                                            accentColor: "var(--accent-terracotta)",
                                                         }}
                                                     />
                                                     <span
                                                         style={{
                                                             fontSize: "0.88rem",
-                                                            textDecoration:
-                                                                isDone
-                                                                    ? "line-through"
-                                                                    : "none",
-                                                            color: isDone
-                                                                ? "var(--text-muted)"
-                                                                : "var(--text-primary)",
+                                                            textDecoration: isDone ? "line-through" : "none",
+                                                            color: isDone ? "var(--text-muted)" : "var(--text-primary)",
                                                         }}
                                                     >
                                                         {task.title}
@@ -473,19 +422,10 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                                     <span
                                                         style={{
                                                             fontSize: "0.7rem",
-                                                            padding:
-                                                                "0.1rem 0.4rem",
+                                                            padding: "0.1rem 0.4rem",
                                                             borderRadius: "4px",
-                                                            backgroundColor:
-                                                                task.priority ===
-                                                                "high"
-                                                                    ? "rgba(239, 68, 68, 0.15)"
-                                                                    : "var(--bg-tertiary)",
-                                                            color:
-                                                                task.priority ===
-                                                                "high"
-                                                                    ? "#DC2626"
-                                                                    : "var(--text-secondary)",
+                                                            backgroundColor: task.priority === "high" ? "rgba(239, 68, 68, 0.15)" : "var(--bg-tertiary)",
+                                                            color: task.priority === "high" ? "#DC2626" : "var(--text-secondary)",
                                                             fontWeight: 500,
                                                         }}
                                                     >
@@ -493,23 +433,13 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                                     </span>
                                                 </div>
                                                 <button
-                                                    onClick={() =>
-                                                        handleDeleteTask(
-                                                            task.id,
-                                                        )
-                                                    }
+                                                    onClick={() => handleDeleteTask(task.id)}
                                                     style={{
                                                         color: "var(--text-muted)",
                                                         padding: "0.2rem",
                                                     }}
-                                                    onMouseEnter={(e) =>
-                                                        (e.currentTarget.style.color =
-                                                            "#EF4444")
-                                                    }
-                                                    onMouseLeave={(e) =>
-                                                        (e.currentTarget.style.color =
-                                                            "var(--text-muted)")
-                                                    }
+                                                    onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
+                                                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -538,9 +468,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                         type="text"
                                         placeholder="Job Name (e.g. Health Check)"
                                         value={cronName}
-                                        onChange={(e) =>
-                                            setCronName(e.target.value)
-                                        }
+                                        onChange={(e) => setCronName(e.target.value)}
                                         style={{
                                             flex: 1,
                                             padding: "0.55rem 0.75rem",
@@ -554,9 +482,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                         type="text"
                                         placeholder="Cron Exp (*/5 * * * *)"
                                         value={cronExpr}
-                                        onChange={(e) =>
-                                            setCronExpr(e.target.value)
-                                        }
+                                        onChange={(e) => setCronExpr(e.target.value)}
                                         style={{
                                             width: "150px",
                                             padding: "0.55rem 0.75rem",
@@ -569,9 +495,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                     />
                                     <select
                                         value={cronType}
-                                        onChange={(e) =>
-                                            setCronType(e.target.value)
-                                        }
+                                        onChange={(e) => setCronType(e.target.value)}
                                         style={{
                                             padding: "0.55rem 0.75rem",
                                             borderRadius: "var(--radius-sm)",
@@ -590,9 +514,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                         type="text"
                                         placeholder='Action Data JSON e.g. {"command":"date"}'
                                         value={cronData}
-                                        onChange={(e) =>
-                                            setCronData(e.target.value)
-                                        }
+                                        onChange={(e) => setCronData(e.target.value)}
                                         style={{
                                             flex: 1,
                                             padding: "0.55rem 0.75rem",
@@ -607,8 +529,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                         type="submit"
                                         style={{
                                             padding: "0.55rem 1rem",
-                                            backgroundColor:
-                                                "var(--accent-terracotta)",
+                                            backgroundColor: "var(--accent-terracotta)",
                                             color: "#fff",
                                             borderRadius: "var(--radius-sm)",
                                             fontSize: "0.84rem",
@@ -647,10 +568,8 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                                 alignItems: "center",
                                                 justifyContent: "space-between",
                                                 padding: "0.75rem 0.9rem",
-                                                backgroundColor:
-                                                    "var(--bg-card)",
-                                                borderRadius:
-                                                    "var(--radius-sm)",
+                                                backgroundColor: "var(--bg-card)",
+                                                borderRadius: "var(--radius-sm)",
                                                 border: "1px solid var(--border-subtle)",
                                             }}
                                         >
@@ -673,28 +592,19 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                                     <span
                                                         style={{
                                                             fontSize: "0.7rem",
-                                                            padding:
-                                                                "0.1rem 0.4rem",
+                                                            padding: "0.1rem 0.4rem",
                                                             borderRadius: "4px",
-                                                            backgroundColor:
-                                                                job.enabled
-                                                                    ? "rgba(74, 222, 128, 0.15)"
-                                                                    : "var(--bg-tertiary)",
-                                                            color: job.enabled
-                                                                ? "#15803D"
-                                                                : "var(--text-muted)",
+                                                            backgroundColor: job.enabled ? "rgba(74, 222, 128, 0.15)" : "var(--bg-tertiary)",
+                                                            color: job.enabled ? "#15803D" : "var(--text-muted)",
                                                             fontWeight: 500,
                                                         }}
                                                     >
-                                                        {job.enabled
-                                                            ? "Active"
-                                                            : "Paused"}
+                                                        {job.enabled ? "Active" : "Paused"}
                                                     </span>
                                                     <span
                                                         style={{
                                                             fontSize: "0.72rem",
-                                                            fontFamily:
-                                                                "var(--font-mono)",
+                                                            fontFamily: "var(--font-mono)",
                                                             color: "var(--text-muted)",
                                                         }}
                                                     >
@@ -706,12 +616,10 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                                         fontSize: "0.75rem",
                                                         color: "var(--text-secondary)",
                                                         marginTop: "0.2rem",
-                                                        fontFamily:
-                                                            "var(--font-mono)",
+                                                        fontFamily: "var(--font-mono)",
                                                     }}
                                                 >
-                                                    [{job.action_type}]{" "}
-                                                    {job.action_data}
+                                                    [{job.action_type}] {job.action_data}
                                                 </div>
                                             </div>
                                             <div
@@ -721,37 +629,24 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                                 }}
                                             >
                                                 <button
-                                                    onClick={() =>
-                                                        handleToggleCron(job)
-                                                    }
+                                                    onClick={() => handleToggleCron(job)}
                                                     style={{
-                                                        padding:
-                                                            "0.35rem 0.65rem",
+                                                        padding: "0.35rem 0.65rem",
                                                         borderRadius: "4px",
                                                         border: "1px solid var(--border-subtle)",
                                                         fontSize: "0.78rem",
                                                     }}
                                                 >
-                                                    {job.enabled
-                                                        ? "Pause"
-                                                        : "Resume"}
+                                                    {job.enabled ? "Pause" : "Resume"}
                                                 </button>
                                                 <button
-                                                    onClick={() =>
-                                                        handleDeleteCron(job.id)
-                                                    }
+                                                    onClick={() => handleDeleteCron(job.id)}
                                                     style={{
                                                         padding: "0.35rem",
                                                         color: "var(--text-muted)",
                                                     }}
-                                                    onMouseEnter={(e) =>
-                                                        (e.currentTarget.style.color =
-                                                            "#EF4444")
-                                                    }
-                                                    onMouseLeave={(e) =>
-                                                        (e.currentTarget.style.color =
-                                                            "var(--text-muted)")
-                                                    }
+                                                    onMouseEnter={(e) => (e.currentTarget.style.color = "#EF4444")}
+                                                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -799,8 +694,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                         alignItems: "center",
                                         gap: "0.4rem",
                                         padding: "0.6rem 1rem",
-                                        backgroundColor:
-                                            "var(--accent-terracotta)",
+                                        backgroundColor: "var(--accent-terracotta)",
                                         color: "#fff",
                                         borderRadius: "var(--radius-sm)",
                                         fontSize: "0.85rem",
@@ -808,9 +702,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                     }}
                                 >
                                     <Play size={14} />
-                                    <span>
-                                        {bashLoading ? "Running..." : "Execute"}
-                                    </span>
+                                    <span>{bashLoading ? "Running..." : "Execute"}</span>
                                 </button>
                             </div>
 
@@ -828,14 +720,8 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                         overflowY: "auto",
                                     }}
                                 >
-                                    {bashOutput.stdout && (
-                                        <div>{bashOutput.stdout}</div>
-                                    )}
-                                    {bashOutput.stderr && (
-                                        <div style={{ color: "#F87171" }}>
-                                            {bashOutput.stderr}
-                                        </div>
-                                    )}
+                                    {bashOutput.stdout && <div>{bashOutput.stdout}</div>}
+                                    {bashOutput.stderr && <div style={{ color: "#F87171" }}>{bashOutput.stderr}</div>}
                                     <div
                                         style={{
                                             marginTop: "0.5rem",
@@ -889,8 +775,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                         alignItems: "center",
                                         gap: "0.4rem",
                                         padding: "0.6rem 1.25rem",
-                                        backgroundColor:
-                                            "var(--accent-terracotta)",
+                                        backgroundColor: "var(--accent-terracotta)",
                                         color: "#fff",
                                         borderRadius: "var(--radius-sm)",
                                         fontSize: "0.85rem",
@@ -898,11 +783,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                     }}
                                 >
                                     <Play size={14} />
-                                    <span>
-                                        {jsLoading
-                                            ? "Executing Sandbox..."
-                                            : "Run JS Sandbox"}
-                                    </span>
+                                    <span>{jsLoading ? "Executing Sandbox..." : "Run JS Sandbox"}</span>
                                 </button>
                             </div>
 
@@ -920,14 +801,8 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                         overflowY: "auto",
                                     }}
                                 >
-                                    {jsOutput.stdout && (
-                                        <div>{jsOutput.stdout}</div>
-                                    )}
-                                    {jsOutput.stderr && (
-                                        <div style={{ color: "#F87171" }}>
-                                            {jsOutput.stderr}
-                                        </div>
-                                    )}
+                                    {jsOutput.stdout && <div>{jsOutput.stdout}</div>}
+                                    {jsOutput.stderr && <div style={{ color: "#F87171" }}>{jsOutput.stderr}</div>}
                                     <div
                                         style={{
                                             marginTop: "0.5rem",
@@ -956,9 +831,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                     type="text"
                                     placeholder="Root Directory (e.g. . or ./workspace)"
                                     value={searchDir}
-                                    onChange={(e) =>
-                                        setSearchDir(e.target.value)
-                                    }
+                                    onChange={(e) => setSearchDir(e.target.value)}
                                     style={{
                                         width: "40%",
                                         padding: "0.6rem 0.75rem",
@@ -972,9 +845,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                     type="text"
                                     placeholder="Pattern or substring (e.g. .js or test)"
                                     value={searchPattern}
-                                    onChange={(e) =>
-                                        setSearchPattern(e.target.value)
-                                    }
+                                    onChange={(e) => setSearchPattern(e.target.value)}
                                     style={{
                                         flex: 1,
                                         padding: "0.6rem 0.75rem",
@@ -984,8 +855,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                         fontSize: "0.85rem",
                                     }}
                                     onKeyDown={(e) => {
-                                        if (e.key === "Enter")
-                                            handleSearchFiles();
+                                        if (e.key === "Enter") handleSearchFiles();
                                     }}
                                 />
                                 <button
@@ -993,8 +863,7 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                     disabled={searchLoading}
                                     style={{
                                         padding: "0.6rem 1rem",
-                                        backgroundColor:
-                                            "var(--accent-terracotta)",
+                                        backgroundColor: "var(--accent-terracotta)",
                                         color: "#fff",
                                         borderRadius: "var(--radius-sm)",
                                         fontSize: "0.85rem",
@@ -1023,11 +892,9 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                             marginBottom: "0.5rem",
                                         }}
                                     >
-                                        Matches found:{" "}
-                                        {searchResults.matches?.length || 0}
+                                        Matches found: {searchResults.matches?.length || 0}
                                     </div>
-                                    {searchResults.matches &&
-                                    searchResults.matches.length > 0 ? (
+                                    {searchResults.matches && searchResults.matches.length > 0 ? (
                                         <ul
                                             style={{
                                                 listStyle: "none",
@@ -1036,24 +903,20 @@ export default function ToolsPanel({ isOpen, onClose }) {
                                                 gap: "0.25rem",
                                             }}
                                         >
-                                            {searchResults.matches.map(
-                                                (m, idx) => (
-                                                    <li
-                                                        key={idx}
-                                                        style={{
-                                                            fontSize: "0.82rem",
-                                                            fontFamily:
-                                                                "var(--font-mono)",
-                                                            color: "var(--text-primary)",
-                                                            padding: "0.2rem 0",
-                                                            borderBottom:
-                                                                "1px solid var(--border-subtle)",
-                                                        }}
-                                                    >
-                                                        {m}
-                                                    </li>
-                                                ),
-                                            )}
+                                            {searchResults.matches.map((m, idx) => (
+                                                <li
+                                                    key={idx}
+                                                    style={{
+                                                        fontSize: "0.82rem",
+                                                        fontFamily: "var(--font-mono)",
+                                                        color: "var(--text-primary)",
+                                                        padding: "0.2rem 0",
+                                                        borderBottom: "1px solid var(--border-subtle)",
+                                                    }}
+                                                >
+                                                    {m}
+                                                </li>
+                                            ))}
                                         </ul>
                                     ) : (
                                         <div

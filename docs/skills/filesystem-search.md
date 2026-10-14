@@ -7,12 +7,14 @@ The `filesystem-search` skill enables recursive directory searching using filena
 ## 1. Capabilities & Triggers
 
 ### When to Activate
+
 - Exploring codebase structure and directory layouts.
 - Finding files with specific extensions (e.g., `.jsx`, `.sql`, `.env`).
 - Locating configuration files, test suites, or documentation.
 - Inspecting workspace trees before running modifications.
 
 ### Underlying Tool
+
 - [`search_filesystem`](../tools/search-filesystem.md)
 
 ---
@@ -20,24 +22,26 @@ The `filesystem-search` skill enables recursive directory searching using filena
 ## 2. Invocation Patterns
 
 ### Finding All Markdown Files in Workspace
+
 ```json
 {
-  "name": "search_filesystem",
-  "arguments": {
-    "directory": "workspace",
-    "pattern": "\\.md$"
-  }
+    "name": "search_filesystem",
+    "arguments": {
+        "directory": "workspace",
+        "pattern": "\\.md$"
+    }
 }
 ```
 
 ### Searching by Filename Substring
+
 ```json
 {
-  "name": "search_filesystem",
-  "arguments": {
-    "directory": "src",
-    "pattern": "route"
-  }
+    "name": "search_filesystem",
+    "arguments": {
+        "directory": "src",
+        "pattern": "route"
+    }
 }
 ```
 

@@ -9,13 +9,15 @@ Tools that allow the AI assistant to inspect or directly update its persistent l
 Reads the complete, current markdown text from `workspace/BRAIN.md`.
 
 ### Parameters
+
 Takes no parameters (`{}`).
 
 ### Return Format
+
 ```json
 {
-  "filePath": "workspace/BRAIN.md",
-  "content": "# User Memory & Context\n\n## User Profile\n- Name: Sayuri..."
+    "filePath": "workspace/BRAIN.md",
+    "content": "# User Memory & Context\n\n## User Profile\n- Name: Sayuri..."
 }
 ```
 
@@ -27,25 +29,27 @@ Updates or appends new facts, preferences, or technical context about the user t
 
 ### Parameters
 
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `content` | `string` | **Yes** | The updated markdown memory content to store. |
+| Parameter | Type     | Required | Description                                   |
+| :-------- | :------- | :------- | :-------------------------------------------- |
+| `content` | `string` | **Yes**  | The updated markdown memory content to store. |
 
 ### Example Invocation
+
 ```json
 {
-  "name": "update_brain_memory",
-  "arguments": {
-    "content": "# User Memory & Context\n\n## Preferences\n- Prefers TypeScript and strict linting rules."
-  }
+    "name": "update_brain_memory",
+    "arguments": {
+        "content": "# User Memory & Context\n\n## Preferences\n- Prefers TypeScript and strict linting rules."
+    }
 }
 ```
 
 ### Return Format
+
 ```json
 {
-  "success": true,
-  "filePath": "workspace/BRAIN.md",
-  "message": "Persistent memory updated successfully."
+    "success": true,
+    "filePath": "workspace/BRAIN.md",
+    "message": "Persistent memory updated successfully."
 }
 ```

@@ -9,9 +9,11 @@ Marnie equips local LLMs with native execution tools. Unlike cloud assistants th
 Marnie supports dual tool-call invocation protocols:
 
 ### A. Ollama Native Function Calling
+
 When models support native tool calling (e.g., Llama 3.1+, Mistral Large, Qwen 2.5), Marnie passes standard JSON Schema tool definitions (`OLLAMA_TOOLS` in `src/components/tools/registry.js`). The model emits structured `tool_calls` objects which are executed automatically.
 
 ### B. Inline Block Fallback Parsing
+
 For models that do not support native function calling or when function calling is disabled, the system prompt instructs the model to emit tool call blocks in either of these formats:
 
 ```xml
@@ -22,7 +24,7 @@ For models that do not support native function calling or when function calling 
 
 or
 
-```json
+````json
 ```tool_call
 {
   "name": "read_file",
@@ -30,7 +32,8 @@ or
     "filePath": "index.html"
   }
 }
-```
+````
+
 ```
 
 The backend parser (`parseToolCalls()`) extracts these blocks, executes the requested tool, and injects the output as a role `tool` response before generating the final reply.
@@ -90,3 +93,4 @@ To ensure reliability across diverse model vocabularies, `src/components/tools/r
 | [`create_cron`](create-cron.md) | Register a persistent recurring cron schedule |
 | [`set_timer`](timer-and-alerts.md) | Set a countdown timer that notifies Discord on expiration |
 | [`send_alert`](timer-and-alerts.md) | Send an immediate Discord alert embed |
+```

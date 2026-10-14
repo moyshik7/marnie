@@ -1,38 +1,8 @@
 import React, { useState, useEffect } from "react";
-import {
-    X,
-    Check,
-    AlertCircle,
-    Bell,
-    Cpu,
-    Database,
-    RefreshCw,
-    BotIcon,
-    Globe,
-    Brain,
-    Edit3,
-    FileText,
-} from "lucide-react";
-import {
-    getSettings,
-    updateSettings,
-    testOllamaConnection,
-    testDiscordAlert,
-    getCustomApiBase,
-    setCustomApiBase,
-    listModels,
-    getBrainMemory,
-    saveBrainMemory,
-    consolidateBrainMemory,
-} from "../services/api";
+import { X, Check, AlertCircle, Bell, Cpu, Database, RefreshCw, BotIcon, Globe, Brain, Edit3, FileText } from "lucide-react";
+import { getSettings, updateSettings, testOllamaConnection, testDiscordAlert, getCustomApiBase, setCustomApiBase, listModels, getBrainMemory, saveBrainMemory, consolidateBrainMemory } from "../services/api";
 
-export default function SettingsModal({
-    isOpen,
-    onClose,
-    onSettingsUpdated,
-    currentModel,
-    onModelChanged,
-}) {
+export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, currentModel, onModelChanged }) {
     const [activeTab, setActiveTab] = useState("ollama");
     const [loading, setLoading] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
@@ -79,12 +49,9 @@ export default function SettingsModal({
             if (s.discord_webhook_url) setDiscordWebhook(s.discord_webhook_url);
             if (s.searxng_url) setSearxngUrl(s.searxng_url);
             if (s.search_provider) setSearchProvider(s.search_provider);
-            if (s.deep_research_enabled)
-                setDeepResearchEnabled(s.deep_research_enabled === "true");
-            if (s.agent_mode_enabled)
-                setAgentModeEnabled(s.agent_mode_enabled === "true");
-            if (s.brain_enabled !== undefined)
-                setBrainEnabled(s.brain_enabled !== "false");
+            if (s.deep_research_enabled) setDeepResearchEnabled(s.deep_research_enabled === "true");
+            if (s.agent_mode_enabled) setAgentModeEnabled(s.agent_mode_enabled === "true");
+            if (s.brain_enabled !== undefined) setBrainEnabled(s.brain_enabled !== "false");
             if (s.system_prompt) setSystemPrompt(s.system_prompt);
 
             // fetch models
@@ -157,9 +124,7 @@ export default function SettingsModal({
             const res = await testOllamaConnection(ollamaUrl);
             setOllamaStatus({
                 ok: true,
-                message:
-                    res.message ||
-                    `Connected! Found ${res.models?.length || 0} models.`,
+                message: res.message || `Connected! Found ${res.models?.length || 0} models.`,
             });
             if (res.models && res.models.length > 0) {
                 setAvailableModels(res.models);
@@ -306,13 +271,8 @@ export default function SettingsModal({
                             alignItems: "center",
                             justifyContent: "center",
                         }}
-                        onMouseEnter={(e) =>
-                            (e.currentTarget.style.color =
-                                "var(--text-primary)")
-                        }
-                        onMouseLeave={(e) =>
-                            (e.currentTarget.style.color = "var(--text-muted)")
-                        }
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
                     >
                         <X size={18} />
                     </button>
@@ -347,12 +307,8 @@ export default function SettingsModal({
                                     padding: "0.75rem 0.9rem",
                                     fontSize: "0.85rem",
                                     fontWeight: isActive ? 600 : 400,
-                                    color: isActive
-                                        ? "var(--accent-terracotta)"
-                                        : "var(--text-secondary)",
-                                    borderBottom: isActive
-                                        ? "2px solid var(--accent-terracotta)"
-                                        : "2px solid transparent",
+                                    color: isActive ? "var(--accent-terracotta)" : "var(--text-secondary)",
+                                    borderBottom: isActive ? "2px solid var(--accent-terracotta)" : "2px solid transparent",
                                     transition: "all 0.15s ease",
                                 }}
                             >
@@ -396,9 +352,7 @@ export default function SettingsModal({
                                     <input
                                         type="text"
                                         value={ollamaUrl}
-                                        onChange={(e) =>
-                                            setOllamaUrl(e.target.value)
-                                        }
+                                        onChange={(e) => setOllamaUrl(e.target.value)}
                                         placeholder="http://localhost:11434"
                                         style={{
                                             flex: 1,
@@ -426,19 +380,8 @@ export default function SettingsModal({
                                             color: "var(--text-primary)",
                                         }}
                                     >
-                                        <RefreshCw
-                                            size={14}
-                                            className={
-                                                ollamaTesting
-                                                    ? "typing-dot"
-                                                    : ""
-                                            }
-                                        />
-                                        <span>
-                                            {ollamaTesting
-                                                ? "Testing..."
-                                                : "Test Connection"}
-                                        </span>
+                                        <RefreshCw size={14} className={ollamaTesting ? "typing-dot" : ""} />
+                                        <span>{ollamaTesting ? "Testing..." : "Test Connection"}</span>
                                     </button>
                                 </div>
                                 <div
@@ -448,8 +391,7 @@ export default function SettingsModal({
                                         marginTop: "0.35rem",
                                     }}
                                 >
-                                    Base URL for the locally running Ollama
-                                    instance or remote server.
+                                    Base URL for the locally running Ollama instance or remote server.
                                 </div>
 
                                 {ollamaStatus && (
@@ -458,23 +400,15 @@ export default function SettingsModal({
                                             marginTop: "0.65rem",
                                             padding: "0.5rem 0.75rem",
                                             borderRadius: "var(--radius-sm)",
-                                            backgroundColor: ollamaStatus.ok
-                                                ? "rgba(74, 222, 128, 0.12)"
-                                                : "rgba(239, 68, 68, 0.12)",
-                                            color: ollamaStatus.ok
-                                                ? "#15803D"
-                                                : "#DC2626",
+                                            backgroundColor: ollamaStatus.ok ? "rgba(74, 222, 128, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                                            color: ollamaStatus.ok ? "#15803D" : "#DC2626",
                                             fontSize: "0.8rem",
                                             display: "flex",
                                             alignItems: "center",
                                             gap: "0.4rem",
                                         }}
                                     >
-                                        {ollamaStatus.ok ? (
-                                            <Check size={14} />
-                                        ) : (
-                                            <AlertCircle size={14} />
-                                        )}
+                                        {ollamaStatus.ok ? <Check size={14} /> : <AlertCircle size={14} />}
                                         <span>{ollamaStatus.message}</span>
                                     </div>
                                 )}
@@ -495,9 +429,7 @@ export default function SettingsModal({
                                 {availableModels.length > 0 ? (
                                     <select
                                         value={defaultModel}
-                                        onChange={(e) =>
-                                            setDefaultModel(e.target.value)
-                                        }
+                                        onChange={(e) => setDefaultModel(e.target.value)}
                                         style={{
                                             width: "100%",
                                             padding: "0.6rem 0.75rem",
@@ -518,9 +450,7 @@ export default function SettingsModal({
                                     <input
                                         type="text"
                                         value={defaultModel}
-                                        onChange={(e) =>
-                                            setDefaultModel(e.target.value)
-                                        }
+                                        onChange={(e) => setDefaultModel(e.target.value)}
                                         placeholder="llama3.2"
                                         style={{
                                             width: "100%",
@@ -540,8 +470,7 @@ export default function SettingsModal({
                                         marginTop: "0.35rem",
                                     }}
                                 >
-                                    Model invoked for chat reasoning and tool
-                                    selection.
+                                    Model invoked for chat reasoning and tool selection.
                                 </div>
                             </div>
                         </div>
@@ -572,9 +501,7 @@ export default function SettingsModal({
                                     <input
                                         type="text"
                                         value={discordWebhook}
-                                        onChange={(e) =>
-                                            setDiscordWebhook(e.target.value)
-                                        }
+                                        onChange={(e) => setDiscordWebhook(e.target.value)}
                                         placeholder="https://discord.com/api/webhooks/..."
                                         style={{
                                             flex: 1,
@@ -588,10 +515,7 @@ export default function SettingsModal({
                                     />
                                     <button
                                         onClick={handleTestDiscord}
-                                        disabled={
-                                            discordTesting ||
-                                            !discordWebhook.trim()
-                                        }
+                                        disabled={discordTesting || !discordWebhook.trim()}
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
@@ -603,24 +527,11 @@ export default function SettingsModal({
                                             fontSize: "0.82rem",
                                             fontWeight: 500,
                                             color: "var(--text-primary)",
-                                            opacity: !discordWebhook.trim()
-                                                ? 0.6
-                                                : 1,
+                                            opacity: !discordWebhook.trim() ? 0.6 : 1,
                                         }}
                                     >
-                                        <Bell
-                                            size={14}
-                                            className={
-                                                discordTesting
-                                                    ? "typing-dot"
-                                                    : ""
-                                            }
-                                        />
-                                        <span>
-                                            {discordTesting
-                                                ? "Sending..."
-                                                : "Test Webhook"}
-                                        </span>
+                                        <Bell size={14} className={discordTesting ? "typing-dot" : ""} />
+                                        <span>{discordTesting ? "Sending..." : "Test Webhook"}</span>
                                     </button>
                                 </div>
                                 <div
@@ -630,9 +541,7 @@ export default function SettingsModal({
                                         marginTop: "0.35rem",
                                     }}
                                 >
-                                    Channel webhook for real-time task
-                                    notifications, Scheduled Job alerts, and
-                                    error reports.
+                                    Channel webhook for real-time task notifications, Scheduled Job alerts, and error reports.
                                 </div>
                             </div>
                         </div>
@@ -658,7 +567,8 @@ export default function SettingsModal({
                                     lineHeight: 1.5,
                                 }}
                             >
-                                <strong>Web Search Provider:</strong> Choose how Marnie retrieves real-time web results. You can switch between DuckDuckGo (instant, no setup required) and a private self-hosted SearXNG instance.
+                                <strong>Web Search Provider:</strong> Choose how Marnie retrieves real-time web results. You can switch between DuckDuckGo (instant, no setup required) and a private self-hosted SearXNG
+                                instance.
                             </div>
 
                             {/* Search Provider Selector */}
@@ -686,20 +596,14 @@ export default function SettingsModal({
                                         style={{
                                             padding: "0.85rem 1rem",
                                             borderRadius: "var(--radius-sm)",
-                                            border: searchProvider === "duckduckgo"
-                                                ? "2px solid var(--accent-terracotta)"
-                                                : "1px solid var(--border-subtle)",
-                                            backgroundColor: searchProvider === "duckduckgo"
-                                                ? "rgba(200, 91, 56, 0.06)"
-                                                : "var(--bg-card)",
+                                            border: searchProvider === "duckduckgo" ? "2px solid var(--accent-terracotta)" : "1px solid var(--border-subtle)",
+                                            backgroundColor: searchProvider === "duckduckgo" ? "rgba(200, 91, 56, 0.06)" : "var(--bg-card)",
                                             cursor: "pointer",
                                             transition: "all 0.15s ease",
                                         }}
                                     >
                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.3rem" }}>
-                                            <span style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-primary)" }}>
-                                                DuckDuckGo
-                                            </span>
+                                            <span style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-primary)" }}>DuckDuckGo</span>
                                             <span
                                                 style={{
                                                     fontSize: "0.68rem",
@@ -713,9 +617,7 @@ export default function SettingsModal({
                                                 Default / Ready
                                             </span>
                                         </div>
-                                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
-                                            Fast, privacy-friendly search without needing any local daemon or API key.
-                                        </div>
+                                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: 1.4 }}>Fast, privacy-friendly search without needing any local daemon or API key.</div>
                                     </div>
 
                                     <div
@@ -723,20 +625,14 @@ export default function SettingsModal({
                                         style={{
                                             padding: "0.85rem 1rem",
                                             borderRadius: "var(--radius-sm)",
-                                            border: searchProvider === "searxng"
-                                                ? "2px solid var(--accent-terracotta)"
-                                                : "1px solid var(--border-subtle)",
-                                            backgroundColor: searchProvider === "searxng"
-                                                ? "rgba(200, 91, 56, 0.06)"
-                                                : "var(--bg-card)",
+                                            border: searchProvider === "searxng" ? "2px solid var(--accent-terracotta)" : "1px solid var(--border-subtle)",
+                                            backgroundColor: searchProvider === "searxng" ? "rgba(200, 91, 56, 0.06)" : "var(--bg-card)",
                                             cursor: "pointer",
                                             transition: "all 0.15s ease",
                                         }}
                                     >
                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.3rem" }}>
-                                            <span style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-primary)" }}>
-                                                SearXNG
-                                            </span>
+                                            <span style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-primary)" }}>SearXNG</span>
                                             <span
                                                 style={{
                                                     fontSize: "0.68rem",
@@ -749,9 +645,7 @@ export default function SettingsModal({
                                                 Self-Hosted
                                             </span>
                                         </div>
-                                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
-                                            Self-hosted metasearch instance aggregating 70+ search engines.
-                                        </div>
+                                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: 1.4 }}>Self-hosted metasearch instance aggregating 70+ search engines.</div>
                                     </div>
                                 </div>
                             </div>
@@ -845,10 +739,7 @@ export default function SettingsModal({
                                             gap: "0.6rem",
                                         }}
                                     >
-                                        <Brain
-                                            size={20}
-                                            color="var(--accent-terracotta)"
-                                        />
+                                        <Brain size={20} color="var(--accent-terracotta)" />
                                         <div>
                                             <div
                                                 style={{
@@ -879,19 +770,12 @@ export default function SettingsModal({
                                             position: "relative",
                                         }}
                                     >
-                                        <input
-                                            type="checkbox"
-                                            checked={brainEnabled}
-                                            onChange={(e) => setBrainEnabled(e.target.checked)}
-                                            style={{ display: "none" }}
-                                        />
+                                        <input type="checkbox" checked={brainEnabled} onChange={(e) => setBrainEnabled(e.target.checked)} style={{ display: "none" }} />
                                         <div
                                             style={{
                                                 width: "38px",
                                                 height: "20px",
-                                                backgroundColor: brainEnabled
-                                                    ? "var(--accent-terracotta)"
-                                                    : "var(--border-strong)",
+                                                backgroundColor: brainEnabled ? "var(--accent-terracotta)" : "var(--border-strong)",
                                                 borderRadius: "10px",
                                                 position: "relative",
                                                 transition: "background-color 0.2s ease",
@@ -921,8 +805,7 @@ export default function SettingsModal({
                                         lineHeight: 1.6,
                                     }}
                                 >
-                                    Marnie learns and remembers your preferences, project context, and instructions over time.
-                                    After every 5 conversation messages, a background LLM call automatically synthesizes your
+                                    Marnie learns and remembers your preferences, project context, and instructions over time. After every 5 conversation messages, a background LLM call automatically synthesizes your
                                     current memory with recent interactions. This context is injected into all chat and agentic workflows.
                                 </div>
 
@@ -1003,9 +886,7 @@ export default function SettingsModal({
                                             padding: "0.6rem 0.85rem",
                                             borderRadius: "4px",
                                             fontSize: "0.8rem",
-                                            backgroundColor: brainConsolidateMsg.ok
-                                                ? "rgba(34, 197, 94, 0.1)"
-                                                : "rgba(239, 68, 68, 0.1)",
+                                            backgroundColor: brainConsolidateMsg.ok ? "rgba(34, 197, 94, 0.1)" : "rgba(239, 68, 68, 0.1)",
                                             border: `1px solid ${brainConsolidateMsg.ok ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.3)"}`,
                                             color: brainConsolidateMsg.ok ? "#16a34a" : "#dc2626",
                                             display: "flex",
@@ -1086,10 +967,7 @@ export default function SettingsModal({
                                         gap: "0.5rem",
                                     }}
                                 >
-                                    <Database
-                                        size={18}
-                                        color="var(--accent-terracotta)"
-                                    />
+                                    <Database size={18} color="var(--accent-terracotta)" />
                                     <div
                                         style={{
                                             fontSize: "0.95rem",
@@ -1106,12 +984,8 @@ export default function SettingsModal({
                                         lineHeight: 1.6,
                                     }}
                                 >
-                                    All conversations, user messages, assistant
-                                    tool calls, background tasks, and scheduled
-                                    jobs are written to{" "}
-                                    <code>./data/marnie.db</code> using{" "}
-                                    <code>better-sqlite3</code> with WAL mode
-                                    enabled.
+                                    All conversations, user messages, assistant tool calls, background tasks, and scheduled jobs are written to <code>./data/marnie.db</code> using <code>better-sqlite3</code> with WAL
+                                    mode enabled.
                                 </div>
                                 <div
                                     style={{
@@ -1122,10 +996,7 @@ export default function SettingsModal({
                                         fontSize: "0.78rem",
                                     }}
                                 >
-                                    Schema Tables: <code>conversations</code>,{" "}
-                                    <code>messages</code>, <code>tasks</code>,{" "}
-                                    <code>cron_jobs</code>,{" "}
-                                    <code>settings</code>
+                                    Schema Tables: <code>conversations</code>, <code>messages</code>, <code>tasks</code>, <code>cron_jobs</code>, <code>settings</code>
                                 </div>
                             </div>
 
@@ -1135,9 +1006,7 @@ export default function SettingsModal({
                                     color: "var(--text-muted)",
                                 }}
                             >
-                                Conversations are never lost when restarting the
-                                server. You can resume any chat history at any
-                                time from the left sidebar.
+                                Conversations are never lost when restarting the server. You can resume any chat history at any time from the left sidebar.
                             </div>
                         </div>
                     )}
@@ -1196,14 +1065,8 @@ export default function SettingsModal({
                                 fontWeight: 500,
                                 boxShadow: "var(--shadow-sm)",
                             }}
-                            onMouseEnter={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                    "var(--accent-terracotta-hover)")
-                            }
-                            onMouseLeave={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                    "var(--accent-terracotta)")
-                            }
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-terracotta-hover)")}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-terracotta)")}
                         >
                             {loading ? "Saving..." : "Save Settings"}
                         </button>

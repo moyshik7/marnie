@@ -7,11 +7,13 @@ The `task-manager` skill allows the agent to create, list, and manage persistent
 ## 1. Capabilities & Triggers
 
 ### When to Activate
+
 - Tracking user to-dos, action items, and project milestones.
 - Managing multi-step project tasks with priority ratings.
 - Listing remaining tasks to inform the next steps of an execution plan.
 
 ### Underlying Tools
+
 - [`create_task`](../tools/task-management.md)
 - [`list_tasks`](../tools/task-management.md)
 
@@ -20,24 +22,26 @@ The `task-manager` skill allows the agent to create, list, and manage persistent
 ## 2. Invocation Patterns
 
 ### Creating a High-Priority Task
+
 ```json
 {
-  "name": "create_task",
-  "arguments": {
-    "title": "Update KaTeX security override",
-    "description": "Ensure mermaid and root resolve to katex >= 0.18.2.",
-    "priority": "high"
-  }
+    "name": "create_task",
+    "arguments": {
+        "title": "Update KaTeX security override",
+        "description": "Ensure mermaid and root resolve to katex >= 0.18.2.",
+        "priority": "high"
+    }
 }
 ```
 
 ### Listing Pending Tasks
+
 ```json
 {
-  "name": "list_tasks",
-  "arguments": {
-    "status": "pending"
-  }
+    "name": "list_tasks",
+    "arguments": {
+        "status": "pending"
+    }
 }
 ```
 

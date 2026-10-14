@@ -10,21 +10,22 @@ Creates a new local file strictly in the `workspace/` directory with initial con
 
 ### Parameters
 
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `filePath` | `string` | **Yes** | Relative path to the file within workspace (e.g. `index.html`, `src/app.js`). |
-| `content` | `string` | No | Initial file content. Defaults to empty string. |
-| `overwrite` | `boolean` | No | If `true`, overwrites existing file. Defaults to `false` (throws an error if file exists). |
+| Parameter   | Type      | Required | Description                                                                                |
+| :---------- | :-------- | :------- | :----------------------------------------------------------------------------------------- |
+| `filePath`  | `string`  | **Yes**  | Relative path to the file within workspace (e.g. `index.html`, `src/app.js`).              |
+| `content`   | `string`  | No       | Initial file content. Defaults to empty string.                                            |
+| `overwrite` | `boolean` | No       | If `true`, overwrites existing file. Defaults to `false` (throws an error if file exists). |
 
 ### Example
+
 ```json
 {
-  "name": "create_file",
-  "arguments": {
-    "filePath": "app.js",
-    "content": "console.log('Hello Marnie!');",
-    "overwrite": true
-  }
+    "name": "create_file",
+    "arguments": {
+        "filePath": "app.js",
+        "content": "console.log('Hello Marnie!');",
+        "overwrite": true
+    }
 }
 ```
 
@@ -36,21 +37,22 @@ Reads content from a local file in the workspace or repository. Supports reading
 
 ### Parameters
 
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `filePath` | `string` | **Yes** | Relative path to the file to inspect. |
-| `startLine` | `number` | No | 1-based start line number. |
-| `endLine` | `number` | No | 1-based end line number (inclusive). |
+| Parameter   | Type     | Required | Description                           |
+| :---------- | :------- | :------- | :------------------------------------ |
+| `filePath`  | `string` | **Yes**  | Relative path to the file to inspect. |
+| `startLine` | `number` | No       | 1-based start line number.            |
+| `endLine`   | `number` | No       | 1-based end line number (inclusive).  |
 
 ### Example
+
 ```json
 {
-  "name": "read_file",
-  "arguments": {
-    "filePath": "NOTES.md",
-    "startLine": 1,
-    "endLine": 25
-  }
+    "name": "read_file",
+    "arguments": {
+        "filePath": "NOTES.md",
+        "startLine": 1,
+        "endLine": 25
+    }
 }
 ```
 
@@ -62,13 +64,13 @@ Writes, appends, or patches specific line ranges in an existing workspace file. 
 
 ### Parameters
 
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `filePath` | `string` | **Yes** | Relative path to the target file. |
-| `content` | `string` | **Yes** | Content to write, append, or replace. |
-| `startLine` | `number` | No | 1-based line number where replacement starts. |
-| `endLine` | `number` | No | 1-based line number where replacement ends (inclusive). |
-| `append` | `boolean` | No | If `true`, appends `content` to the end of the file. |
+| Parameter   | Type      | Required | Description                                             |
+| :---------- | :-------- | :------- | :------------------------------------------------------ |
+| `filePath`  | `string`  | **Yes**  | Relative path to the target file.                       |
+| `content`   | `string`  | **Yes**  | Content to write, append, or replace.                   |
+| `startLine` | `number`  | No       | 1-based line number where replacement starts.           |
+| `endLine`   | `number`  | No       | 1-based line number where replacement ends (inclusive). |
+| `append`    | `boolean` | No       | If `true`, appends `content` to the end of the file.    |
 
 ### Operational Modes
 
@@ -84,6 +86,7 @@ Writes, appends, or patches specific line ranges in an existing workspace file. 
 ## 4. Security Enforcement
 
 All write and creation operations must resolve strictly within `workspace/`. Any path containing escape sequences such as `../` that resolves outside `WORKSPACE_DIR` triggers a `403 Forbidden` exception:
+
 ```json
 { "error": "Access denied: Path escapes workspace directory" }
 ```

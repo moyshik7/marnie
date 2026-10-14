@@ -24,21 +24,21 @@ graph LR
 ## 2. Key Capabilities
 
 1. **Drag-and-Drop & File Picker**:
-   - Supports Markdown (`.md`) and plain text (`.txt`) documents.
-   - Drag files directly over the browser window to open the upload dialogue.
-   - Interactive file picker for batch multi-file uploads.
+    - Supports Markdown (`.md`) and plain text (`.txt`) documents.
+    - Drag files directly over the browser window to open the upload dialogue.
+    - Interactive file picker for batch multi-file uploads.
 2. **Snippet / Copied Text Modal**:
-   - Allows pasting raw text or clipboard notes directly into a new document card with custom categorization.
+    - Allows pasting raw text or clipboard notes directly into a new document card with custom categorization.
 3. **Card-Based UI**:
-   - Displays reference documents as responsive cards with metadata badges:
-     - Document type badge (`< >` for Markdown, text document icon for Plain Text).
-     - File size in KB/MB.
-     - Total word count.
-     - Upload and update timestamps.
+    - Displays reference documents as responsive cards with metadata badges:
+        - Document type badge (`< >` for Markdown, text document icon for Plain Text).
+        - File size in KB/MB.
+        - Total word count.
+        - Upload and update timestamps.
 4. **Read-Only Fullscreen Preview Modal**:
-   - Inspect document text without modifying the original knowledge source.
+    - Inspect document text without modifying the original knowledge source.
 5. **Agent Integration (`retrieve_expanded_capacity`)**:
-   - The AI agent can query the knowledge base during conversation turns to extract facts, verify specifications, or cite documentation.
+    - The AI agent can query the knowledge base during conversation turns to extract facts, verify specifications, or cite documentation.
 
 ---
 

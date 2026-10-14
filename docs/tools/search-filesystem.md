@@ -6,10 +6,10 @@ Recursively searches files and subdirectories matching a filename substring or r
 
 ## 1. Parameters
 
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `directory` | `string` | **Yes** | Target directory path to start recursive traversal (e.g. `workspace`, `src`). |
-| `pattern` | `string` | No | Substring or regex pattern to match against file paths and names. If omitted, lists all files. |
+| Parameter   | Type     | Required | Description                                                                                    |
+| :---------- | :------- | :------- | :--------------------------------------------------------------------------------------------- |
+| `directory` | `string` | **Yes**  | Target directory path to start recursive traversal (e.g. `workspace`, `src`).                  |
+| `pattern`   | `string` | No       | Substring or regex pattern to match against file paths and names. If omitted, lists all files. |
 
 ---
 
@@ -17,10 +17,10 @@ Recursively searches files and subdirectories matching a filename substring or r
 
 - **Recursion**: Scans the target directory recursively up to a safe depth limit.
 - **Ignored Directories**: Automatically skips heavy build and package directories:
-  - `node_modules`
-  - `.git`
-  - `dist`
-  - `coverage`
+    - `node_modules`
+    - `.git`
+    - `dist`
+    - `coverage`
 - **Output Capping**: Limits the returned results array to 500 entries to prevent memory exhaustion and excessive context bloat.
 
 ---
@@ -29,11 +29,11 @@ Recursively searches files and subdirectories matching a filename substring or r
 
 ```json
 {
-  "name": "search_filesystem",
-  "arguments": {
-    "directory": "workspace",
-    "pattern": "\\.md$"
-  }
+    "name": "search_filesystem",
+    "arguments": {
+        "directory": "workspace",
+        "pattern": "\\.md$"
+    }
 }
 ```
 
@@ -43,13 +43,9 @@ Recursively searches files and subdirectories matching a filename substring or r
 
 ```json
 {
-  "directory": "workspace",
-  "pattern": "\\.md$",
-  "matches": [
-    "workspace/BRAIN.md",
-    "workspace/NOTES.md",
-    "workspace/research/summary.md"
-  ],
-  "totalMatches": 3
+    "directory": "workspace",
+    "pattern": "\\.md$",
+    "matches": ["workspace/BRAIN.md", "workspace/NOTES.md", "workspace/research/summary.md"],
+    "totalMatches": 3
 }
 ```

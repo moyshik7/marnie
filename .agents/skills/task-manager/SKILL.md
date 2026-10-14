@@ -1,8 +1,8 @@
 ---
 name: task-manager
 description: >-
-  Create, list, and manage persistent task items stored in SQLite.
-  Use for tracking user todos, task checklists, project milestones, and action items.
+    Create, list, and manage persistent task items stored in SQLite.
+    Use for tracking user todos, task checklists, project milestones, and action items.
 ---
 
 # Task Manager Skill
@@ -12,6 +12,7 @@ Provides persistent task tracking stored in SQLite with title, description, prio
 ## Tools Included
 
 ### 1. `create_task`
+
 Creates a persistent task record.
 
 ```json
@@ -26,9 +27,11 @@ Creates a persistent task record.
 }
 </tool_call>
 ```
+
 Aliases: `task_create`
 
 ### 2. `list_tasks`
+
 Lists all active or filtered tasks from SQLite.
 
 ```json
@@ -41,17 +44,18 @@ Lists all active or filtered tasks from SQLite.
 }
 </tool_call>
 ```
+
 Aliases: `task_list`
 
 ## Programmatic Usage
 
 ```javascript
-const tasks = require('./src/components/tools/tasks');
+const tasks = require("./src/components/tools/tasks");
 
 const created = tasks.createTask({
-  title: 'Review pull request',
-  priority: 'medium',
+    title: "Review pull request",
+    priority: "medium",
 });
 
-const activeTasks = tasks.listTasks({ status: 'pending' });
+const activeTasks = tasks.listTasks({ status: "pending" });
 ```

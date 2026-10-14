@@ -7,11 +7,13 @@ The `fetch-notes` skill retrieves persistent user notes, task lists, and referen
 ## 1. Capabilities & Triggers
 
 ### When to Activate
+
 - Retrieving additional context, working memory, or task checklists not injected into the base prompt.
 - Checking existing project tasks before starting new work.
 - Reading user directives or scratchpad notes from `workspace/NOTES.md`.
 
 ### Underlying Tool
+
 - [`fetch_notes`](../tools/notes.md)
 
 ---
@@ -19,20 +21,22 @@ The `fetch-notes` skill retrieves persistent user notes, task lists, and referen
 ## 2. Invocation Patterns
 
 ### Fetching a Specific Section
+
 ```json
 {
-  "name": "fetch_notes",
-  "arguments": {
-    "section": "Active Tasks & Checklist"
-  }
+    "name": "fetch_notes",
+    "arguments": {
+        "section": "Active Tasks & Checklist"
+    }
 }
 ```
 
 ### Fetching the Entire Notes File
+
 ```json
 {
-  "name": "fetch_notes",
-  "arguments": {}
+    "name": "fetch_notes",
+    "arguments": {}
 }
 ```
 
