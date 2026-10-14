@@ -22,17 +22,16 @@ const BASE_URL = () => {
 };
 
 const API_KEY = () => getSetting("openai_api_key", process.env.OPENAI_API_KEY || "");
-const DEFAULT_MODEL = () => getSetting("openai_model", process.env.OPENAI_MODEL || "gpt-4o");
+const DEFAULT_MODEL = () => getSetting("openai_model", process.env.OPENAI_MODEL || "gpt-6-astra");
 
 const FALLBACK_MODELS = [
-    "gpt-4o",
-    "gpt-4o-mini",
-    "o1",
-    "o1-mini",
-    "o3-mini",
-    "gpt-4-turbo",
-    "gpt-4",
-    "gpt-3.5-turbo",
+    "gpt-6-astra",
+    "gpt-6.1-sol",
+    "gpt-6-luna",
+    "gpt-6-sol",
+    "gpt-5.6-sol",
+    "gpt-5.6-terra",
+    "gpt-5.6-luna",
 ];
 
 /**
