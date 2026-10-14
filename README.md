@@ -83,7 +83,7 @@ Slash commands can be used at the beginning of any prompt. Typing `/` automatica
 
 - [x] Ollama
 - [x] llama.cpp
-- [ ] Gemini API
+- [x] Gemini API
 - [x] Anthropic API
 - [x] OpenAI API
 - [x] Deepseek API

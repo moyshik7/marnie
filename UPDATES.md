@@ -1,3 +1,14 @@
+## Updates on 0.6.x
+- Added several LLm providers
+    - OpenAI
+    - Anthropic
+    - Gemini
+    - Deepseek
+    - llama.cpp (local)
+- Reworked the settings popup
+- Made the ux simpler and easier
+- Fixed bugs
+
 ## Updates on 0.5.x
 
 - Dedicated SQLite Database (better-sqlite3):
