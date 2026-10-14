@@ -624,23 +624,14 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                         }}
                                     >
                                         <Cpu size={16} color="var(--accent-terracotta)" />
-                                        <span>Active AI Provider / Endpoint</span>
+                                        <span>Active LLM Provider</span>
                                     </label>
                                     <span
                                         style={{
                                             fontSize: "0.72rem",
                                             padding: "0.2rem 0.55rem",
                                             borderRadius: "999px",
-                                            backgroundColor:
-                                                selectedProvider === "deepseek"
-                                                    ? "rgba(59, 130, 246, 0.12)"
-                                                    : selectedProvider === "anthropic" || selectedProvider === "claude"
-                                                    ? "rgba(217, 119, 6, 0.12)"
-                                                    : selectedProvider === "openai"
-                                                    ? "rgba(16, 163, 127, 0.12)"
-                                                    : selectedProvider === "llamacpp"
-                                                    ? "rgba(168, 85, 247, 0.12)"
-                                                    : "rgba(34, 197, 94, 0.12)",
+                                            backgroundColor: "var(--bg-tertiary)",
                                             color:
                                                 selectedProvider === "deepseek"
                                                     ? "#2563EB"
@@ -657,24 +648,6 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                             gap: "0.35rem",
                                         }}
                                     >
-                                        <span
-                                            style={{
-                                                width: "6px",
-                                                height: "6px",
-                                                borderRadius: "50%",
-                                                backgroundColor:
-                                                    selectedProvider === "deepseek"
-                                                        ? "#2563EB"
-                                                        : selectedProvider === "anthropic" || selectedProvider === "claude"
-                                                        ? "#D97706"
-                                                        : selectedProvider === "openai"
-                                                        ? "#10A37F"
-                                                        : selectedProvider === "llamacpp"
-                                                        ? "#9333EA"
-                                                        : "#16A34A",
-                                                display: "inline-block",
-                                            }}
-                                        />
                                         Active:{" "}
                                         {selectedProvider === "deepseek"
                                             ? "DeepSeek API (Cloud)"
@@ -711,16 +684,6 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                     <option value="llamacpp">llama.cpp HTTP Server (Local / Remote)</option>
                                     <option value="gemini" disabled>Google Gemini API (Coming Soon)</option>
                                 </select>
-                                <div
-                                    style={{
-                                        fontSize: "0.75rem",
-                                        color: "var(--text-muted)",
-                                        marginTop: "0.45rem",
-                                        lineHeight: 1.4,
-                                    }}
-                                >
-                                    When selected, the entire workspace (chat, streaming responses, deep research, and memory synthesis) will use this service.
-                                </div>
                             </div>
 
                             {/* Section 1: Ollama Configuration */}
@@ -866,19 +829,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                 >
                                     <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
                                         <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                                            DeepSeek API Configuration
-                                        </span>
-                                        <span
-                                            style={{
-                                                fontSize: "0.68rem",
-                                                fontWeight: 600,
-                                                padding: "0.15rem 0.45rem",
-                                                borderRadius: "999px",
-                                                backgroundColor: "rgba(59, 130, 246, 0.12)",
-                                                color: "#2563EB",
-                                            }}
-                                        >
-                                            DeepSeek-V3 & R1
+                                            DeepSeek API
                                         </span>
                                     </div>
                                     <span
@@ -976,15 +927,6 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                                 <span>{deepseekTesting ? "Verifying..." : "Verify Key"}</span>
                                             </button>
                                         </div>
-                                        <div
-                                            style={{
-                                                fontSize: "0.75rem",
-                                                color: "var(--text-muted)",
-                                                marginTop: "0.35rem",
-                                            }}
-                                        >
-                                            Required for DeepSeek API requests. Saved securely in local database.
-                                        </div>
                                     </div>
 
                                     {/* DeepSeek Custom Endpoint */}
@@ -1074,18 +1016,6 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                     <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
                                         <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
                                             Anthropic Claude API Configuration
-                                        </span>
-                                        <span
-                                            style={{
-                                                fontSize: "0.68rem",
-                                                fontWeight: 600,
-                                                padding: "0.15rem 0.45rem",
-                                                borderRadius: "999px",
-                                                backgroundColor: "rgba(217, 119, 6, 0.12)",
-                                                color: "#D97706",
-                                            }}
-                                        >
-                                            Claude 3.5 Sonnet & Haiku
                                         </span>
                                     </div>
                                     <span
@@ -1183,15 +1113,6 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                                 <span>{anthropicTesting ? "Verifying..." : "Verify Key"}</span>
                                             </button>
                                         </div>
-                                        <div
-                                            style={{
-                                                fontSize: "0.75rem",
-                                                color: "var(--text-muted)",
-                                                marginTop: "0.35rem",
-                                            }}
-                                        >
-                                            Required for Claude API requests. Saved securely in local database.
-                                        </div>
                                     </div>
 
                                     {/* Anthropic Custom Endpoint */}
@@ -1281,18 +1202,6 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                     <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
                                         <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
                                             OpenAI API Configuration
-                                        </span>
-                                        <span
-                                            style={{
-                                                fontSize: "0.68rem",
-                                                fontWeight: 600,
-                                                padding: "0.15rem 0.45rem",
-                                                borderRadius: "999px",
-                                                backgroundColor: "rgba(16, 163, 127, 0.12)",
-                                                color: "#10A37F",
-                                            }}
-                                        >
-                                            GPT-4o & o1 / o3
                                         </span>
                                     </div>
                                     <span
@@ -1390,15 +1299,6 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                                 <span>{openaiTesting ? "Verifying..." : "Verify Key"}</span>
                                             </button>
                                         </div>
-                                        <div
-                                            style={{
-                                                fontSize: "0.75rem",
-                                                color: "var(--text-muted)",
-                                                marginTop: "0.35rem",
-                                            }}
-                                        >
-                                            Required for OpenAI API requests. Saved securely in local database.
-                                        </div>
                                     </div>
 
                                     {/* OpenAI Custom Endpoint */}
@@ -1489,18 +1389,6 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                         <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
                                             llama.cpp Server Configuration
                                         </span>
-                                        <span
-                                            style={{
-                                                fontSize: "0.68rem",
-                                                fontWeight: 600,
-                                                padding: "0.15rem 0.45rem",
-                                                borderRadius: "999px",
-                                                backgroundColor: "rgba(168, 85, 247, 0.12)",
-                                                color: "#9333EA",
-                                            }}
-                                        >
-                                            llama-server / GGUF
-                                        </span>
                                     </div>
                                     <span
                                         style={{
@@ -1579,7 +1467,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                                 marginTop: "0.35rem",
                                             }}
                                         >
-                                            Base endpoint for <code>llama-server</code> running locally or remotely (default: <code>http://localhost:8080</code>).
+                                            Default: <code>http://localhost:8080</code>
                                         </div>
                                     </div>
 
@@ -1847,27 +1735,11 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                             >
                                 <div>
                                     <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)" }}>
-                                        More Integrations Under Development
+                                        More LLM sources coming soon!
                                     </span>
                                     <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
-                                        Google Gemini API integration will be available as a selectable endpoint soon.
+                                        Todo: Gemini, Mistral, Alibaba Cloud (Qwen), Openrouter, Amazon Bedrock, Cloudflare etc
                                     </div>
-                                </div>
-                                <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-                                    {["Gemini"].map((name) => (
-                                        <span
-                                            key={name}
-                                            style={{
-                                                fontSize: "0.68rem",
-                                                padding: "0.15rem 0.45rem",
-                                                borderRadius: "var(--radius-sm)",
-                                                border: "1px solid var(--border-subtle)",
-                                                color: "var(--text-muted)",
-                                            }}
-                                        >
-                                            {name}
-                                        </span>
-                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -2367,19 +2239,6 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                 }}
                             >
                                 <Check size={14} /> Changes saved in real time
-                            </span>
-                        )}
-                        {autoSaveStatus === "idle" && !saveSuccess && (
-                            <span
-                                style={{
-                                    fontSize: "0.78rem",
-                                    color: "var(--text-muted)",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.35rem",
-                                }}
-                            >
-                                <Check size={13} color="#16A34A" /> Real-time auto-save active
                             </span>
                         )}
                         {autoSaveStatus === "error" && (
