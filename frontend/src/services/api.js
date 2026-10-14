@@ -93,13 +93,18 @@ export async function compactConversation(id) {
     });
 }
 
-// ── Models ──────────────────────────────────────────────────
-export async function listModels() {
+// ── Models & Providers ─────────────────────────────────────
+export async function listProviders() {
+    return request("/settings/providers");
+}
+
+export async function listModels(provider) {
     try {
-        const data = await request("/chat/models");
+        const query = provider ? `?provider=${encodeURIComponent(provider)}` : "";
+        const data = await request(`/chat/models${query}`);
         return data.models || [];
     } catch (err) {
-        console.warn("Failed to load Ollama models:", err.message);
+        console.warn("Failed to load models:", err.message);
         return [];
     }
 }
@@ -187,6 +192,13 @@ export async function testOllamaConnection(url) {
     return request("/settings/test-ollama", {
         method: "POST",
         body: JSON.stringify({ url: url || undefined }),
+    });
+}
+
+export async function testDeepSeekConnection({ apiKey, baseUrl } = {}) {
+    return request("/settings/test-deepseek", {
+        method: "POST",
+        body: JSON.stringify({ apiKey: apiKey || undefined, baseUrl: baseUrl || undefined }),
     });
 }
 

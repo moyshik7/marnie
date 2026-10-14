@@ -72,7 +72,9 @@ router.post("/consolidate", async (req, res) => {
     }
 
     try {
-        const result = await brain.consolidateMemory({ conversationId: targetConvId, model });
+        const conv = db.prepare("SELECT * FROM conversations WHERE id = ?").get(targetConvId);
+        const provider = req.body.provider || conv?.provider;
+        const result = await brain.consolidateMemory({ conversationId: targetConvId, model: model || conv?.model, provider });
         res.json(result);
     } catch (err) {
         res.status(500).json({ error: err.message });

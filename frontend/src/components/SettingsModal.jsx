@@ -1,15 +1,23 @@
-import React, { useState, useEffect } from "react";
-import { X, Check, AlertCircle, Bell, Cpu, Database, RefreshCw, BotIcon, Globe, Brain, Edit3, FileText } from "lucide-react";
-import { getSettings, updateSettings, testOllamaConnection, testDiscordAlert, getCustomApiBase, setCustomApiBase, listModels, getBrainMemory, saveBrainMemory, consolidateBrainMemory } from "../services/api";
+import React, { useState, useEffect, useRef } from "react";
+import { X, Check, AlertCircle, Bell, Cpu, Database, RefreshCw, BotIcon, Globe, Brain, Edit3, FileText, Eye, EyeOff, Key, Sparkles, Server } from "lucide-react";
+import { getSettings, updateSettings, testOllamaConnection, testDeepSeekConnection, testDiscordAlert, getCustomApiBase, setCustomApiBase, listModels, getBrainMemory, saveBrainMemory, consolidateBrainMemory } from "../services/api";
 
 export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, currentModel, onModelChanged }) {
     const [activeTab, setActiveTab] = useState("ollama");
     const [loading, setLoading] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
 
+    // Provider selection state
+    const [selectedProvider, setSelectedProvider] = useState("ollama");
+
     // Form states
     const [ollamaUrl, setOllamaUrl] = useState("http://localhost:11434");
     const [defaultModel, setDefaultModel] = useState("llama3.2");
+    const [deepseekApiKey, setDeepseekApiKey] = useState("");
+    const [showDeepseekKey, setShowDeepseekKey] = useState(false);
+    const [deepseekBaseUrl, setDeepseekBaseUrl] = useState("https://api.deepseek.com");
+    const [deepseekModel, setDeepseekModel] = useState("deepseek-chat");
+
     const [availableModels, setAvailableModels] = useState([]);
     const [discordWebhook, setDiscordWebhook] = useState("");
     const [searxngUrl, setSearxngUrl] = useState("http://localhost:8080");
@@ -29,8 +37,14 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
     // Test states
     const [ollamaTesting, setOllamaTesting] = useState(false);
     const [ollamaStatus, setOllamaStatus] = useState(null);
+    const [deepseekTesting, setDeepseekTesting] = useState(false);
+    const [deepseekStatus, setDeepseekStatus] = useState(null);
     const [discordTesting, setDiscordTesting] = useState(false);
     const [discordStatus, setDiscordStatus] = useState(null);
+
+    // Real-time auto-saving status
+    const [autoSaveStatus, setAutoSaveStatus] = useState("idle"); // "idle" | "saving" | "saved" | "error"
+    const autoSaveTimerRef = useRef(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -44,8 +58,13 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
             setLoading(true);
             const data = await getSettings();
             const s = data.settings || {};
+            const prov = s.default_provider || "ollama";
+            setSelectedProvider(prov);
             if (s.ollama_base_url) setOllamaUrl(s.ollama_base_url);
             if (s.default_model) setDefaultModel(s.default_model);
+            if (s.deepseek_api_key) setDeepseekApiKey(s.deepseek_api_key);
+            if (s.deepseek_base_url) setDeepseekBaseUrl(s.deepseek_base_url);
+            if (s.deepseek_model) setDeepseekModel(s.deepseek_model);
             if (s.discord_webhook_url) setDiscordWebhook(s.discord_webhook_url);
             if (s.searxng_url) setSearxngUrl(s.searxng_url);
             if (s.search_provider) setSearchProvider(s.search_provider);
@@ -54,8 +73,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
             if (s.brain_enabled !== undefined) setBrainEnabled(s.brain_enabled !== "false");
             if (s.system_prompt) setSystemPrompt(s.system_prompt);
 
-            // fetch models
-            const models = await listModels();
+            // fetch models for active provider
+            const models = await listModels(prov);
             if (models.length) setAvailableModels(models);
 
             // fetch persistent brain memory
@@ -76,11 +95,98 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
         }
     };
 
+    // Real-time persistence helper
+    const performSave = async (overrides = {}) => {
+        setAutoSaveStatus("saving");
+        try {
+            const providerToSave = overrides.selectedProvider ?? selectedProvider;
+            const ollamaUrlToSave = overrides.ollamaUrl ?? ollamaUrl;
+            const defaultModelToSave = overrides.defaultModel ?? defaultModel;
+            const deepseekKeyToSave = overrides.deepseekApiKey ?? deepseekApiKey;
+            const deepseekUrlToSave = overrides.deepseekBaseUrl ?? deepseekBaseUrl;
+            const deepseekModelToSave = overrides.deepseekModel ?? deepseekModel;
+            const discordWebhookToSave = overrides.discordWebhook ?? discordWebhook;
+            const searxngUrlToSave = overrides.searxngUrl ?? searxngUrl;
+            const searchProviderToSave = overrides.searchProvider ?? searchProvider;
+            const deepResearchEnabledToSave = overrides.deepResearchEnabled ?? deepResearchEnabled;
+            const agentModeEnabledToSave = overrides.agentModeEnabled ?? agentModeEnabled;
+            const brainEnabledToSave = overrides.brainEnabled ?? brainEnabled;
+            const systemPromptToSave = overrides.systemPrompt ?? systemPrompt;
+
+            const payload = {
+                default_provider: providerToSave,
+                ollama_base_url: ollamaUrlToSave,
+                default_model: defaultModelToSave,
+                deepseek_api_key: deepseekKeyToSave,
+                deepseek_base_url: deepseekUrlToSave,
+                deepseek_model: deepseekModelToSave,
+                discord_webhook_url: discordWebhookToSave,
+                searxng_url: searxngUrlToSave,
+                search_provider: searchProviderToSave,
+                deep_research_enabled: String(deepResearchEnabledToSave),
+                agent_mode_enabled: String(agentModeEnabledToSave),
+                brain_enabled: String(brainEnabledToSave),
+                system_prompt: systemPromptToSave,
+            };
+
+            await updateSettings(payload);
+            setAutoSaveStatus("saved");
+            setTimeout(() => setAutoSaveStatus("idle"), 2500);
+
+            if (onSettingsUpdated) {
+                onSettingsUpdated(payload);
+            }
+
+            const activeModelToReport = providerToSave === "deepseek" ? deepseekModelToSave : defaultModelToSave;
+            if (onModelChanged && activeModelToReport) {
+                onModelChanged(activeModelToReport);
+            }
+        } catch (err) {
+            console.warn("Real-time auto-save error:", err);
+            setAutoSaveStatus("error");
+        }
+    };
+
+    const triggerAutoSave = (overrides = {}, delay = 500) => {
+        setAutoSaveStatus("saving");
+        if (autoSaveTimerRef.current) {
+            clearTimeout(autoSaveTimerRef.current);
+        }
+        autoSaveTimerRef.current = setTimeout(() => {
+            performSave(overrides);
+        }, delay);
+    };
+
+    const handleProviderChange = async (newProvider) => {
+        setSelectedProvider(newProvider);
+        performSave({ selectedProvider: newProvider });
+
+        try {
+            const models = await listModels(newProvider);
+            if (models && models.length > 0) {
+                setAvailableModels(models);
+                if (newProvider === "deepseek") {
+                    if (!models.includes(deepseekModel)) {
+                        setDeepseekModel(models[0]);
+                        performSave({ selectedProvider: newProvider, deepseekModel: models[0] });
+                    }
+                } else {
+                    if (!models.includes(defaultModel)) {
+                        setDefaultModel(models[0]);
+                        performSave({ selectedProvider: newProvider, defaultModel: models[0] });
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn("Failed to load models for provider:", newProvider, err);
+        }
+    };
+
     const handleConsolidateBrain = async () => {
         setBrainConsolidating(true);
         setBrainConsolidateMsg(null);
         try {
-            const res = await consolidateBrainMemory(null, defaultModel);
+            const res = await consolidateBrainMemory(null, selectedProvider === "deepseek" ? deepseekModel : defaultModel);
             if (res.updated) {
                 setBrainContent(res.content);
                 setBrainLastUpdated(new Date().toISOString());
@@ -126,10 +232,11 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                 ok: true,
                 message: res.message || `Connected! Found ${res.models?.length || 0} models.`,
             });
-            if (res.models && res.models.length > 0) {
+            if (res.models && res.models.length > 0 && selectedProvider === "ollama") {
                 setAvailableModels(res.models);
                 if (!res.models.includes(defaultModel)) {
                     setDefaultModel(res.models[0]);
+                    performSave({ defaultModel: res.models[0] });
                 }
             }
         } catch (err) {
@@ -139,6 +246,32 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
             });
         } finally {
             setOllamaTesting(false);
+        }
+    };
+
+    const handleTestDeepSeek = async () => {
+        setDeepseekTesting(true);
+        setDeepseekStatus(null);
+        try {
+            const res = await testDeepSeekConnection({ apiKey: deepseekApiKey, baseUrl: deepseekBaseUrl });
+            setDeepseekStatus({
+                ok: true,
+                message: res.message || `Connected to DeepSeek! Key verified.`,
+            });
+            if (res.models && res.models.length > 0 && selectedProvider === "deepseek") {
+                setAvailableModels(res.models);
+                if (!res.models.includes(deepseekModel)) {
+                    setDeepseekModel(res.models[0]);
+                    performSave({ deepseekModel: res.models[0] });
+                }
+            }
+        } catch (err) {
+            setDeepseekStatus({
+                ok: false,
+                message: err.message || "DeepSeek connection failed",
+            });
+        } finally {
+            setDeepseekTesting(false);
         }
     };
 
@@ -164,36 +297,9 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
     const handleSave = async () => {
         setLoading(true);
         try {
-            await updateSettings({
-                ollama_base_url: ollamaUrl,
-                default_model: defaultModel,
-                discord_webhook_url: discordWebhook,
-                searxng_url: searxngUrl,
-                search_provider: searchProvider,
-                deep_research_enabled: String(deepResearchEnabled),
-                agent_mode_enabled: String(agentModeEnabled),
-                brain_enabled: String(brainEnabled),
-                system_prompt: systemPrompt,
-            });
-
+            await performSave();
             // Save custom API base if changed
             setCustomApiBase(apiBaseUrl);
-
-            if (onModelChanged && defaultModel) {
-                onModelChanged(defaultModel);
-            }
-
-            if (onSettingsUpdated) {
-                onSettingsUpdated({
-                    ollama_base_url: ollamaUrl,
-                    default_model: defaultModel,
-                    discord_webhook_url: discordWebhook,
-                    searxng_url: searxngUrl,
-                    search_provider: searchProvider,
-                    deep_research_enabled: deepResearchEnabled,
-                    agent_mode_enabled: agentModeEnabled,
-                });
-            }
 
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 2500);
@@ -327,115 +433,500 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                         padding: "1.5rem",
                     }}
                 >
-                    {/* TAB 1: OLLAMA */}
+                    {/* TAB 1: MODELS & PROVIDERS */}
                     {activeTab === "ollama" && (
                         <div
                             style={{
                                 display: "flex",
                                 flexDirection: "column",
-                                gap: "1.25rem",
+                                gap: "1.5rem",
                             }}
                         >
-                            <div>
-                                <label
+                            {/* Top Provider Dropdown */}
+                            <div
+                                style={{
+                                    backgroundColor: "var(--bg-secondary)",
+                                    border: "1px solid var(--border-strong)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                }}
+                            >
+                                <div
                                     style={{
-                                        display: "block",
-                                        fontSize: "0.82rem",
-                                        fontWeight: 600,
-                                        color: "var(--text-primary)",
-                                        marginBottom: "0.35rem",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        marginBottom: "0.5rem",
                                     }}
                                 >
-                                    Ollama Base URL
-                                </label>
-                                <div style={{ display: "flex", gap: "0.5rem" }}>
-                                    <input
-                                        type="text"
-                                        value={ollamaUrl}
-                                        onChange={(e) => setOllamaUrl(e.target.value)}
-                                        placeholder="http://localhost:11434"
-                                        style={{
-                                            flex: 1,
-                                            padding: "0.6rem 0.75rem",
-                                            borderRadius: "var(--radius-sm)",
-                                            border: "1px solid var(--border-strong)",
-                                            backgroundColor: "var(--bg-card)",
-                                            fontSize: "0.88rem",
-                                            outline: "none",
-                                        }}
-                                    />
-                                    <button
-                                        onClick={handleTestOllama}
-                                        disabled={ollamaTesting}
+                                    <label
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
-                                            gap: "0.4rem",
-                                            padding: "0.6rem 0.9rem",
-                                            backgroundColor: "var(--bg-card)",
-                                            border: "1px solid var(--border-strong)",
-                                            borderRadius: "var(--radius-sm)",
-                                            fontSize: "0.82rem",
-                                            fontWeight: 500,
+                                            gap: "0.45rem",
+                                            fontSize: "0.85rem",
+                                            fontWeight: 600,
                                             color: "var(--text-primary)",
                                         }}
                                     >
-                                        <RefreshCw size={14} className={ollamaTesting ? "typing-dot" : ""} />
-                                        <span>{ollamaTesting ? "Testing..." : "Test Connection"}</span>
-                                    </button>
+                                        <Cpu size={16} color="var(--accent-terracotta)" />
+                                        <span>Active AI Provider / Endpoint</span>
+                                    </label>
+                                    <span
+                                        style={{
+                                            fontSize: "0.72rem",
+                                            padding: "0.2rem 0.55rem",
+                                            borderRadius: "999px",
+                                            backgroundColor: selectedProvider === "deepseek" ? "rgba(59, 130, 246, 0.12)" : "rgba(34, 197, 94, 0.12)",
+                                            color: selectedProvider === "deepseek" ? "#2563EB" : "#16A34A",
+                                            fontWeight: 600,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "0.35rem",
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                width: "6px",
+                                                height: "6px",
+                                                borderRadius: "50%",
+                                                backgroundColor: selectedProvider === "deepseek" ? "#2563EB" : "#16A34A",
+                                                display: "inline-block",
+                                            }}
+                                        />
+                                        Active: {selectedProvider === "deepseek" ? "DeepSeek API (Cloud)" : "Ollama (Local)"}
+                                    </span>
                                 </div>
+
+                                <select
+                                    value={selectedProvider}
+                                    onChange={(e) => handleProviderChange(e.target.value)}
+                                    style={{
+                                        width: "100%",
+                                        padding: "0.65rem 0.85rem",
+                                        borderRadius: "var(--radius-sm)",
+                                        border: "1px solid var(--border-strong)",
+                                        backgroundColor: "var(--bg-card)",
+                                        color: "var(--text-primary)",
+                                        fontSize: "0.9rem",
+                                        fontWeight: 500,
+                                        outline: "none",
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    <option value="ollama">Ollama (Local / Self-hosted)</option>
+                                    <option value="deepseek">DeepSeek API (Cloud)</option>
+                                    <option value="openai" disabled>OpenAI API (Coming Soon)</option>
+                                    <option value="claude" disabled>Anthropic Claude API (Coming Soon)</option>
+                                    <option value="gemini" disabled>Google Gemini API (Coming Soon)</option>
+                                    <option value="llamacpp" disabled>llama.cpp HTTP Server (Coming Soon)</option>
+                                </select>
                                 <div
                                     style={{
                                         fontSize: "0.75rem",
                                         color: "var(--text-muted)",
-                                        marginTop: "0.35rem",
+                                        marginTop: "0.45rem",
+                                        lineHeight: 1.4,
                                     }}
                                 >
-                                    Base URL for the locally running Ollama instance or remote server.
+                                    When selected, the entire workspace (chat, streaming responses, deep research, and memory synthesis) will use this service.
                                 </div>
-
-                                {ollamaStatus && (
-                                    <div
-                                        style={{
-                                            marginTop: "0.65rem",
-                                            padding: "0.5rem 0.75rem",
-                                            borderRadius: "var(--radius-sm)",
-                                            backgroundColor: ollamaStatus.ok ? "rgba(74, 222, 128, 0.12)" : "rgba(239, 68, 68, 0.12)",
-                                            color: ollamaStatus.ok ? "#15803D" : "#DC2626",
-                                            fontSize: "0.8rem",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "0.4rem",
-                                        }}
-                                    >
-                                        {ollamaStatus.ok ? <Check size={14} /> : <AlertCircle size={14} />}
-                                        <span>{ollamaStatus.message}</span>
-                                    </div>
-                                )}
                             </div>
 
-                            <div>
+                            {/* Section 1: Ollama Configuration */}
+                            <div
+                                style={{
+                                    border: "1px solid var(--border-subtle)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                    backgroundColor: selectedProvider === "ollama" ? "var(--bg-card)" : "transparent",
+                                    opacity: selectedProvider === "ollama" ? 1 : 0.75,
+                                    transition: "opacity 0.15s ease",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        marginBottom: "0.75rem",
+                                    }}
+                                >
+                                    <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                        Ollama Configuration
+                                    </span>
+                                    <span
+                                        style={{
+                                            fontSize: "0.7rem",
+                                            fontWeight: 500,
+                                            padding: "0.15rem 0.5rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    >
+                                        Local
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <label
+                                        style={{
+                                            display: "block",
+                                            fontSize: "0.8rem",
+                                            fontWeight: 500,
+                                            color: "var(--text-secondary)",
+                                            marginBottom: "0.35rem",
+                                        }}
+                                    >
+                                        Ollama Base URL
+                                    </label>
+                                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                                        <input
+                                            type="text"
+                                            value={ollamaUrl}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setOllamaUrl(val);
+                                                triggerAutoSave({ ollamaUrl: val });
+                                            }}
+                                            placeholder="http://localhost:11434"
+                                            style={{
+                                                flex: 1,
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-card)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleTestOllama}
+                                            disabled={ollamaTesting}
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.4rem",
+                                                padding: "0.6rem 0.9rem",
+                                                backgroundColor: "var(--bg-card)",
+                                                border: "1px solid var(--border-strong)",
+                                                borderRadius: "var(--radius-sm)",
+                                                fontSize: "0.82rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-primary)",
+                                                cursor: "pointer",
+                                            }}
+                                        >
+                                            <RefreshCw size={14} className={ollamaTesting ? "typing-dot" : ""} />
+                                            <span>{ollamaTesting ? "Testing..." : "Test Connection"}</span>
+                                        </button>
+                                    </div>
+                                    <div
+                                        style={{
+                                            fontSize: "0.75rem",
+                                            color: "var(--text-muted)",
+                                            marginTop: "0.35rem",
+                                        }}
+                                    >
+                                        Base URL for locally running Ollama instance or remote server.
+                                    </div>
+
+                                    {ollamaStatus && (
+                                        <div
+                                            style={{
+                                                marginTop: "0.65rem",
+                                                padding: "0.5rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                backgroundColor: ollamaStatus.ok ? "rgba(74, 222, 128, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                                                color: ollamaStatus.ok ? "#15803D" : "#DC2626",
+                                                fontSize: "0.8rem",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.4rem",
+                                            }}
+                                        >
+                                            {ollamaStatus.ok ? <Check size={14} /> : <AlertCircle size={14} />}
+                                            <span>{ollamaStatus.message}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Section 2: DeepSeek API Configuration (Below Ollama) */}
+                            <div
+                                style={{
+                                    border: "1px solid var(--border-subtle)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                    backgroundColor: selectedProvider === "deepseek" ? "var(--bg-card)" : "transparent",
+                                    opacity: selectedProvider === "deepseek" ? 1 : 0.75,
+                                    transition: "opacity 0.15s ease",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        marginBottom: "0.75rem",
+                                    }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                            DeepSeek API Configuration
+                                        </span>
+                                        <span
+                                            style={{
+                                                fontSize: "0.68rem",
+                                                fontWeight: 600,
+                                                padding: "0.15rem 0.45rem",
+                                                borderRadius: "999px",
+                                                backgroundColor: "rgba(59, 130, 246, 0.12)",
+                                                color: "#2563EB",
+                                            }}
+                                        >
+                                            DeepSeek-V3 & R1
+                                        </span>
+                                    </div>
+                                    <span
+                                        style={{
+                                            fontSize: "0.7rem",
+                                            fontWeight: 500,
+                                            padding: "0.15rem 0.5rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    >
+                                        Cloud
+                                    </span>
+                                </div>
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                                    {/* DeepSeek API Key */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            DeepSeek API Key
+                                        </label>
+                                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                                            <div style={{ position: "relative", flex: 1 }}>
+                                                <input
+                                                    type={showDeepseekKey ? "text" : "password"}
+                                                    value={deepseekApiKey}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setDeepseekApiKey(val);
+                                                        triggerAutoSave({ deepseekApiKey: val });
+                                                    }}
+                                                    placeholder="sk-..."
+                                                    style={{
+                                                        width: "100%",
+                                                        padding: "0.6rem 2.4rem 0.6rem 0.75rem",
+                                                        borderRadius: "var(--radius-sm)",
+                                                        border: "1px solid var(--border-strong)",
+                                                        backgroundColor: "var(--bg-card)",
+                                                        color: "var(--text-primary)",
+                                                        fontSize: "0.88rem",
+                                                        outline: "none",
+                                                        fontFamily: showDeepseekKey ? "monospace" : "inherit",
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowDeepseekKey((prev) => !prev)}
+                                                    title={showDeepseekKey ? "Hide API Key" : "Show API Key"}
+                                                    style={{
+                                                        position: "absolute",
+                                                        right: "0.6rem",
+                                                        top: "50%",
+                                                        transform: "translateY(-50%)",
+                                                        background: "none",
+                                                        border: "none",
+                                                        color: "var(--text-muted)",
+                                                        cursor: "pointer",
+                                                        padding: "0.2rem",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                    }}
+                                                >
+                                                    {showDeepseekKey ? <EyeOff size={15} /> : <Eye size={15} />}
+                                                </button>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleTestDeepSeek}
+                                                disabled={deepseekTesting || !deepseekApiKey.trim()}
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "0.4rem",
+                                                    padding: "0.6rem 0.9rem",
+                                                    backgroundColor: "var(--bg-card)",
+                                                    border: "1px solid var(--border-strong)",
+                                                    borderRadius: "var(--radius-sm)",
+                                                    fontSize: "0.82rem",
+                                                    fontWeight: 500,
+                                                    color: "var(--text-primary)",
+                                                    cursor: !deepseekApiKey.trim() ? "not-allowed" : "pointer",
+                                                    opacity: !deepseekApiKey.trim() ? 0.6 : 1,
+                                                }}
+                                            >
+                                                <RefreshCw size={14} className={deepseekTesting ? "typing-dot" : ""} />
+                                                <span>{deepseekTesting ? "Verifying..." : "Verify Key"}</span>
+                                            </button>
+                                        </div>
+                                        <div
+                                            style={{
+                                                fontSize: "0.75rem",
+                                                color: "var(--text-muted)",
+                                                marginTop: "0.35rem",
+                                            }}
+                                        >
+                                            Required for DeepSeek API requests. Saved securely in local database.
+                                        </div>
+                                    </div>
+
+                                    {/* DeepSeek Custom Endpoint */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            Custom DeepSeek Endpoint URL (Optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={deepseekBaseUrl}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setDeepseekBaseUrl(val);
+                                                triggerAutoSave({ deepseekBaseUrl: val });
+                                            }}
+                                            placeholder="https://api.deepseek.com"
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-card)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                fontSize: "0.75rem",
+                                                color: "var(--text-muted)",
+                                                marginTop: "0.35rem",
+                                            }}
+                                        >
+                                            Default: <code>https://api.deepseek.com</code>. Supports OpenAI-compatible reverse proxies or gateways.
+                                        </div>
+                                    </div>
+
+                                    {deepseekStatus && (
+                                        <div
+                                            style={{
+                                                marginTop: "0.25rem",
+                                                padding: "0.5rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                backgroundColor: deepseekStatus.ok ? "rgba(74, 222, 128, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                                                color: deepseekStatus.ok ? "#15803D" : "#DC2626",
+                                                fontSize: "0.8rem",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.4rem",
+                                            }}
+                                        >
+                                            {deepseekStatus.ok ? <Check size={14} /> : <AlertCircle size={14} />}
+                                            <span>{deepseekStatus.message}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Section 3: Default Model Selection */}
+                            <div
+                                style={{
+                                    border: "1px solid var(--border-subtle)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                    backgroundColor: "var(--bg-card)",
+                                }}
+                            >
                                 <label
                                     style={{
                                         display: "block",
-                                        fontSize: "0.82rem",
+                                        fontSize: "0.85rem",
                                         fontWeight: 600,
                                         color: "var(--text-primary)",
                                         marginBottom: "0.35rem",
                                     }}
                                 >
-                                    Default Model
+                                    Default Model ({selectedProvider === "deepseek" ? "DeepSeek" : "Ollama"})
                                 </label>
-                                {availableModels.length > 0 ? (
+
+                                {selectedProvider === "deepseek" ? (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                                        <select
+                                            value={deepseekModel}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setDeepseekModel(val);
+                                                performSave({ deepseekModel: val });
+                                            }}
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-secondary)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        >
+                                            <option value="deepseek-chat">deepseek-chat (DeepSeek-V3 671B General / Fast)</option>
+                                            <option value="deepseek-reasoner">deepseek-reasoner (DeepSeek-R1 Full Chain-of-Thought)</option>
+                                            {availableModels.filter((m) => m !== "deepseek-chat" && m !== "deepseek-reasoner").map((m) => (
+                                                <option key={m} value={m}>
+                                                    {m}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : availableModels.length > 0 ? (
                                     <select
                                         value={defaultModel}
-                                        onChange={(e) => setDefaultModel(e.target.value)}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setDefaultModel(val);
+                                            performSave({ defaultModel: val });
+                                        }}
                                         style={{
                                             width: "100%",
                                             padding: "0.6rem 0.75rem",
                                             borderRadius: "var(--radius-sm)",
                                             border: "1px solid var(--border-strong)",
-                                            backgroundColor: "var(--bg-card)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-primary)",
                                             fontSize: "0.88rem",
                                             outline: "none",
                                         }}
@@ -450,27 +941,71 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                     <input
                                         type="text"
                                         value={defaultModel}
-                                        onChange={(e) => setDefaultModel(e.target.value)}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setDefaultModel(val);
+                                            triggerAutoSave({ defaultModel: val });
+                                        }}
                                         placeholder="llama3.2"
                                         style={{
                                             width: "100%",
                                             padding: "0.6rem 0.75rem",
                                             borderRadius: "var(--radius-sm)",
                                             border: "1px solid var(--border-strong)",
-                                            backgroundColor: "var(--bg-card)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-primary)",
                                             fontSize: "0.88rem",
                                             outline: "none",
                                         }}
                                     />
                                 )}
+
                                 <div
                                     style={{
                                         fontSize: "0.75rem",
                                         color: "var(--text-muted)",
-                                        marginTop: "0.35rem",
+                                        marginTop: "0.45rem",
                                     }}
                                 >
-                                    Model invoked for chat reasoning and tool selection.
+                                    Default model invoked for conversations, deep research, and workspace task execution.
+                                </div>
+                            </div>
+
+                            {/* Section 4: Upcoming Integrations (Extensible architecture) */}
+                            <div
+                                style={{
+                                    border: "1px dashed var(--border-strong)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "0.85rem 1rem",
+                                    backgroundColor: "var(--bg-secondary)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                }}
+                            >
+                                <div>
+                                    <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+                                        More Integrations Under Development
+                                    </span>
+                                    <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
+                                        Anthropic Claude, Google Gemini, OpenAI, and llama.cpp HTTP server will be available as selectable endpoints soon.
+                                    </div>
+                                </div>
+                                <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+                                    {["Claude", "Gemini", "OpenAI", "llama.cpp"].map((name) => (
+                                        <span
+                                            key={name}
+                                            style={{
+                                                fontSize: "0.68rem",
+                                                padding: "0.15rem 0.45rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-subtle)",
+                                                color: "var(--text-muted)",
+                                            }}
+                                        >
+                                            {name}
+                                        </span>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -943,19 +1478,60 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                         justifyContent: "space-between",
                     }}
                 >
-                    <div>
-                        {saveSuccess && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        {autoSaveStatus === "saving" && (
+                            <span
+                                style={{
+                                    fontSize: "0.82rem",
+                                    color: "var(--accent-terracotta)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.4rem",
+                                    fontWeight: 500,
+                                }}
+                            >
+                                <RefreshCw size={13} className="typing-dot" /> Auto-saving changes in real time...
+                            </span>
+                        )}
+                        {(autoSaveStatus === "saved" || saveSuccess) && (
                             <span
                                 style={{
                                     fontSize: "0.82rem",
                                     color: "#16A34A",
                                     display: "flex",
                                     alignItems: "center",
-                                    gap: "0.35rem",
+                                    gap: "0.4rem",
                                     fontWeight: 500,
                                 }}
                             >
-                                <Check size={14} /> Saved successfully!
+                                <Check size={14} /> Changes saved in real time
+                            </span>
+                        )}
+                        {autoSaveStatus === "idle" && !saveSuccess && (
+                            <span
+                                style={{
+                                    fontSize: "0.78rem",
+                                    color: "var(--text-muted)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.35rem",
+                                }}
+                            >
+                                <Check size={13} color="#16A34A" /> Real-time auto-save active
+                            </span>
+                        )}
+                        {autoSaveStatus === "error" && (
+                            <span
+                                style={{
+                                    fontSize: "0.82rem",
+                                    color: "#DC2626",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.4rem",
+                                    fontWeight: 500,
+                                }}
+                            >
+                                <AlertCircle size={14} /> Auto-save error
                             </span>
                         )}
                     </div>

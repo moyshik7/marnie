@@ -125,4 +125,30 @@ async function generate({ model, prompt, options = {} }) {
     return res.data;
 }
 
-module.exports = { listModels, chat, chatStream, generate };
+/**
+ * Test Ollama connectivity.
+ * @param {object} [config]
+ * @param {string} [config.url]
+ */
+async function testConnection(config = {}) {
+    const url = (config.url || BASE_URL()).replace(/\/+$/, "");
+    const res = await axios.get(`${url}/api/tags`, { timeout: 6000 });
+    const models = (res.data.models || []).map((m) => m.name);
+    return {
+        ok: true,
+        url,
+        models,
+        message: `Connected to Ollama! Found ${models.length} model(s).`,
+    };
+}
+
+module.exports = {
+    id: "ollama",
+    name: "Ollama",
+    listModels,
+    resolveModel,
+    chat,
+    chatStream,
+    generate,
+    testConnection,
+};

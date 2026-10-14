@@ -1,7 +1,7 @@
 "use strict";
 
 const db = require("../../db/index");
-const ollama = require("../providers/ollama/interact");
+const providers = require("../providers");
 const { searchWeb } = require("./webSearch");
 const reportStorage = require("./reportStorage");
 const { findFirstSourceImage } = require("./metaImageFetcher");
@@ -75,8 +75,11 @@ async function startResearchPipeline(researchId) {
     const startTime = Date.now();
     let previewImage = null;
 
+    const provider = research.provider || providers.getActiveProviderName();
+    const researchModel = research.model || providers.getDefaultModel(provider);
+
     try {
-        appendLog(researchId, `Initiating Deep Research on topic: "${research.topic}"`, "start");
+        appendLog(researchId, `Initiating Deep Research on topic: "${research.topic}" using [${provider}/${researchModel}]`, "start");
 
         // 1. Initial Research Plan and Sub-Queries
         appendLog(researchId, "Generating research breakdown, perspectives, and targeted queries...", "planning");
@@ -89,8 +92,9 @@ Topic: "${research.topic}"
 Output strictly valid JSON with an array of string queries:
 {"queries": ["query 1", "query 2"]}`;
 
-            const planRes = await ollama.chat({
-                model: research.model,
+            const planRes = await providers.chat({
+                provider,
+                model: researchModel,
                 messages: [{ role: "user", content: planPrompt }],
                 options: { temperature: 0.2 },
             });
@@ -213,8 +217,9 @@ Formatting & Mathematical Instructions:
 2. Provide LaTeX math enclosed in $...$ for inline equations and $$...$$ for block formulas whenever discussing quantitative details, metrics, formulas, or statistical concepts.
 3. Write in high-density, authoritative markdown. Avoid em dashes (use regular dashes).`;
 
-        const draftRes = await ollama.chat({
-            model: research.model,
+        const draftRes = await providers.chat({
+            provider,
+            model: researchModel,
             messages: [{ role: "user", content: draftPrompt }],
             options: { temperature: 0.3 },
         });
@@ -242,8 +247,9 @@ Review this research report critically:
 
 Provide the improved, definitive revised version in markdown. Avoid em dashes (use regular dashes).`;
 
-            const reviewRes = await ollama.chat({
-                model: research.model,
+            const reviewRes = await providers.chat({
+                provider,
+                model: researchModel,
                 messages: [{ role: "user", content: reviewPrompt }],
                 options: { temperature: 0.25 },
             });
@@ -282,8 +288,9 @@ Generate strictly valid JSON with this exact schema:
 }
 Do not include any commentary or extra text. Output strictly JSON.`;
 
-            const metaRes = await ollama.chat({
-                model: research.model,
+            const metaRes = await providers.chat({
+                provider,
+                model: researchModel,
                 messages: [{ role: "user", content: metaPrompt }],
                 options: { temperature: 0.2 },
             });

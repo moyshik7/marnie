@@ -3,6 +3,7 @@
 const router = require("express").Router();
 const { v4: uuidv4 } = require("uuid");
 const db = require("../../db/index");
+const providers = require("../../components/providers");
 const engine = require("../../components/tools/deepResearchEngine");
 const reportStorage = require("../../components/tools/reportStorage");
 
@@ -153,21 +154,18 @@ router.get("/:id", (req, res) => {
  * Body: { topic, model?, minRevisions?, maxRevisions?, maxResults? }
  */
 router.post("/", async (req, res) => {
-    const { topic, model, minRevisions = 1, maxRevisions = 3, maxResults = 5 } = req.body;
+    const { topic, model, provider, minRevisions = 1, maxRevisions = 3, maxResults = 5 } = req.body;
 
     if (!topic || typeof topic !== "string" || !topic.trim()) {
         return res.status(400).json({ error: "`topic` (string) is required" });
     }
 
     const id = uuidv4();
+    const resolvedProvider = provider || providers.getActiveProviderName();
     let resolvedModel = model;
     if (!resolvedModel) {
-        try {
-            const setting = db.prepare("SELECT value FROM settings WHERE key = 'default_model'").get();
-            if (setting?.value) resolvedModel = setting.value;
-        } catch {}
+        resolvedModel = providers.getDefaultModel(resolvedProvider);
     }
-    resolvedModel = resolvedModel || "llama3.2";
 
     const minRev = Math.max(1, parseInt(minRevisions, 10) || 1);
     const maxRev = Math.max(minRev, parseInt(maxRevisions, 10) || 3);
@@ -177,15 +175,16 @@ router.post("/", async (req, res) => {
         db.prepare(
             `
       INSERT INTO deep_researches (
-        id, topic, status, model, min_revisions, max_revisions, max_results, summary, report, logs, sources
+        id, topic, status, model, provider, min_revisions, max_revisions, max_results, summary, report, logs, sources
       ) VALUES (
-        @id, @topic, 'in_progress', @model, @min_revisions, @max_revisions, @max_results, '', '', '[]', '[]'
+        @id, @topic, 'in_progress', @model, @provider, @min_revisions, @max_revisions, @max_results, '', '', '[]', '[]'
       )
     `,
         ).run({
             id,
             topic: topic.trim(),
             model: resolvedModel,
+            provider: resolvedProvider,
             min_revisions: minRev,
             max_revisions: maxRev,
             max_results: maxRes,

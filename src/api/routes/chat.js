@@ -4,7 +4,7 @@ const router = require("express").Router();
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const db = require("../../db/index");
-const ollama = require("../../components/providers/ollama/interact");
+const providers = require("../../components/providers");
 const { executeTool, buildSystemPrompt, parseToolCalls, OLLAMA_TOOLS } = require("../../components/tools/registry");
 const { filterEmDashes, filterEmojis, normalizeAssistantText } = require("../../components/tools/emDashFilter");
 const brain = require("../../components/tools/brainMemory");
@@ -140,7 +140,7 @@ const stmtConvGet = db.prepare("SELECT * FROM conversations WHERE id = ?");
 const stmtConvList = db.prepare("SELECT * FROM conversations ORDER BY updated_at DESC");
 const stmtConvDelete = db.prepare("DELETE FROM conversations WHERE id = ?");
 const stmtConvUpdate = db.prepare(`
-  UPDATE conversations SET title=@title, model=@model, updated_at=strftime('%s','now') WHERE id=@id
+  UPDATE conversations SET title=@title, model=@model, provider=@provider, updated_at=strftime('%s','now') WHERE id=@id
 `);
 
 const stmtMsgInsert = db.prepare(`
@@ -301,20 +301,22 @@ router.get("/conversations", (_req, res) => {
  */
 router.post("/conversations", async (req, res) => {
     const id = uuidv4();
-    let { title = "New conversation", model, provider = "ollama" } = req.body;
+    let { title = "New conversation", model, provider } = req.body;
+    if (!provider) {
+        provider = providers.getActiveProviderName();
+    }
     if (!model) {
         try {
-            const setting = db.prepare("SELECT value FROM settings WHERE key = 'default_model'").get();
-            if (setting && setting.value) model = setting.value;
+            model = providers.getDefaultModel(provider);
         } catch {}
     }
     if (!model) {
         try {
-            const models = await ollama.listModels();
+            const models = await providers.listModels(provider);
             if (models.length > 0) model = models[0];
         } catch {}
     }
-    model = model || process.env.DEFAULT_MODEL || "llama3.2";
+    model = model || providers.getDefaultModel(provider);
     stmtConvCreate.run({ id, title, model, provider });
     res.status(201).json(stmtConvGet.get(id));
 });
@@ -331,14 +333,15 @@ router.get("/conversations/:id", (req, res) => {
 
 /**
  * PATCH /api/chat/conversations/:id
- * Update title or model.
+ * Update title, model, or provider.
  */
 router.patch("/conversations/:id", (req, res) => {
     const conv = stmtConvGet.get(req.params.id);
     if (!conv) return res.status(404).json({ error: "Conversation not found" });
     const title = req.body.title !== undefined ? req.body.title : conv.title;
     const model = req.body.model !== undefined ? req.body.model : conv.model;
-    stmtConvUpdate.run({ id: conv.id, title, model });
+    const provider = req.body.provider !== undefined ? req.body.provider : conv.provider || providers.getActiveProviderName();
+    stmtConvUpdate.run({ id: conv.id, title, model, provider });
     res.json(stmtConvGet.get(conv.id));
 });
 
@@ -369,7 +372,7 @@ router.post("/conversations/:id/fork", (req, res) => {
         id: newConvId,
         title: forkTitle,
         model: sourceConv.model,
-        provider: sourceConv.provider || "ollama",
+        provider: sourceConv.provider || providers.getActiveProviderName(),
     });
 
     const sourceMsgs = stmtMsgList.all(sourceConv.id);
@@ -448,8 +451,10 @@ router.post("/conversations/:id/compact", async (req, res) => {
             },
         ];
 
-        const modelToUse = conv.model || process.env.DEFAULT_MODEL || "llama3.2";
-        const llmRes = await ollama.chat({
+        const provider = conv.provider || providers.getActiveProviderName();
+        const modelToUse = conv.model || providers.getDefaultModel(provider);
+        const llmRes = await providers.chat({
+            provider,
             model: modelToUse,
             messages: summaryPrompt,
         });
@@ -589,6 +594,7 @@ router.post("/conversations/:id/complete", async (req, res) => {
             let currentMessages = [...messages];
             const maxTurns = 5;
             let turn = 0;
+            const convProvider = req.body.provider || conv.provider || providers.getActiveProviderName();
 
             while (turn < maxTurns) {
                 turn++;
@@ -598,7 +604,8 @@ router.post("/conversations/:id/complete", async (req, res) => {
                 let turnThinking = "";
                 const nativeToolCalls = [];
 
-                await ollama.chatStream({
+                await providers.chatStream({
+                    provider: convProvider,
                     model: model || conv.model,
                     messages: currentMessages,
                     options,
@@ -698,10 +705,12 @@ router.post("/conversations/:id/complete", async (req, res) => {
             let lastUsage = undefined;
             const maxTurns = 5;
             let turn = 0;
+            const convProvider = req.body.provider || conv.provider || providers.getActiveProviderName();
 
             while (turn < maxTurns) {
                 turn++;
-                const response = await ollama.chat({
+                const response = await providers.chat({
+                    provider: convProvider,
                     model: model || conv.model,
                     messages: currentMessages,
                     options,
@@ -807,10 +816,12 @@ router.post("/conversations/:id/complete", async (req, res) => {
  * Body: { messages, model?, options?, stream? }
  */
 router.post("/complete", async (req, res) => {
-    const { messages: rawMessages, model, options = {}, stream = false } = req.body;
+    const { messages: rawMessages, model, options = {}, stream = false, provider } = req.body;
     if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
         return res.status(400).json({ error: "`messages` (array) is required" });
     }
+
+    const activeProvider = provider || providers.getActiveProviderName();
 
     // Inject system prompt if not present
     const hasSystem = rawMessages.some((m) => m.role === "system");
@@ -837,8 +848,9 @@ router.post("/complete", async (req, res) => {
                 let turnThinking = "";
                 const nativeToolCalls = [];
 
-                await ollama.chatStream({
-                    model,
+                await providers.chatStream({
+                    provider: activeProvider,
+                    model: model || providers.getDefaultModel(activeProvider),
                     messages: currentMessages,
                     options,
                     tools: OLLAMA_TOOLS,
@@ -919,8 +931,9 @@ router.post("/complete", async (req, res) => {
 
             while (turn < maxTurns) {
                 turn++;
-                const response = await ollama.chat({
-                    model,
+                const response = await providers.chat({
+                    provider: activeProvider,
+                    model: model || providers.getDefaultModel(activeProvider),
                     messages: currentMessages,
                     options,
                     tools: OLLAMA_TOOLS,
@@ -999,14 +1012,15 @@ router.post("/complete", async (req, res) => {
 
 /**
  * GET /api/chat/models
- * List models available from the configured Ollama instance.
+ * List models available from the active provider or specified provider.
  */
-router.get("/models", async (_req, res) => {
+router.get("/models", async (req, res) => {
+    const provider = req.query.provider || providers.getActiveProviderName();
     try {
-        const models = await ollama.listModels();
-        res.json({ models });
+        const models = await providers.listModels(provider);
+        res.json({ provider, models });
     } catch (err) {
-        res.status(502).json({ error: "Could not reach Ollama", detail: err.message });
+        res.status(502).json({ error: `Could not reach ${provider}`, detail: err.message });
     }
 });
 

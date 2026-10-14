@@ -15,6 +15,8 @@ const stmtUpsert = db.prepare(`
     updated_at = strftime('%s','now')
 `);
 
+const providers = require("../../components/providers");
+
 // GET /api/settings
 router.get("/", (_req, res) => {
     const rows = stmtGetAll.all();
@@ -28,6 +30,14 @@ router.get("/", (_req, res) => {
     });
 });
 
+// GET /api/settings/providers
+router.get("/providers", (_req, res) => {
+    res.json({
+        providers: providers.listProviders(),
+        active: providers.getActiveProviderName(),
+    });
+});
+
 // PATCH /api/settings or POST /api/settings
 const updateSettingsHandler = (req, res) => {
     const updates = req.body;
@@ -35,7 +45,22 @@ const updateSettingsHandler = (req, res) => {
         return res.status(400).json({ error: "Body must be an object with key-value settings" });
     }
 
-    const allowedKeys = ["ollama_base_url", "default_model", "discord_webhook_url", "searxng_url", "search_provider", "deep_research_enabled", "agent_mode_enabled", "system_prompt", "brain_enabled"];
+    const allowedKeys = [
+        "default_provider",
+        "llm_provider",
+        "ollama_base_url",
+        "default_model",
+        "deepseek_api_key",
+        "deepseek_base_url",
+        "deepseek_model",
+        "discord_webhook_url",
+        "searxng_url",
+        "search_provider",
+        "deep_research_enabled",
+        "agent_mode_enabled",
+        "system_prompt",
+        "brain_enabled",
+    ];
 
     const updatedKeys = [];
     const runTransaction = db.transaction(() => {
@@ -64,23 +89,27 @@ router.post("/", updateSettingsHandler);
 
 // POST /api/settings/test-ollama
 router.post("/test-ollama", async (req, res) => {
-    let url = req.body.url;
-    if (!url) {
-        const row = stmtGet.get("ollama_base_url");
-        url = (row && row.value) || process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-    }
-    // Trim trailing slash
-    url = url.replace(/\/+$/, "");
-
     try {
-        const response = await axios.get(`${url}/api/tags`, { timeout: 5000 });
-        const models = (response.data.models || []).map((m) => m.name);
-        res.json({ ok: true, url, models, message: `Connected to Ollama! Found ${models.length} model(s).` });
+        const result = await providers.testProvider("ollama", req.body);
+        res.json(result);
     } catch (err) {
         res.status(502).json({
             ok: false,
-            url,
-            error: `Could not connect to Ollama at ${url}: ${err.message}`,
+            url: req.body?.url,
+            error: err.message,
+        });
+    }
+});
+
+// POST /api/settings/test-deepseek
+router.post("/test-deepseek", async (req, res) => {
+    try {
+        const result = await providers.testProvider("deepseek", req.body);
+        res.json(result);
+    } catch (err) {
+        res.status(502).json({
+            ok: false,
+            error: err.message,
         });
     }
 });

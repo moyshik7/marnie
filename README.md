@@ -86,7 +86,7 @@ Slash commands can be used at the beginning of any prompt. Typing `/` automatica
 - [ ] Gemini API
 - [ ] Anthropic API
 - [ ] OpenAI API
-- [ ] Deepseek API
+- [x] Deepseek API
 - [ ] Openrouter
 - [ ] Cloudflare
 - [ ] Vercel

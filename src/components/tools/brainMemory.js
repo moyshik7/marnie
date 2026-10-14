@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const { WORKSPACE_DIR } = require("../../utils/workspace");
 const db = require("../../db/index");
-const ollama = require("../providers/ollama/interact");
+const providers = require("../providers");
 
 const BRAIN_FILE_PATH = path.join(WORKSPACE_DIR, "BRAIN.md");
 
@@ -235,9 +235,13 @@ Please generate the updated, consolidated memory document for workspace/BRAIN.md
             },
         ];
 
-        // 4. Call Ollama model for memory consolidation
-        const response = await ollama.chat({
-            model: model || undefined,
+        // 4. Call active provider for memory consolidation
+        const activeProvider = (options && options.provider) || providers.getActiveProviderName();
+        const chosenModel = model || providers.getDefaultModel(activeProvider);
+
+        const response = await providers.chat({
+            provider: activeProvider,
+            model: chosenModel,
             messages: consolidationMessages,
             options: {
                 temperature: 0.3, // Lower temperature for factual memory synthesis

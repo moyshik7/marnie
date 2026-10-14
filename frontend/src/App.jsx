@@ -119,33 +119,39 @@ export default function App() {
     const initializeWorkspace = async () => {
         await checkHealth();
 
-        // 1. Fetch available models from Ollama
-        let modelsList = [];
-        try {
-            modelsList = await listModels();
-            setAvailableModels(modelsList);
-        } catch (e) {
-            console.warn("Could not load Ollama models:", e);
-        }
-
-        // 2. Fetch settings
-        let initialModel = "";
+        // 1. Fetch settings to determine active provider and default model
+        let activeProv = "ollama";
+        let configuredModel = "";
         try {
             const settingsData = await getSettings();
-            const configuredModel = settingsData?.settings?.default_model;
-            if (configuredModel && (modelsList.length === 0 || modelsList.includes(configuredModel))) {
-                initialModel = configuredModel;
-            }
+            activeProv = settingsData?.settings?.default_provider || "ollama";
+            configuredModel = activeProv === "deepseek"
+                ? (settingsData?.settings?.deepseek_model || "deepseek-chat")
+                : (settingsData?.settings?.default_model || "llama3.2");
         } catch (e) {
             console.warn("Could not load settings:", e);
         }
 
-        // Fallback: If configured model is not in available models or empty, pick first model from Ollama
+        // 2. Fetch available models for the active provider
+        let modelsList = [];
+        try {
+            modelsList = await listModels(activeProv);
+            setAvailableModels(modelsList);
+        } catch (e) {
+            console.warn(`Could not load ${activeProv} models:`, e);
+        }
+
+        let initialModel = "";
+        if (configuredModel && (modelsList.length === 0 || modelsList.includes(configuredModel))) {
+            initialModel = configuredModel;
+        }
+
+        // Fallback: If configured model is not in available models or empty, pick first model
         if (!initialModel && modelsList.length > 0) {
             initialModel = modelsList[0];
         }
         if (!initialModel) {
-            initialModel = "llama3.2";
+            initialModel = activeProv === "deepseek" ? "deepseek-chat" : "llama3.2";
         }
 
         setActiveModel(initialModel);
@@ -373,14 +379,27 @@ export default function App() {
                 )}
             </main>
 
-            {/* Settings Modal (Discord Webhook, Ollama URL, Models, Future Labs) */}
             <SettingsModal
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
                 currentModel={activeModel}
                 onModelChanged={handleModelChange}
-                onSettingsUpdated={(newSettings) => {
-                    if (newSettings.default_model) handleModelChange(newSettings.default_model);
+                onSettingsUpdated={async (newSettings) => {
+                    const prov = newSettings?.default_provider;
+                    if (prov) {
+                        try {
+                            const models = await listModels(prov);
+                            setAvailableModels(models);
+                            const modelToUse = prov === "deepseek"
+                                ? (newSettings.deepseek_model || (models.length > 0 ? models[0] : "deepseek-chat"))
+                                : (newSettings.default_model || (models.length > 0 ? models[0] : "llama3.2"));
+                            handleModelChange(modelToUse);
+                            return;
+                        } catch (e) {
+                            console.warn("Failed to refresh models on settings update:", e);
+                        }
+                    }
+                    if (newSettings?.default_model) handleModelChange(newSettings.default_model);
                 }}
             />
 

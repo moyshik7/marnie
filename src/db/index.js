@@ -104,13 +104,20 @@ try {
 try {
     db.exec("ALTER TABLE deep_researches ADD COLUMN slug TEXT;");
 } catch (_) {}
+try {
+    db.exec("ALTER TABLE deep_researches ADD COLUMN provider TEXT;");
+} catch (_) {}
 
 // Seed default settings if not exists
 const seedStmt = db.prepare(`
   INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)
 `);
+seedStmt.run("default_provider", process.env.DEFAULT_PROVIDER || "ollama");
 seedStmt.run("ollama_base_url", process.env.OLLAMA_BASE_URL || "http://localhost:11434");
 seedStmt.run("default_model", process.env.DEFAULT_MODEL || "llama3.2");
+seedStmt.run("deepseek_api_key", process.env.DEEPSEEK_API_KEY || "");
+seedStmt.run("deepseek_base_url", process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com");
+seedStmt.run("deepseek_model", process.env.DEEPSEEK_MODEL || "deepseek-chat");
 seedStmt.run("discord_webhook_url", process.env.DISCORD_WEBHOOK_URL || "");
 seedStmt.run("searxng_url", process.env.SEARXNG_URL || "http://localhost:8080");
 seedStmt.run("search_provider", process.env.SEARCH_PROVIDER || "duckduckgo");
