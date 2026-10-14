@@ -8,18 +8,7 @@ import ReportViewer from "./components/ReportViewer";
 import NotesModal from "./components/NotesModal";
 import ExpandedCapacityView from "./components/ExpandedCapacityView";
 import SearchChatsView from "./components/SearchChatsView";
-import {
-    listConversations,
-    createConversation,
-    getConversation,
-    renameConversation,
-    updateConversation,
-    deleteConversation,
-    getSettings,
-    updateSettings,
-    listModels,
-    checkOngoingResearch,
-} from "./services/api";
+import { listConversations, createConversation, getConversation, renameConversation, updateConversation, deleteConversation, getSettings, updateSettings, listModels, checkOngoingResearch } from "./services/api";
 
 export default function App() {
     // Check if directly visiting /report/:slug
@@ -130,37 +119,54 @@ export default function App() {
     const initializeWorkspace = async () => {
         await checkHealth();
 
-        // 1. Fetch available models from Ollama
-        let modelsList = [];
-        try {
-            modelsList = await listModels();
-            setAvailableModels(modelsList);
-        } catch (e) {
-            console.warn("Could not load Ollama models:", e);
-        }
-
-        // 2. Fetch settings
-        let initialModel = "";
+        // 1. Fetch settings to determine active provider and default model
+        let activeProv = "ollama";
+        let configuredModel = "";
         try {
             const settingsData = await getSettings();
-            const configuredModel = settingsData?.settings?.default_model;
-            if (
-                configuredModel &&
-                (modelsList.length === 0 ||
-                    modelsList.includes(configuredModel))
-            ) {
-                initialModel = configuredModel;
+            activeProv = settingsData?.settings?.default_provider || "ollama";
+            if (activeProv === "deepseek") {
+                configuredModel = settingsData?.settings?.deepseek_model || "deepseek-chat";
+            } else if (activeProv === "anthropic" || activeProv === "claude") {
+                configuredModel = settingsData?.settings?.anthropic_model || "claude-3-5-sonnet-20241022";
+            } else if (activeProv === "openai") {
+                configuredModel = settingsData?.settings?.openai_model || "gpt-4o";
+            } else if (activeProv === "gemini") {
+                configuredModel = settingsData?.settings?.gemini_model || "gemini-2.0-flash";
+            } else if (activeProv === "llamacpp") {
+                configuredModel = settingsData?.settings?.llamacpp_model || "default";
+            } else {
+                configuredModel = settingsData?.settings?.default_model || "llama3.2";
             }
         } catch (e) {
             console.warn("Could not load settings:", e);
         }
 
-        // Fallback: If configured model is not in available models or empty, pick first model from Ollama
+        // 2. Fetch available models for the active provider
+        let modelsList = [];
+        try {
+            modelsList = await listModels(activeProv);
+            setAvailableModels(modelsList);
+        } catch (e) {
+            console.warn(`Could not load ${activeProv} models:`, e);
+        }
+
+        let initialModel = "";
+        if (configuredModel && (modelsList.length === 0 || modelsList.includes(configuredModel))) {
+            initialModel = configuredModel;
+        }
+
+        // Fallback: If configured model is not in available models or empty, pick first model
         if (!initialModel && modelsList.length > 0) {
             initialModel = modelsList[0];
         }
         if (!initialModel) {
-            initialModel = "llama3.2";
+            if (activeProv === "deepseek") initialModel = "deepseek-chat";
+            else if (activeProv === "anthropic" || activeProv === "claude") initialModel = "claude-3-5-sonnet-20241022";
+            else if (activeProv === "openai") initialModel = "gpt-4o";
+            else if (activeProv === "gemini") initialModel = "gemini-2.0-flash";
+            else if (activeProv === "llamacpp") initialModel = "default";
+            else initialModel = "llama3.2";
         }
 
         setActiveModel(initialModel);
@@ -182,13 +188,8 @@ export default function App() {
                     setActiveConversation(current);
                     if (current.model) {
                         // Check if current.model exists in Ollama
-                        const models = modelsList.length
-                            ? modelsList
-                            : availableModels;
-                        if (
-                            models.length === 0 ||
-                            models.includes(current.model)
-                        ) {
+                        const models = modelsList.length ? modelsList : availableModels;
+                        if (models.length === 0 || models.includes(current.model)) {
                             setActiveModel(current.model);
                         }
                     }
@@ -218,18 +219,13 @@ export default function App() {
             setActiveConversation(conv);
             if (conv.model) {
                 // If the model in the conversation is valid/known, activate it
-                if (
-                    availableModels.length === 0 ||
-                    availableModels.includes(conv.model)
-                ) {
+                if (availableModels.length === 0 || availableModels.includes(conv.model)) {
                     setActiveModel(conv.model);
                 } else if (availableModels.length > 0) {
                     // If conversation had an unavailable model like llama3.2, auto-update it to active/first model
                     const modelToUse = activeModel || availableModels[0];
                     setActiveModel(modelToUse);
-                    updateConversation(id, { model: modelToUse }).catch(
-                        console.warn,
-                    );
+                    updateConversation(id, { model: modelToUse }).catch(console.warn);
                 }
             }
         } catch (err) {
@@ -243,16 +239,8 @@ export default function App() {
 
         // 1. Update active conversation in state and SQLite
         if (activeConversationId) {
-            setActiveConversation((prev) =>
-                prev ? { ...prev, model: newModel } : prev,
-            );
-            setConversations((prev) =>
-                prev.map((c) =>
-                    c.id === activeConversationId
-                        ? { ...c, model: newModel }
-                        : c,
-                ),
-            );
+            setActiveConversation((prev) => (prev ? { ...prev, model: newModel } : prev));
+            setConversations((prev) => prev.map((c) => (c.id === activeConversationId ? { ...c, model: newModel } : c)));
             try {
                 await updateConversation(activeConversationId, {
                     model: newModel,
@@ -272,13 +260,8 @@ export default function App() {
 
     const handleNewConversation = async () => {
         try {
-            const modelToUse =
-                activeModel ||
-                (availableModels.length > 0 ? availableModels[0] : "llama3.2");
-            const newConv = await createConversation(
-                "New conversation",
-                modelToUse,
-            );
+            const modelToUse = activeModel || (availableModels.length > 0 ? availableModels[0] : "llama3.2");
+            const newConv = await createConversation("New conversation", modelToUse);
             await refreshConversations(modelToUse);
             selectConversation(newConv.id, newConv);
         } catch (err) {
@@ -288,13 +271,8 @@ export default function App() {
 
     const handleDiscussResearch = async (topic) => {
         try {
-            const modelToUse =
-                activeModel ||
-                (availableModels.length > 0 ? availableModels[0] : "llama3.2");
-            const newConv = await createConversation(
-                `Discuss: ${topic.slice(0, 32)}`,
-                modelToUse,
-            );
+            const modelToUse = activeModel || (availableModels.length > 0 ? availableModels[0] : "llama3.2");
+            const newConv = await createConversation(`Discuss: ${topic.slice(0, 32)}`, modelToUse);
             await refreshConversations(modelToUse);
             selectConversation(newConv.id, newConv);
             setActiveSection("chat");
@@ -336,13 +314,7 @@ export default function App() {
     };
 
     if (reportSlug) {
-        return (
-            <ReportViewer
-                slug={reportSlug}
-                theme={theme}
-                onToggleTheme={toggleTheme}
-            />
-        );
+        return <ReportViewer slug={reportSlug} theme={theme} onToggleTheme={toggleTheme} />;
     }
 
     return (
@@ -395,15 +367,9 @@ export default function App() {
                         onResearchCountChange={(hasOngoing) => setIsResearchOngoing(hasOngoing)}
                     />
                 ) : activeSection === "capacity" ? (
-                    <ExpandedCapacityView
-                        onClose={() => setActiveSection("chat")}
-                    />
+                    <ExpandedCapacityView onClose={() => setActiveSection("chat")} />
                 ) : activeSection === "search" ? (
-                    <SearchChatsView
-                        availableModels={availableModels}
-                        onClose={() => setActiveSection("chat")}
-                        onSelectConversation={handleSelectConversation}
-                    />
+                    <SearchChatsView availableModels={availableModels} onClose={() => setActiveSection("chat")} onSelectConversation={handleSelectConversation} />
                 ) : (
                     <ChatView
                         conversation={activeConversation}
@@ -414,9 +380,7 @@ export default function App() {
                         onToggleTheme={toggleTheme}
                         onOpenTools={() => setIsToolsOpen(true)}
                         onOpenSettings={() => setIsSettingsOpen(true)}
-                        onRefreshConversations={() =>
-                            refreshConversations(activeModel)
-                        }
+                        onRefreshConversations={() => refreshConversations(activeModel)}
                         onSelectConversation={selectConversation}
                         onConversationUpdated={(updatedConv) => {
                             setActiveConversation(updatedConv);
@@ -430,23 +394,42 @@ export default function App() {
                 )}
             </main>
 
-            {/* Settings Modal (Discord Webhook, Ollama URL, Models, Future Labs) */}
             <SettingsModal
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
                 currentModel={activeModel}
                 onModelChanged={handleModelChange}
-                onSettingsUpdated={(newSettings) => {
-                    if (newSettings.default_model)
-                        handleModelChange(newSettings.default_model);
+                onSettingsUpdated={async (newSettings) => {
+                    const prov = newSettings?.default_provider;
+                    if (prov) {
+                        try {
+                            const models = await listModels(prov);
+                            let modelToUse = newSettings.default_model;
+                            if (prov === "deepseek") {
+                                modelToUse = newSettings.deepseek_model || (models.length > 0 ? models[0] : "deepseek-chat");
+                            } else if (prov === "anthropic" || prov === "claude") {
+                                modelToUse = newSettings.anthropic_model || (models.length > 0 ? models[0] : "claude-3-5-sonnet-20241022");
+                            } else if (prov === "openai") {
+                                modelToUse = newSettings.openai_model || (models.length > 0 ? models[0] : "gpt-4o");
+                            } else if (prov === "gemini") {
+                                modelToUse = newSettings.gemini_model || (models.length > 0 ? models[0] : "gemini-2.0-flash");
+                            } else if (prov === "llamacpp") {
+                                modelToUse = newSettings.llamacpp_model || (models.length > 0 ? models[0] : "default");
+                            } else {
+                                modelToUse = newSettings.default_model || (models.length > 0 ? models[0] : "llama3.2");
+                            }
+                            handleModelChange(modelToUse);
+                            return;
+                        } catch (e) {
+                            console.warn("Failed to refresh models on settings update:", e);
+                        }
+                    }
+                    if (newSettings?.default_model) handleModelChange(newSettings.default_model);
                 }}
             />
 
             {/* Tools Drawer (Tasks, Cronjobs, Bash, JS Runner, File Search) */}
-            <ToolsPanel
-                isOpen={isToolsOpen}
-                onClose={() => setIsToolsOpen(false)}
-            />
+            <ToolsPanel isOpen={isToolsOpen} onClose={() => setIsToolsOpen(false)} />
 
             {/* AI Notes & Tasks Modal (workspace/NOTES.md) */}
             <NotesModal

@@ -1,8 +1,8 @@
 ---
 name: cron-scheduler
 description: >-
-  Schedule and manage recurring background cron jobs stored persistently in SQLite.
-  Supports executing bash commands, sending Discord notifications, or triggering HTTP webhooks.
+    Schedule and manage recurring background cron jobs stored persistently in SQLite.
+    Supports executing bash commands, sending Discord notifications, or triggering HTTP webhooks.
 ---
 
 # Cron Scheduler Skill
@@ -10,6 +10,7 @@ description: >-
 Schedules persistent background cron jobs using standard 5-field cron expressions (e.g. `*/5 * * * *`, `0 9 * * *`).
 
 ## When to Use
+
 - Scheduling recurring server tasks (health checks, database backups, cache pruning).
 - Setting up automated periodic Discord alerts or morning briefings.
 - Recurring HTTP webhook pings.
@@ -33,9 +34,11 @@ Schedules persistent background cron jobs using standard 5-field cron expression
 ```
 
 ### Supported `action_type` values:
+
 - `bash`: Runs `{ "command": "..." }`
 - `discord`: Sends `{ "message": "...", "title": "..." }`
 - `http`: Pings `{ "url": "...", "method": "POST" }`
 
 ### Aliases
+
 `cron_create`

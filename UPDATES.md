@@ -1,4 +1,16 @@
+## Updates on 0.6.x
+- Added several LLm providers
+    - OpenAI
+    - Anthropic
+    - Gemini
+    - Deepseek
+    - llama.cpp (local)
+- Reworked the settings popup
+- Made the ux simpler and easier
+- Fixed bugs
+
 ## Updates on 0.5.x
+
 - Dedicated SQLite Database (better-sqlite3):
     - Created capacity.js managing ./data/capacity.db separately from marnie.db.
     - Built a documents schema with automatic SQLite fts5 virtual indexing and synchronization triggers for sub-millisecond keyword and semantic search
@@ -12,13 +24,13 @@
 - Added the Expanded Capacity button with a database icon (Database) immediately above Deep Research in Sidebar.jsx with styling matching the other sidebar buttons
 - Created ExpandedCapacityView.jsx rendering in the main view area (just like ChatView and DeepResearchView)
     - Drag-and-drop listener across the window for .md and .txt files with visual drag state
-    - + Upload files file picker and Copied text modal to paste text snippets directly
+    -   - Upload files file picker and Copied text modal to paste text snippets directly
     - Grid of rounded reference cards styled like the screenshot with file type badges (< > code badge for markdown and text document badge for plain text)
     - Read-only preview modal (not editable) and file deletion
 - Added the Search in chats feature to Marnie, integrated into the left sidebar and displayed in a full tab view
 
-
 ## Updates on 0.4.x
+
 - Added a text editor with markdown, latex, mermaid preview and edit mode
 - Edited / Created files can be viewed and edited in the browser
 - Bug fix: File editor edits the source code of the app and renders the app corrupted. Fixed: Now the file edit and create can only edit / create files inside the workspace directory
@@ -38,6 +50,7 @@
 - Several minor bug fixes
 
 ## Updates on 0.3.x
+
 - Updated research report page
 - Deep research can now use tools
 - Research report preview now supports latex preview

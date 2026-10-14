@@ -1,45 +1,45 @@
-import React, { useState, useEffect } from "react";
-import {
-    X,
-    Check,
-    AlertCircle,
-    Bell,
-    Cpu,
-    Database,
-    RefreshCw,
-    BotIcon,
-    Globe,
-    Brain,
-    Edit3,
-    FileText,
-} from "lucide-react";
-import {
-    getSettings,
-    updateSettings,
-    testOllamaConnection,
-    testDiscordAlert,
-    getCustomApiBase,
-    setCustomApiBase,
-    listModels,
-    getBrainMemory,
-    saveBrainMemory,
-    consolidateBrainMemory,
-} from "../services/api";
+import React, { useState, useEffect, useRef } from "react";
+import { X, Check, AlertCircle, Bell, Cpu, Database, RefreshCw, BotIcon, Globe, Brain, Edit3, FileText, Eye, EyeOff, Key, Sparkles, Server } from "lucide-react";
+import { getSettings, updateSettings, testOllamaConnection, testDeepSeekConnection, testAnthropicConnection, testOpenAIConnection, testGeminiConnection, testLlamaCppConnection, testDiscordAlert, getCustomApiBase, setCustomApiBase, listModels, getBrainMemory, saveBrainMemory, consolidateBrainMemory } from "../services/api";
 
-export default function SettingsModal({
-    isOpen,
-    onClose,
-    onSettingsUpdated,
-    currentModel,
-    onModelChanged,
-}) {
+export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, currentModel, onModelChanged }) {
     const [activeTab, setActiveTab] = useState("ollama");
     const [loading, setLoading] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
 
+    // Provider selection state
+    const [selectedProvider, setSelectedProvider] = useState("ollama");
+
     // Form states
     const [ollamaUrl, setOllamaUrl] = useState("http://localhost:11434");
     const [defaultModel, setDefaultModel] = useState("llama3.2");
+    const [deepseekApiKey, setDeepseekApiKey] = useState("");
+    const [showDeepseekKey, setShowDeepseekKey] = useState(false);
+    const [deepseekBaseUrl, setDeepseekBaseUrl] = useState("https://api.deepseek.com");
+    const [deepseekModel, setDeepseekModel] = useState("deepseek-chat");
+
+    // Anthropic form states
+    const [anthropicApiKey, setAnthropicApiKey] = useState("");
+    const [showAnthropicKey, setShowAnthropicKey] = useState(false);
+    const [anthropicBaseUrl, setAnthropicBaseUrl] = useState("https://api.anthropic.com");
+    const [anthropicModel, setAnthropicModel] = useState("claude-3-5-sonnet-20241022");
+
+    // OpenAI form states
+    const [openaiApiKey, setOpenaiApiKey] = useState("");
+    const [showOpenaiKey, setShowOpenaiKey] = useState(false);
+    const [openaiBaseUrl, setOpenaiBaseUrl] = useState("https://api.openai.com/v1");
+    const [openaiModel, setOpenaiModel] = useState("gpt-4o");
+
+    // Google Gemini form states
+    const [geminiApiKey, setGeminiApiKey] = useState("");
+    const [showGeminiKey, setShowGeminiKey] = useState(false);
+    const [geminiBaseUrl, setGeminiBaseUrl] = useState("https://generativelanguage.googleapis.com/v1beta");
+    const [geminiModel, setGeminiModel] = useState("gemini-2.0-flash");
+
+    // llama.cpp form states
+    const [llamacppUrl, setLlamacppUrl] = useState("http://localhost:8080");
+    const [llamacppModel, setLlamacppModel] = useState("default");
+
     const [availableModels, setAvailableModels] = useState([]);
     const [discordWebhook, setDiscordWebhook] = useState("");
     const [searxngUrl, setSearxngUrl] = useState("http://localhost:8080");
@@ -59,8 +59,22 @@ export default function SettingsModal({
     // Test states
     const [ollamaTesting, setOllamaTesting] = useState(false);
     const [ollamaStatus, setOllamaStatus] = useState(null);
+    const [deepseekTesting, setDeepseekTesting] = useState(false);
+    const [deepseekStatus, setDeepseekStatus] = useState(null);
+    const [anthropicTesting, setAnthropicTesting] = useState(false);
+    const [anthropicStatus, setAnthropicStatus] = useState(null);
+    const [openaiTesting, setOpenaiTesting] = useState(false);
+    const [openaiStatus, setOpenaiStatus] = useState(null);
+    const [geminiTesting, setGeminiTesting] = useState(false);
+    const [geminiStatus, setGeminiStatus] = useState(null);
+    const [llamacppTesting, setLlamacppTesting] = useState(false);
+    const [llamacppStatus, setLlamacppStatus] = useState(null);
     const [discordTesting, setDiscordTesting] = useState(false);
     const [discordStatus, setDiscordStatus] = useState(null);
+
+    // Real-time auto-saving status
+    const [autoSaveStatus, setAutoSaveStatus] = useState("idle"); // "idle" | "saving" | "saved" | "error"
+    const autoSaveTimerRef = useRef(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -74,21 +88,34 @@ export default function SettingsModal({
             setLoading(true);
             const data = await getSettings();
             const s = data.settings || {};
+            const prov = s.default_provider || "ollama";
+            setSelectedProvider(prov);
             if (s.ollama_base_url) setOllamaUrl(s.ollama_base_url);
             if (s.default_model) setDefaultModel(s.default_model);
+            if (s.deepseek_api_key) setDeepseekApiKey(s.deepseek_api_key);
+            if (s.deepseek_base_url) setDeepseekBaseUrl(s.deepseek_base_url);
+            if (s.deepseek_model) setDeepseekModel(s.deepseek_model);
+            if (s.anthropic_api_key) setAnthropicApiKey(s.anthropic_api_key);
+            if (s.anthropic_base_url) setAnthropicBaseUrl(s.anthropic_base_url);
+            if (s.anthropic_model) setAnthropicModel(s.anthropic_model);
+            if (s.openai_api_key) setOpenaiApiKey(s.openai_api_key);
+            if (s.openai_base_url) setOpenaiBaseUrl(s.openai_base_url);
+            if (s.openai_model) setOpenaiModel(s.openai_model);
+            if (s.gemini_api_key) setGeminiApiKey(s.gemini_api_key);
+            if (s.gemini_base_url) setGeminiBaseUrl(s.gemini_base_url);
+            if (s.gemini_model) setGeminiModel(s.gemini_model);
+            if (s.llamacpp_base_url) setLlamacppUrl(s.llamacpp_base_url);
+            if (s.llamacpp_model) setLlamacppModel(s.llamacpp_model);
             if (s.discord_webhook_url) setDiscordWebhook(s.discord_webhook_url);
             if (s.searxng_url) setSearxngUrl(s.searxng_url);
             if (s.search_provider) setSearchProvider(s.search_provider);
-            if (s.deep_research_enabled)
-                setDeepResearchEnabled(s.deep_research_enabled === "true");
-            if (s.agent_mode_enabled)
-                setAgentModeEnabled(s.agent_mode_enabled === "true");
-            if (s.brain_enabled !== undefined)
-                setBrainEnabled(s.brain_enabled !== "false");
+            if (s.deep_research_enabled) setDeepResearchEnabled(s.deep_research_enabled === "true");
+            if (s.agent_mode_enabled) setAgentModeEnabled(s.agent_mode_enabled === "true");
+            if (s.brain_enabled !== undefined) setBrainEnabled(s.brain_enabled !== "false");
             if (s.system_prompt) setSystemPrompt(s.system_prompt);
 
-            // fetch models
-            const models = await listModels();
+            // fetch models for active provider
+            const models = await listModels(prov);
             if (models.length) setAvailableModels(models);
 
             // fetch persistent brain memory
@@ -109,11 +136,158 @@ export default function SettingsModal({
         }
     };
 
+    // Real-time persistence helper
+    const performSave = async (overrides = {}) => {
+        setAutoSaveStatus("saving");
+        try {
+            const providerToSave = overrides.selectedProvider ?? selectedProvider;
+            const ollamaUrlToSave = overrides.ollamaUrl ?? ollamaUrl;
+            const defaultModelToSave = overrides.defaultModel ?? defaultModel;
+            const deepseekKeyToSave = overrides.deepseekApiKey ?? deepseekApiKey;
+            const deepseekUrlToSave = overrides.deepseekBaseUrl ?? deepseekBaseUrl;
+            const deepseekModelToSave = overrides.deepseekModel ?? deepseekModel;
+            const anthropicKeyToSave = overrides.anthropicApiKey ?? anthropicApiKey;
+            const anthropicUrlToSave = overrides.anthropicBaseUrl ?? anthropicBaseUrl;
+            const anthropicModelToSave = overrides.anthropicModel ?? anthropicModel;
+            const openaiKeyToSave = overrides.openaiApiKey ?? openaiApiKey;
+            const openaiUrlToSave = overrides.openaiBaseUrl ?? openaiBaseUrl;
+            const openaiModelToSave = overrides.openaiModel ?? openaiModel;
+            const geminiKeyToSave = overrides.geminiApiKey ?? geminiApiKey;
+            const geminiUrlToSave = overrides.geminiBaseUrl ?? geminiBaseUrl;
+            const geminiModelToSave = overrides.geminiModel ?? geminiModel;
+            const llamacppUrlToSave = overrides.llamacppUrl ?? llamacppUrl;
+            const llamacppModelToSave = overrides.llamacppModel ?? llamacppModel;
+            const discordWebhookToSave = overrides.discordWebhook ?? discordWebhook;
+            const searxngUrlToSave = overrides.searxngUrl ?? searxngUrl;
+            const searchProviderToSave = overrides.searchProvider ?? searchProvider;
+            const deepResearchEnabledToSave = overrides.deepResearchEnabled ?? deepResearchEnabled;
+            const agentModeEnabledToSave = overrides.agentModeEnabled ?? agentModeEnabled;
+            const brainEnabledToSave = overrides.brainEnabled ?? brainEnabled;
+            const systemPromptToSave = overrides.systemPrompt ?? systemPrompt;
+
+            const payload = {
+                default_provider: providerToSave,
+                ollama_base_url: ollamaUrlToSave,
+                default_model: defaultModelToSave,
+                deepseek_api_key: deepseekKeyToSave,
+                deepseek_base_url: deepseekUrlToSave,
+                deepseek_model: deepseekModelToSave,
+                anthropic_api_key: anthropicKeyToSave,
+                anthropic_base_url: anthropicUrlToSave,
+                anthropic_model: anthropicModelToSave,
+                openai_api_key: openaiKeyToSave,
+                openai_base_url: openaiUrlToSave,
+                openai_model: openaiModelToSave,
+                gemini_api_key: geminiKeyToSave,
+                gemini_base_url: geminiUrlToSave,
+                gemini_model: geminiModelToSave,
+                llamacpp_base_url: llamacppUrlToSave,
+                llamacpp_model: llamacppModelToSave,
+                discord_webhook_url: discordWebhookToSave,
+                searxng_url: searxngUrlToSave,
+                search_provider: searchProviderToSave,
+                deep_research_enabled: String(deepResearchEnabledToSave),
+                agent_mode_enabled: String(agentModeEnabledToSave),
+                brain_enabled: String(brainEnabledToSave),
+                system_prompt: systemPromptToSave,
+            };
+
+            await updateSettings(payload);
+            setAutoSaveStatus("saved");
+            setTimeout(() => setAutoSaveStatus("idle"), 2500);
+
+            if (onSettingsUpdated) {
+                onSettingsUpdated(payload);
+            }
+
+            let activeModelToReport = defaultModelToSave;
+            if (providerToSave === "deepseek") {
+                activeModelToReport = deepseekModelToSave;
+            } else if (providerToSave === "anthropic" || providerToSave === "claude") {
+                activeModelToReport = anthropicModelToSave;
+            } else if (providerToSave === "openai") {
+                activeModelToReport = openaiModelToSave;
+            } else if (providerToSave === "gemini") {
+                activeModelToReport = geminiModelToSave;
+            } else if (providerToSave === "llamacpp") {
+                activeModelToReport = llamacppModelToSave;
+            }
+            if (onModelChanged && activeModelToReport) {
+                onModelChanged(activeModelToReport);
+            }
+        } catch (err) {
+            console.warn("Real-time auto-save error:", err);
+            setAutoSaveStatus("error");
+        }
+    };
+
+    const triggerAutoSave = (overrides = {}, delay = 500) => {
+        setAutoSaveStatus("saving");
+        if (autoSaveTimerRef.current) {
+            clearTimeout(autoSaveTimerRef.current);
+        }
+        autoSaveTimerRef.current = setTimeout(() => {
+            performSave(overrides);
+        }, delay);
+    };
+
+    const handleProviderChange = async (newProvider) => {
+        setSelectedProvider(newProvider);
+        performSave({ selectedProvider: newProvider });
+
+        try {
+            const models = await listModels(newProvider);
+            if (models && models.length > 0) {
+                setAvailableModels(models);
+                if (newProvider === "deepseek") {
+                    if (!models.includes(deepseekModel)) {
+                        setDeepseekModel(models[0]);
+                        performSave({ selectedProvider: newProvider, deepseekModel: models[0] });
+                    }
+                } else if (newProvider === "anthropic" || newProvider === "claude") {
+                    if (!models.includes(anthropicModel)) {
+                        setAnthropicModel(models[0]);
+                        performSave({ selectedProvider: newProvider, anthropicModel: models[0] });
+                    }
+                } else if (newProvider === "openai") {
+                    if (!models.includes(openaiModel)) {
+                        setOpenaiModel(models[0]);
+                        performSave({ selectedProvider: newProvider, openaiModel: models[0] });
+                    }
+                } else if (newProvider === "gemini") {
+                    if (!models.includes(geminiModel)) {
+                        setGeminiModel(models[0]);
+                        performSave({ selectedProvider: newProvider, geminiModel: models[0] });
+                    }
+                } else if (newProvider === "llamacpp") {
+                    if (!models.includes(llamacppModel)) {
+                        setLlamacppModel(models[0]);
+                        performSave({ selectedProvider: newProvider, llamacppModel: models[0] });
+                    }
+                } else {
+                    if (!models.includes(defaultModel)) {
+                        setDefaultModel(models[0]);
+                        performSave({ selectedProvider: newProvider, defaultModel: models[0] });
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn("Failed to load models for provider:", newProvider, err);
+        }
+    };
+
     const handleConsolidateBrain = async () => {
         setBrainConsolidating(true);
         setBrainConsolidateMsg(null);
         try {
-            const res = await consolidateBrainMemory(null, defaultModel);
+            let modelForConsolidate = defaultModel;
+            if (selectedProvider === "deepseek") modelForConsolidate = deepseekModel;
+            else if (selectedProvider === "anthropic" || selectedProvider === "claude") modelForConsolidate = anthropicModel;
+            else if (selectedProvider === "openai") modelForConsolidate = openaiModel;
+            else if (selectedProvider === "gemini") modelForConsolidate = geminiModel;
+            else if (selectedProvider === "llamacpp") modelForConsolidate = llamacppModel;
+
+            const res = await consolidateBrainMemory(null, modelForConsolidate);
             if (res.updated) {
                 setBrainContent(res.content);
                 setBrainLastUpdated(new Date().toISOString());
@@ -157,14 +331,13 @@ export default function SettingsModal({
             const res = await testOllamaConnection(ollamaUrl);
             setOllamaStatus({
                 ok: true,
-                message:
-                    res.message ||
-                    `Connected! Found ${res.models?.length || 0} models.`,
+                message: res.message || `Connected! Found ${res.models?.length || 0} models.`,
             });
-            if (res.models && res.models.length > 0) {
+            if (res.models && res.models.length > 0 && selectedProvider === "ollama") {
                 setAvailableModels(res.models);
                 if (!res.models.includes(defaultModel)) {
                     setDefaultModel(res.models[0]);
+                    performSave({ defaultModel: res.models[0] });
                 }
             }
         } catch (err) {
@@ -174,6 +347,136 @@ export default function SettingsModal({
             });
         } finally {
             setOllamaTesting(false);
+        }
+    };
+
+    const handleTestDeepSeek = async () => {
+        setDeepseekTesting(true);
+        setDeepseekStatus(null);
+        try {
+            const res = await testDeepSeekConnection({ apiKey: deepseekApiKey, baseUrl: deepseekBaseUrl });
+            setDeepseekStatus({
+                ok: true,
+                message: res.message || `Connected to DeepSeek! Key verified.`,
+            });
+            if (res.models && res.models.length > 0 && selectedProvider === "deepseek") {
+                setAvailableModels(res.models);
+                if (!res.models.includes(deepseekModel)) {
+                    setDeepseekModel(res.models[0]);
+                    performSave({ deepseekModel: res.models[0] });
+                }
+            }
+        } catch (err) {
+            setDeepseekStatus({
+                ok: false,
+                message: err.message || "DeepSeek connection failed",
+            });
+        } finally {
+            setDeepseekTesting(false);
+        }
+    };
+
+    const handleTestAnthropic = async () => {
+        setAnthropicTesting(true);
+        setAnthropicStatus(null);
+        try {
+            const res = await testAnthropicConnection({ apiKey: anthropicApiKey, baseUrl: anthropicBaseUrl });
+            setAnthropicStatus({
+                ok: true,
+                message: res.message || `Connected to Anthropic! API key verified.`,
+            });
+            if (res.models && res.models.length > 0 && (selectedProvider === "anthropic" || selectedProvider === "claude")) {
+                setAvailableModels(res.models);
+                if (!res.models.includes(anthropicModel)) {
+                    setAnthropicModel(res.models[0]);
+                    performSave({ anthropicModel: res.models[0] });
+                }
+            }
+        } catch (err) {
+            setAnthropicStatus({
+                ok: false,
+                message: err.message || "Anthropic connection failed",
+            });
+        } finally {
+            setAnthropicTesting(false);
+        }
+    };
+
+    const handleTestOpenAI = async () => {
+        setOpenaiTesting(true);
+        setOpenaiStatus(null);
+        try {
+            const res = await testOpenAIConnection({ apiKey: openaiApiKey, baseUrl: openaiBaseUrl });
+            setOpenaiStatus({
+                ok: true,
+                message: res.message || `Connected to OpenAI! Key verified.`,
+            });
+            if (res.models && res.models.length > 0 && selectedProvider === "openai") {
+                setAvailableModels(res.models);
+                if (!res.models.includes(openaiModel)) {
+                    setOpenaiModel(res.models[0]);
+                    performSave({ openaiModel: res.models[0] });
+                }
+            }
+        } catch (err) {
+            setOpenaiStatus({
+                ok: false,
+                message: err.message || "OpenAI connection failed",
+            });
+        } finally {
+            setOpenaiTesting(false);
+        }
+    };
+
+    const handleTestGemini = async () => {
+        setGeminiTesting(true);
+        setGeminiStatus(null);
+        try {
+            const res = await testGeminiConnection({ apiKey: geminiApiKey, baseUrl: geminiBaseUrl });
+            setGeminiStatus({
+                ok: true,
+                message: res.message || `Connected to Google Gemini! Key verified.`,
+            });
+            if (res.models && res.models.length > 0 && selectedProvider === "gemini") {
+                setAvailableModels(res.models);
+                if (!res.models.includes(geminiModel)) {
+                    setGeminiModel(res.models[0]);
+                    performSave({ geminiModel: res.models[0] });
+                }
+            }
+        } catch (err) {
+            setGeminiStatus({
+                ok: false,
+                message: err.message || "Gemini connection failed",
+            });
+        } finally {
+            setGeminiTesting(false);
+        }
+    };
+
+    const handleTestLlamaCpp = async () => {
+        setLlamacppTesting(true);
+        setLlamacppStatus(null);
+        try {
+            const res = await testLlamaCppConnection({ url: llamacppUrl });
+            setLlamacppStatus({
+                ok: true,
+                message: res.message || `Connected to llama.cpp server!`,
+            });
+            if (res.models && res.models.length > 0 && selectedProvider === "llamacpp") {
+                setAvailableModels(res.models);
+                if (!res.models.includes(llamacppModel)) {
+                    setLlamacppModel(res.models[0]);
+                    performSave({ llamacppModel: res.models[0] });
+                }
+            }
+        } catch (err) {
+            setLlamacppStatus({
+                ok: false,
+                message: err.message || "llama.cpp connection failed",
+            });
+        } finally {
+            setLlamacppTesting(false);
         }
     };
 
@@ -199,36 +502,9 @@ export default function SettingsModal({
     const handleSave = async () => {
         setLoading(true);
         try {
-            await updateSettings({
-                ollama_base_url: ollamaUrl,
-                default_model: defaultModel,
-                discord_webhook_url: discordWebhook,
-                searxng_url: searxngUrl,
-                search_provider: searchProvider,
-                deep_research_enabled: String(deepResearchEnabled),
-                agent_mode_enabled: String(agentModeEnabled),
-                brain_enabled: String(brainEnabled),
-                system_prompt: systemPrompt,
-            });
-
+            await performSave();
             // Save custom API base if changed
             setCustomApiBase(apiBaseUrl);
-
-            if (onModelChanged && defaultModel) {
-                onModelChanged(defaultModel);
-            }
-
-            if (onSettingsUpdated) {
-                onSettingsUpdated({
-                    ollama_base_url: ollamaUrl,
-                    default_model: defaultModel,
-                    discord_webhook_url: discordWebhook,
-                    searxng_url: searxngUrl,
-                    search_provider: searchProvider,
-                    deep_research_enabled: deepResearchEnabled,
-                    agent_mode_enabled: agentModeEnabled,
-                });
-            }
 
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 2500);
@@ -293,18 +569,8 @@ export default function SettingsModal({
                                 letterSpacing: "-0.02em",
                             }}
                         >
-                            Workspace Settings & Integrations
+                            Settings & Integrations
                         </h2>
-                        <p
-                            style={{
-                                fontSize: "0.8rem",
-                                color: "var(--text-muted)",
-                                marginTop: "0.15rem",
-                            }}
-                        >
-                            Configure Ollama endpoints, Discord alerts, tools,
-                            and future agent extensions.
-                        </p>
                     </div>
                     <button
                         onClick={onClose}
@@ -316,13 +582,8 @@ export default function SettingsModal({
                             alignItems: "center",
                             justifyContent: "center",
                         }}
-                        onMouseEnter={(e) =>
-                            (e.currentTarget.style.color =
-                                "var(--text-primary)")
-                        }
-                        onMouseLeave={(e) =>
-                            (e.currentTarget.style.color = "var(--text-muted)")
-                        }
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
                     >
                         <X size={18} />
                     </button>
@@ -339,19 +600,10 @@ export default function SettingsModal({
                     }}
                 >
                     {[
-                        { id: "ollama", label: "AI", icon: Cpu },
+                        { id: "ollama", label: "Models", icon: Cpu },
                         { id: "discord", label: "Integrations", icon: Bell },
                         { id: "websearch", label: "Web Search", icon: Globe },
-                        {
-                            id: "future",
-                            label: "Research & Agents (Future)",
-                            icon: BotIcon,
-                        },
-                        {
-                            id: "storage",
-                            label: "Memory",
-                            icon: Database,
-                        },
+                        { id: "storage", label: "Memory", icon: Database },
                     ].map((tab) => {
                         const Icon = tab.icon;
                         const isActive = activeTab === tab.id;
@@ -366,12 +618,8 @@ export default function SettingsModal({
                                     padding: "0.75rem 0.9rem",
                                     fontSize: "0.85rem",
                                     fontWeight: isActive ? 600 : 400,
-                                    color: isActive
-                                        ? "var(--accent-terracotta)"
-                                        : "var(--text-secondary)",
-                                    borderBottom: isActive
-                                        ? "2px solid var(--accent-terracotta)"
-                                        : "2px solid transparent",
+                                    color: isActive ? "var(--accent-terracotta)" : "var(--text-secondary)",
+                                    borderBottom: isActive ? "2px solid var(--accent-terracotta)" : "2px solid transparent",
                                     transition: "all 0.15s ease",
                                 }}
                             >
@@ -390,139 +638,1319 @@ export default function SettingsModal({
                         padding: "1.5rem",
                     }}
                 >
-                    {/* TAB 1: OLLAMA */}
+                    {/* TAB 1: MODELS & PROVIDERS */}
                     {activeTab === "ollama" && (
                         <div
                             style={{
                                 display: "flex",
                                 flexDirection: "column",
-                                gap: "1.25rem",
+                                gap: "1.5rem",
                             }}
                         >
-                            <div>
-                                <label
+                            {/* Top Provider Dropdown */}
+                            <div
+                                style={{
+                                    backgroundColor: "var(--bg-secondary)",
+                                    border: "1px solid var(--border-strong)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                }}
+                            >
+                                <div
                                     style={{
-                                        display: "block",
-                                        fontSize: "0.82rem",
-                                        fontWeight: 600,
-                                        color: "var(--text-primary)",
-                                        marginBottom: "0.35rem",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        marginBottom: "0.5rem",
                                     }}
                                 >
-                                    Ollama Base Route URL
-                                </label>
-                                <div style={{ display: "flex", gap: "0.5rem" }}>
-                                    <input
-                                        type="text"
-                                        value={ollamaUrl}
-                                        onChange={(e) =>
-                                            setOllamaUrl(e.target.value)
-                                        }
-                                        placeholder="http://localhost:11434"
-                                        style={{
-                                            flex: 1,
-                                            padding: "0.6rem 0.75rem",
-                                            borderRadius: "var(--radius-sm)",
-                                            border: "1px solid var(--border-strong)",
-                                            backgroundColor: "var(--bg-card)",
-                                            fontSize: "0.88rem",
-                                            outline: "none",
-                                        }}
-                                    />
-                                    <button
-                                        onClick={handleTestOllama}
-                                        disabled={ollamaTesting}
+                                    <label
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
-                                            gap: "0.4rem",
-                                            padding: "0.6rem 0.9rem",
-                                            backgroundColor: "var(--bg-card)",
-                                            border: "1px solid var(--border-strong)",
-                                            borderRadius: "var(--radius-sm)",
-                                            fontSize: "0.82rem",
-                                            fontWeight: 500,
+                                            gap: "0.45rem",
+                                            fontSize: "0.85rem",
+                                            fontWeight: 600,
                                             color: "var(--text-primary)",
                                         }}
                                     >
-                                        <RefreshCw
-                                            size={14}
-                                            className={
-                                                ollamaTesting
-                                                    ? "typing-dot"
-                                                    : ""
-                                            }
-                                        />
-                                        <span>
-                                            {ollamaTesting
-                                                ? "Testing..."
-                                                : "Test Connection"}
-                                        </span>
-                                    </button>
-                                </div>
-                                <div
-                                    style={{
-                                        fontSize: "0.75rem",
-                                        color: "var(--text-muted)",
-                                        marginTop: "0.35rem",
-                                    }}
-                                >
-                                    Base URL for the locally running Ollama
-                                    instance or remote server.
-                                </div>
-
-                                {ollamaStatus && (
-                                    <div
+                                        <Cpu size={16} color="var(--accent-terracotta)" />
+                                        <span>Active LLM Provider</span>
+                                    </label>
+                                    <span
                                         style={{
-                                            marginTop: "0.65rem",
-                                            padding: "0.5rem 0.75rem",
-                                            borderRadius: "var(--radius-sm)",
-                                            backgroundColor: ollamaStatus.ok
-                                                ? "rgba(74, 222, 128, 0.12)"
-                                                : "rgba(239, 68, 68, 0.12)",
-                                            color: ollamaStatus.ok
-                                                ? "#15803D"
-                                                : "#DC2626",
-                                            fontSize: "0.8rem",
+                                            fontSize: "0.72rem",
+                                            padding: "0.2rem 0.55rem",
+                                            borderRadius: "999px",
+                                            backgroundColor: "var(--bg-tertiary)",
+                                            color:
+                                                selectedProvider === "deepseek"
+                                                    ? "#2563EB"
+                                                    : selectedProvider === "anthropic" || selectedProvider === "claude"
+                                                    ? "#D97706"
+                                                    : selectedProvider === "openai"
+                                                    ? "#10A37F"
+                                                    : selectedProvider === "gemini"
+                                                    ? "#1A73E8"
+                                                    : selectedProvider === "llamacpp"
+                                                    ? "#9333EA"
+                                                    : "#16A34A",
+                                            fontWeight: 600,
                                             display: "flex",
                                             alignItems: "center",
-                                            gap: "0.4rem",
+                                            gap: "0.35rem",
                                         }}
                                     >
-                                        {ollamaStatus.ok ? (
-                                            <Check size={14} />
-                                        ) : (
-                                            <AlertCircle size={14} />
-                                        )}
-                                        <span>{ollamaStatus.message}</span>
-                                    </div>
-                                )}
+                                        Active:{" "}
+                                        {selectedProvider === "deepseek"
+                                            ? "DeepSeek API (Cloud)"
+                                            : selectedProvider === "anthropic" || selectedProvider === "claude"
+                                            ? "Anthropic Claude (Cloud)"
+                                            : selectedProvider === "openai"
+                                            ? "OpenAI API (Cloud)"
+                                            : selectedProvider === "gemini"
+                                            ? "Google Gemini API (Cloud)"
+                                            : selectedProvider === "llamacpp"
+                                            ? "llama.cpp Server (Local)"
+                                            : "Ollama (Local)"}
+                                    </span>
+                                </div>
+
+                                <select
+                                    value={selectedProvider}
+                                    onChange={(e) => handleProviderChange(e.target.value)}
+                                    style={{
+                                        width: "100%",
+                                        padding: "0.65rem 0.85rem",
+                                        borderRadius: "var(--radius-sm)",
+                                        border: "1px solid var(--border-strong)",
+                                        backgroundColor: "var(--bg-card)",
+                                        color: "var(--text-primary)",
+                                        fontSize: "0.9rem",
+                                        fontWeight: 500,
+                                        outline: "none",
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    <option value="ollama">Ollama (Local / Self-hosted)</option>
+                                    <option value="deepseek">DeepSeek API (Cloud)</option>
+                                    <option value="anthropic">Anthropic Claude API (Cloud)</option>
+                                    <option value="openai">OpenAI API (Cloud)</option>
+                                    <option value="gemini">Google Gemini API (Cloud)</option>
+                                    <option value="llamacpp">llama.cpp HTTP Server (Local / Remote)</option>
+                                </select>
                             </div>
 
-                            <div>
+                            {/* Section 1: Ollama Configuration */}
+                            <div
+                                style={{
+                                    border: "1px solid var(--border-subtle)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                    backgroundColor: selectedProvider === "ollama" ? "var(--bg-card)" : "transparent",
+                                    opacity: selectedProvider === "ollama" ? 1 : 0.75,
+                                    transition: "opacity 0.15s ease",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        marginBottom: "0.75rem",
+                                    }}
+                                >
+                                    <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                        Ollama Configuration
+                                    </span>
+                                    <span
+                                        style={{
+                                            fontSize: "0.7rem",
+                                            fontWeight: 500,
+                                            padding: "0.15rem 0.5rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    >
+                                        Local
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <label
+                                        style={{
+                                            display: "block",
+                                            fontSize: "0.8rem",
+                                            fontWeight: 500,
+                                            color: "var(--text-secondary)",
+                                            marginBottom: "0.35rem",
+                                        }}
+                                    >
+                                        Ollama Base URL
+                                    </label>
+                                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                                        <input
+                                            type="text"
+                                            value={ollamaUrl}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setOllamaUrl(val);
+                                                triggerAutoSave({ ollamaUrl: val });
+                                            }}
+                                            placeholder="http://localhost:11434"
+                                            style={{
+                                                flex: 1,
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-card)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleTestOllama}
+                                            disabled={ollamaTesting}
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.4rem",
+                                                padding: "0.6rem 0.9rem",
+                                                backgroundColor: "var(--bg-card)",
+                                                border: "1px solid var(--border-strong)",
+                                                borderRadius: "var(--radius-sm)",
+                                                fontSize: "0.82rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-primary)",
+                                                cursor: "pointer",
+                                            }}
+                                        >
+                                            <RefreshCw size={14} className={ollamaTesting ? "typing-dot" : ""} />
+                                            <span>{ollamaTesting ? "Testing..." : "Test Connection"}</span>
+                                        </button>
+                                    </div>
+                                    <div
+                                        style={{
+                                            fontSize: "0.75rem",
+                                            color: "var(--text-muted)",
+                                            marginTop: "0.35rem",
+                                        }}
+                                    >
+                                        Base URL for locally running Ollama instance or remote server.
+                                    </div>
+
+                                    {ollamaStatus && (
+                                        <div
+                                            style={{
+                                                marginTop: "0.65rem",
+                                                padding: "0.5rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                backgroundColor: ollamaStatus.ok ? "rgba(74, 222, 128, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                                                color: ollamaStatus.ok ? "#15803D" : "#DC2626",
+                                                fontSize: "0.8rem",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.4rem",
+                                            }}
+                                        >
+                                            {ollamaStatus.ok ? <Check size={14} /> : <AlertCircle size={14} />}
+                                            <span>{ollamaStatus.message}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Section 2: DeepSeek API Configuration (Below Ollama) */}
+                            <div
+                                style={{
+                                    border: "1px solid var(--border-subtle)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                    backgroundColor: selectedProvider === "deepseek" ? "var(--bg-card)" : "transparent",
+                                    opacity: selectedProvider === "deepseek" ? 1 : 0.75,
+                                    transition: "opacity 0.15s ease",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        marginBottom: "0.75rem",
+                                    }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                            DeepSeek API
+                                        </span>
+                                    </div>
+                                    <span
+                                        style={{
+                                            fontSize: "0.7rem",
+                                            fontWeight: 500,
+                                            padding: "0.15rem 0.5rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    >
+                                        Cloud
+                                    </span>
+                                </div>
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                                    {/* DeepSeek API Key */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            DeepSeek API Key
+                                        </label>
+                                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                                            <div style={{ position: "relative", flex: 1 }}>
+                                                <input
+                                                    type={showDeepseekKey ? "text" : "password"}
+                                                    value={deepseekApiKey}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setDeepseekApiKey(val);
+                                                        triggerAutoSave({ deepseekApiKey: val });
+                                                    }}
+                                                    placeholder="sk-..."
+                                                    style={{
+                                                        width: "100%",
+                                                        padding: "0.6rem 2.4rem 0.6rem 0.75rem",
+                                                        borderRadius: "var(--radius-sm)",
+                                                        border: "1px solid var(--border-strong)",
+                                                        backgroundColor: "var(--bg-card)",
+                                                        color: "var(--text-primary)",
+                                                        fontSize: "0.88rem",
+                                                        outline: "none",
+                                                        fontFamily: showDeepseekKey ? "monospace" : "inherit",
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowDeepseekKey((prev) => !prev)}
+                                                    title={showDeepseekKey ? "Hide API Key" : "Show API Key"}
+                                                    style={{
+                                                        position: "absolute",
+                                                        right: "0.6rem",
+                                                        top: "50%",
+                                                        transform: "translateY(-50%)",
+                                                        background: "none",
+                                                        border: "none",
+                                                        color: "var(--text-muted)",
+                                                        cursor: "pointer",
+                                                        padding: "0.2rem",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                    }}
+                                                >
+                                                    {showDeepseekKey ? <EyeOff size={15} /> : <Eye size={15} />}
+                                                </button>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleTestDeepSeek}
+                                                disabled={deepseekTesting || !deepseekApiKey.trim()}
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "0.4rem",
+                                                    padding: "0.6rem 0.9rem",
+                                                    backgroundColor: "var(--bg-card)",
+                                                    border: "1px solid var(--border-strong)",
+                                                    borderRadius: "var(--radius-sm)",
+                                                    fontSize: "0.82rem",
+                                                    fontWeight: 500,
+                                                    color: "var(--text-primary)",
+                                                    cursor: !deepseekApiKey.trim() ? "not-allowed" : "pointer",
+                                                    opacity: !deepseekApiKey.trim() ? 0.6 : 1,
+                                                }}
+                                            >
+                                                <RefreshCw size={14} className={deepseekTesting ? "typing-dot" : ""} />
+                                                <span>{deepseekTesting ? "Verifying..." : "Verify Key"}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* DeepSeek Custom Endpoint */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            Custom DeepSeek Endpoint URL (Optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={deepseekBaseUrl}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setDeepseekBaseUrl(val);
+                                                triggerAutoSave({ deepseekBaseUrl: val });
+                                            }}
+                                            placeholder="https://api.deepseek.com"
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-card)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                fontSize: "0.75rem",
+                                                color: "var(--text-muted)",
+                                                marginTop: "0.35rem",
+                                            }}
+                                        >
+                                            Default: <code>https://api.deepseek.com</code>. Supports OpenAI-compatible reverse proxies or gateways.
+                                        </div>
+                                    </div>
+
+                                    {deepseekStatus && (
+                                        <div
+                                            style={{
+                                                marginTop: "0.25rem",
+                                                padding: "0.5rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                backgroundColor: deepseekStatus.ok ? "rgba(74, 222, 128, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                                                color: deepseekStatus.ok ? "#15803D" : "#DC2626",
+                                                fontSize: "0.8rem",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.4rem",
+                                            }}
+                                        >
+                                            {deepseekStatus.ok ? <Check size={14} /> : <AlertCircle size={14} />}
+                                            <span>{deepseekStatus.message}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Section: Anthropic Claude API Configuration */}
+                            <div
+                                style={{
+                                    border: "1px solid var(--border-subtle)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                    backgroundColor: (selectedProvider === "anthropic" || selectedProvider === "claude") ? "var(--bg-card)" : "transparent",
+                                    opacity: (selectedProvider === "anthropic" || selectedProvider === "claude") ? 1 : 0.75,
+                                    transition: "opacity 0.15s ease",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        marginBottom: "0.75rem",
+                                    }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                            Anthropic Claude API Configuration
+                                        </span>
+                                    </div>
+                                    <span
+                                        style={{
+                                            fontSize: "0.7rem",
+                                            fontWeight: 500,
+                                            padding: "0.15rem 0.5rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    >
+                                        Cloud
+                                    </span>
+                                </div>
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                                    {/* Anthropic API Key */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            Anthropic API Key
+                                        </label>
+                                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                                            <div style={{ position: "relative", flex: 1 }}>
+                                                <input
+                                                    type={showAnthropicKey ? "text" : "password"}
+                                                    value={anthropicApiKey}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setAnthropicApiKey(val);
+                                                        triggerAutoSave({ anthropicApiKey: val });
+                                                    }}
+                                                    placeholder="sk-ant-api03-..."
+                                                    style={{
+                                                        width: "100%",
+                                                        padding: "0.6rem 2.4rem 0.6rem 0.75rem",
+                                                        borderRadius: "var(--radius-sm)",
+                                                        border: "1px solid var(--border-strong)",
+                                                        backgroundColor: "var(--bg-card)",
+                                                        color: "var(--text-primary)",
+                                                        fontSize: "0.88rem",
+                                                        outline: "none",
+                                                        fontFamily: showAnthropicKey ? "monospace" : "inherit",
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowAnthropicKey((prev) => !prev)}
+                                                    title={showAnthropicKey ? "Hide API Key" : "Show API Key"}
+                                                    style={{
+                                                        position: "absolute",
+                                                        right: "0.6rem",
+                                                        top: "50%",
+                                                        transform: "translateY(-50%)",
+                                                        background: "none",
+                                                        border: "none",
+                                                        color: "var(--text-muted)",
+                                                        cursor: "pointer",
+                                                        padding: "0.2rem",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                    }}
+                                                >
+                                                    {showAnthropicKey ? <EyeOff size={15} /> : <Eye size={15} />}
+                                                </button>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleTestAnthropic}
+                                                disabled={anthropicTesting || !anthropicApiKey.trim()}
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "0.4rem",
+                                                    padding: "0.6rem 0.9rem",
+                                                    backgroundColor: "var(--bg-card)",
+                                                    border: "1px solid var(--border-strong)",
+                                                    borderRadius: "var(--radius-sm)",
+                                                    fontSize: "0.82rem",
+                                                    fontWeight: 500,
+                                                    color: "var(--text-primary)",
+                                                    cursor: !anthropicApiKey.trim() ? "not-allowed" : "pointer",
+                                                    opacity: !anthropicApiKey.trim() ? 0.6 : 1,
+                                                }}
+                                            >
+                                                <RefreshCw size={14} className={anthropicTesting ? "typing-dot" : ""} />
+                                                <span>{anthropicTesting ? "Verifying..." : "Verify Key"}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Anthropic Custom Endpoint */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            Custom Anthropic Endpoint URL (Optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={anthropicBaseUrl}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setAnthropicBaseUrl(val);
+                                                triggerAutoSave({ anthropicBaseUrl: val });
+                                            }}
+                                            placeholder="https://api.anthropic.com"
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-card)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                fontSize: "0.75rem",
+                                                color: "var(--text-muted)",
+                                                marginTop: "0.35rem",
+                                            }}
+                                        >
+                                            Default: <code>https://api.anthropic.com</code>. Supports reverse proxies or enterprise gateways.
+                                        </div>
+                                    </div>
+
+                                    {anthropicStatus && (
+                                        <div
+                                            style={{
+                                                marginTop: "0.25rem",
+                                                padding: "0.5rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                backgroundColor: anthropicStatus.ok ? "rgba(74, 222, 128, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                                                color: anthropicStatus.ok ? "#15803D" : "#DC2626",
+                                                fontSize: "0.8rem",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.4rem",
+                                            }}
+                                        >
+                                            {anthropicStatus.ok ? <Check size={14} /> : <AlertCircle size={14} />}
+                                            <span>{anthropicStatus.message}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Section: OpenAI API Configuration */}
+                            <div
+                                style={{
+                                    border: "1px solid var(--border-subtle)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                    backgroundColor: selectedProvider === "openai" ? "var(--bg-card)" : "transparent",
+                                    opacity: selectedProvider === "openai" ? 1 : 0.75,
+                                    transition: "opacity 0.15s ease",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        marginBottom: "0.75rem",
+                                    }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                            OpenAI API Configuration
+                                        </span>
+                                    </div>
+                                    <span
+                                        style={{
+                                            fontSize: "0.7rem",
+                                            fontWeight: 500,
+                                            padding: "0.15rem 0.5rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    >
+                                        Cloud
+                                    </span>
+                                </div>
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                                    {/* OpenAI API Key */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            OpenAI API Key
+                                        </label>
+                                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                                            <div style={{ position: "relative", flex: 1 }}>
+                                                <input
+                                                    type={showOpenaiKey ? "text" : "password"}
+                                                    value={openaiApiKey}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setOpenaiApiKey(val);
+                                                        triggerAutoSave({ openaiApiKey: val });
+                                                    }}
+                                                    placeholder="sk-proj-..."
+                                                    style={{
+                                                        width: "100%",
+                                                        padding: "0.6rem 2.4rem 0.6rem 0.75rem",
+                                                        borderRadius: "var(--radius-sm)",
+                                                        border: "1px solid var(--border-strong)",
+                                                        backgroundColor: "var(--bg-card)",
+                                                        color: "var(--text-primary)",
+                                                        fontSize: "0.88rem",
+                                                        outline: "none",
+                                                        fontFamily: showOpenaiKey ? "monospace" : "inherit",
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowOpenaiKey((prev) => !prev)}
+                                                    title={showOpenaiKey ? "Hide API Key" : "Show API Key"}
+                                                    style={{
+                                                        position: "absolute",
+                                                        right: "0.6rem",
+                                                        top: "50%",
+                                                        transform: "translateY(-50%)",
+                                                        background: "none",
+                                                        border: "none",
+                                                        color: "var(--text-muted)",
+                                                        cursor: "pointer",
+                                                        padding: "0.2rem",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                    }}
+                                                >
+                                                    {showOpenaiKey ? <EyeOff size={15} /> : <Eye size={15} />}
+                                                </button>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleTestOpenAI}
+                                                disabled={openaiTesting || !openaiApiKey.trim()}
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "0.4rem",
+                                                    padding: "0.6rem 0.9rem",
+                                                    backgroundColor: "var(--bg-card)",
+                                                    border: "1px solid var(--border-strong)",
+                                                    borderRadius: "var(--radius-sm)",
+                                                    fontSize: "0.82rem",
+                                                    fontWeight: 500,
+                                                    color: "var(--text-primary)",
+                                                    cursor: !openaiApiKey.trim() ? "not-allowed" : "pointer",
+                                                    opacity: !openaiApiKey.trim() ? 0.6 : 1,
+                                                }}
+                                            >
+                                                <RefreshCw size={14} className={openaiTesting ? "typing-dot" : ""} />
+                                                <span>{openaiTesting ? "Verifying..." : "Verify Key"}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* OpenAI Custom Endpoint */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            Custom OpenAI Endpoint URL (Optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={openaiBaseUrl}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setOpenaiBaseUrl(val);
+                                                triggerAutoSave({ openaiBaseUrl: val });
+                                            }}
+                                            placeholder="https://api.openai.com/v1"
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-card)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                fontSize: "0.75rem",
+                                                color: "var(--text-muted)",
+                                                marginTop: "0.35rem",
+                                            }}
+                                        >
+                                            Default: <code>https://api.openai.com/v1</code>. Supports OpenAI-compatible reverse proxies, Azure gateways, or Helicone.
+                                        </div>
+                                    </div>
+
+                                    {openaiStatus && (
+                                        <div
+                                            style={{
+                                                marginTop: "0.25rem",
+                                                padding: "0.5rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                backgroundColor: openaiStatus.ok ? "rgba(74, 222, 128, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                                                color: openaiStatus.ok ? "#15803D" : "#DC2626",
+                                                fontSize: "0.8rem",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.4rem",
+                                            }}
+                                        >
+                                            {openaiStatus.ok ? <Check size={14} /> : <AlertCircle size={14} />}
+                                            <span>{openaiStatus.message}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Section: Google Gemini API Configuration */}
+                            <div
+                                style={{
+                                    border: "1px solid var(--border-subtle)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                    backgroundColor: selectedProvider === "gemini" ? "var(--bg-card)" : "transparent",
+                                    opacity: selectedProvider === "gemini" ? 1 : 0.75,
+                                    transition: "opacity 0.15s ease",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        marginBottom: "0.75rem",
+                                    }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                            Google Gemini API Configuration
+                                        </span>
+                                    </div>
+                                    <span
+                                        style={{
+                                            fontSize: "0.7rem",
+                                            fontWeight: 500,
+                                            padding: "0.15rem 0.5rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    >
+                                        Cloud
+                                    </span>
+                                </div>
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                                    {/* Gemini API Key */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            Google Gemini API Key
+                                        </label>
+                                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                                            <div style={{ position: "relative", flex: 1 }}>
+                                                <input
+                                                    type={showGeminiKey ? "text" : "password"}
+                                                    value={geminiApiKey}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setGeminiApiKey(val);
+                                                        triggerAutoSave({ geminiApiKey: val });
+                                                    }}
+                                                    placeholder="AIzaSy..."
+                                                    style={{
+                                                        width: "100%",
+                                                        padding: "0.6rem 2.4rem 0.6rem 0.75rem",
+                                                        borderRadius: "var(--radius-sm)",
+                                                        border: "1px solid var(--border-strong)",
+                                                        backgroundColor: "var(--bg-card)",
+                                                        color: "var(--text-primary)",
+                                                        fontSize: "0.88rem",
+                                                        outline: "none",
+                                                        fontFamily: showGeminiKey ? "monospace" : "inherit",
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowGeminiKey((prev) => !prev)}
+                                                    title={showGeminiKey ? "Hide API Key" : "Show API Key"}
+                                                    style={{
+                                                        position: "absolute",
+                                                        right: "0.6rem",
+                                                        top: "50%",
+                                                        transform: "translateY(-50%)",
+                                                        background: "none",
+                                                        border: "none",
+                                                        color: "var(--text-muted)",
+                                                        cursor: "pointer",
+                                                        padding: "0.2rem",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                    }}
+                                                >
+                                                    {showGeminiKey ? <EyeOff size={15} /> : <Eye size={15} />}
+                                                </button>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleTestGemini}
+                                                disabled={geminiTesting || !geminiApiKey.trim()}
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "0.4rem",
+                                                    padding: "0.6rem 0.9rem",
+                                                    backgroundColor: "var(--bg-card)",
+                                                    border: "1px solid var(--border-strong)",
+                                                    borderRadius: "var(--radius-sm)",
+                                                    fontSize: "0.82rem",
+                                                    fontWeight: 500,
+                                                    color: "var(--text-primary)",
+                                                    cursor: !geminiApiKey.trim() ? "not-allowed" : "pointer",
+                                                    opacity: !geminiApiKey.trim() ? 0.6 : 1,
+                                                }}
+                                            >
+                                                <RefreshCw size={14} className={geminiTesting ? "typing-dot" : ""} />
+                                                <span>{geminiTesting ? "Verifying..." : "Verify Key"}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Gemini Custom Endpoint */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            Custom Gemini Endpoint URL (Optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={geminiBaseUrl}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setGeminiBaseUrl(val);
+                                                triggerAutoSave({ geminiBaseUrl: val });
+                                            }}
+                                            placeholder="https://generativelanguage.googleapis.com/v1beta"
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-card)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                fontSize: "0.75rem",
+                                                color: "var(--text-muted)",
+                                                marginTop: "0.35rem",
+                                            }}
+                                        >
+                                            Default: <code>https://generativelanguage.googleapis.com/v1beta</code>. Generative Language API endpoint.
+                                        </div>
+                                    </div>
+
+                                    {geminiStatus && (
+                                        <div
+                                            style={{
+                                                marginTop: "0.25rem",
+                                                padding: "0.5rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                backgroundColor: geminiStatus.ok ? "rgba(74, 222, 128, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                                                color: geminiStatus.ok ? "#15803D" : "#DC2626",
+                                                fontSize: "0.8rem",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.4rem",
+                                            }}
+                                        >
+                                            {geminiStatus.ok ? <Check size={14} /> : <AlertCircle size={14} />}
+                                            <span>{geminiStatus.message}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Section: llama.cpp Server Configuration */}
+                            <div
+                                style={{
+                                    border: "1px solid var(--border-subtle)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                    backgroundColor: selectedProvider === "llamacpp" ? "var(--bg-card)" : "transparent",
+                                    opacity: selectedProvider === "llamacpp" ? 1 : 0.75,
+                                    transition: "opacity 0.15s ease",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        marginBottom: "0.75rem",
+                                    }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                            llama.cpp Server Configuration
+                                        </span>
+                                    </div>
+                                    <span
+                                        style={{
+                                            fontSize: "0.7rem",
+                                            fontWeight: 500,
+                                            padding: "0.15rem 0.5rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    >
+                                        Local
+                                    </span>
+                                </div>
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            llama.cpp HTTP Server URL
+                                        </label>
+                                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                                            <input
+                                                type="text"
+                                                value={llamacppUrl}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setLlamacppUrl(val);
+                                                    triggerAutoSave({ llamacppUrl: val });
+                                                }}
+                                                placeholder="http://localhost:8080"
+                                                style={{
+                                                    flex: 1,
+                                                    padding: "0.6rem 0.75rem",
+                                                    borderRadius: "var(--radius-sm)",
+                                                    border: "1px solid var(--border-strong)",
+                                                    backgroundColor: "var(--bg-card)",
+                                                    color: "var(--text-primary)",
+                                                    fontSize: "0.88rem",
+                                                    outline: "none",
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleTestLlamaCpp}
+                                                disabled={llamacppTesting}
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "0.4rem",
+                                                    padding: "0.6rem 0.9rem",
+                                                    backgroundColor: "var(--bg-card)",
+                                                    border: "1px solid var(--border-strong)",
+                                                    borderRadius: "var(--radius-sm)",
+                                                    fontSize: "0.82rem",
+                                                    fontWeight: 500,
+                                                    color: "var(--text-primary)",
+                                                    cursor: "pointer",
+                                                }}
+                                            >
+                                                <RefreshCw size={14} className={llamacppTesting ? "typing-dot" : ""} />
+                                                <span>{llamacppTesting ? "Testing..." : "Test Server"}</span>
+                                            </button>
+                                        </div>
+                                        <div
+                                            style={{
+                                                fontSize: "0.75rem",
+                                                color: "var(--text-muted)",
+                                                marginTop: "0.35rem",
+                                            }}
+                                        >
+                                            Default: <code>http://localhost:8080</code>
+                                        </div>
+                                    </div>
+
+                                    {llamacppStatus && (
+                                        <div
+                                            style={{
+                                                marginTop: "0.25rem",
+                                                padding: "0.5rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                backgroundColor: llamacppStatus.ok ? "rgba(74, 222, 128, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                                                color: llamacppStatus.ok ? "#15803D" : "#DC2626",
+                                                fontSize: "0.8rem",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.4rem",
+                                            }}
+                                        >
+                                            {llamacppStatus.ok ? <Check size={14} /> : <AlertCircle size={14} />}
+                                            <span>{llamacppStatus.message}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Section: Default Model Selection */}
+                            <div
+                                style={{
+                                    border: "1px solid var(--border-subtle)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                    backgroundColor: "var(--bg-card)",
+                                }}
+                            >
                                 <label
                                     style={{
                                         display: "block",
-                                        fontSize: "0.82rem",
+                                        fontSize: "0.85rem",
                                         fontWeight: 600,
                                         color: "var(--text-primary)",
                                         marginBottom: "0.35rem",
                                     }}
                                 >
-                                    Default Model
+                                    Default Model ({
+                                        selectedProvider === "deepseek"
+                                            ? "DeepSeek"
+                                            : (selectedProvider === "anthropic" || selectedProvider === "claude")
+                                            ? "Anthropic Claude"
+                                            : selectedProvider === "openai"
+                                            ? "OpenAI"
+                                            : selectedProvider === "gemini"
+                                            ? "Google Gemini"
+                                            : selectedProvider === "llamacpp"
+                                            ? "llama.cpp"
+                                            : "Ollama"
+                                    })
                                 </label>
-                                {availableModels.length > 0 ? (
+
+                                {selectedProvider === "deepseek" ? (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                                        <select
+                                            value={deepseekModel}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setDeepseekModel(val);
+                                                performSave({ deepseekModel: val });
+                                            }}
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-secondary)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        >
+                                            <option value="deepseek-chat">deepseek-chat (DeepSeek-V3 671B General / Fast)</option>
+                                            <option value="deepseek-reasoner">deepseek-reasoner (DeepSeek-R1 Full Chain-of-Thought)</option>
+                                            {availableModels.filter((m) => m !== "deepseek-chat" && m !== "deepseek-reasoner").map((m) => (
+                                                <option key={m} value={m}>
+                                                    {m}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : (selectedProvider === "anthropic" || selectedProvider === "claude") ? (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                                        <select
+                                            value={anthropicModel}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setAnthropicModel(val);
+                                                performSave({ anthropicModel: val });
+                                            }}
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-secondary)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        >
+                                            <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet-20241022 (Claude 3.5 Sonnet - Recommended)</option>
+                                            <option value="claude-3-5-haiku-20241022">claude-3-5-haiku-20241022 (Claude 3.5 Haiku - Fast & Lightweight)</option>
+                                            <option value="claude-3-opus-20240229">claude-3-opus-20240229 (Claude 3 Opus - Complex Analysis)</option>
+                                            {availableModels.filter((m) => !["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"].includes(m)).map((m) => (
+                                                <option key={m} value={m}>
+                                                    {m}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : selectedProvider === "openai" ? (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                                        <select
+                                            value={openaiModel}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setOpenaiModel(val);
+                                                performSave({ openaiModel: val });
+                                            }}
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-secondary)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        >
+                                            <option value="gpt-4o">gpt-4o (Omni Flagship - Recommended)</option>
+                                            <option value="gpt-4o-mini">gpt-4o-mini (Fast & Affordable)</option>
+                                            <option value="o1">o1 (Full Chain-of-Thought Reasoning)</option>
+                                            <option value="o3-mini">o3-mini (High-speed STEM Reasoning)</option>
+                                            <option value="gpt-4-turbo">gpt-4-turbo (High Capacity)</option>
+                                            {availableModels.filter((m) => !["gpt-4o", "gpt-4o-mini", "o1", "o3-mini", "gpt-4-turbo"].includes(m)).map((m) => (
+                                                <option key={m} value={m}>
+                                                    {m}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : selectedProvider === "gemini" ? (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                                        <select
+                                            value={geminiModel}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setGeminiModel(val);
+                                                performSave({ geminiModel: val });
+                                            }}
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-secondary)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        >
+                                            <option value="gemini-2.0-flash">gemini-2.0-flash (Next-gen Fast & Multimodal - Recommended)</option>
+                                            <option value="gemini-2.5-flash">gemini-2.5-flash (Experimental High Efficiency)</option>
+                                            <option value="gemini-1.5-pro">gemini-1.5-pro (Complex Reasoning & Large Context)</option>
+                                            <option value="gemini-1.5-flash">gemini-1.5-flash (Fast & Lightweight)</option>
+                                            {availableModels.filter((m) => !["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-pro", "gemini-1.5-flash"].includes(m)).map((m) => (
+                                                <option key={m} value={m}>
+                                                    {m}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : selectedProvider === "llamacpp" ? (
+                                    availableModels.length > 0 ? (
+                                        <select
+                                            value={llamacppModel}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setLlamacppModel(val);
+                                                performSave({ llamacppModel: val });
+                                            }}
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-secondary)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        >
+                                            {availableModels.map((m) => (
+                                                <option key={m} value={m}>
+                                                    {m}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            value={llamacppModel}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setLlamacppModel(val);
+                                                triggerAutoSave({ llamacppModel: val });
+                                            }}
+                                            placeholder="default"
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-secondary)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        />
+                                    )
+                                ) : availableModels.length > 0 ? (
                                     <select
                                         value={defaultModel}
-                                        onChange={(e) =>
-                                            setDefaultModel(e.target.value)
-                                        }
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setDefaultModel(val);
+                                            performSave({ defaultModel: val });
+                                        }}
                                         style={{
                                             width: "100%",
                                             padding: "0.6rem 0.75rem",
                                             borderRadius: "var(--radius-sm)",
                                             border: "1px solid var(--border-strong)",
-                                            backgroundColor: "var(--bg-card)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-primary)",
                                             fontSize: "0.88rem",
                                             outline: "none",
                                         }}
@@ -537,64 +1965,56 @@ export default function SettingsModal({
                                     <input
                                         type="text"
                                         value={defaultModel}
-                                        onChange={(e) =>
-                                            setDefaultModel(e.target.value)
-                                        }
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setDefaultModel(val);
+                                            triggerAutoSave({ defaultModel: val });
+                                        }}
                                         placeholder="llama3.2"
                                         style={{
                                             width: "100%",
                                             padding: "0.6rem 0.75rem",
                                             borderRadius: "var(--radius-sm)",
                                             border: "1px solid var(--border-strong)",
-                                            backgroundColor: "var(--bg-card)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-primary)",
                                             fontSize: "0.88rem",
                                             outline: "none",
                                         }}
                                     />
                                 )}
+
                                 <div
                                     style={{
                                         fontSize: "0.75rem",
                                         color: "var(--text-muted)",
-                                        marginTop: "0.35rem",
+                                        marginTop: "0.45rem",
                                     }}
                                 >
-                                    Model invoked for chat reasoning and tool
-                                    selection.
+                                    Default model invoked for conversations, deep research, and workspace task execution.
                                 </div>
                             </div>
 
-                            <div>
-                                <label
-                                    style={{
-                                        display: "block",
-                                        fontSize: "0.82rem",
-                                        fontWeight: 600,
-                                        color: "var(--text-primary)",
-                                        marginBottom: "0.35rem",
-                                    }}
-                                >
-                                    System Prompt
-                                </label>
-                                <textarea
-                                    value={systemPrompt}
-                                    onChange={(e) =>
-                                        setSystemPrompt(e.target.value)
-                                    }
-                                    rows={4}
-                                    style={{
-                                        width: "100%",
-                                        padding: "0.6rem 0.75rem",
-                                        borderRadius: "var(--radius-sm)",
-                                        border: "1px solid var(--border-strong)",
-                                        backgroundColor: "var(--bg-card)",
-                                        fontSize: "0.85rem",
-                                        outline: "none",
-                                        resize: "vertical",
-                                        lineHeight: 1.5,
-                                    }}
-                                    placeholder="System instructions for the AI workspace assistant..."
-                                />
+                            {/* Section: Upcoming Integrations (Extensible architecture) */}
+                            <div
+                                style={{
+                                    border: "1px dashed var(--border-strong)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "0.85rem 1rem",
+                                    backgroundColor: "var(--bg-secondary)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                }}
+                            >
+                                <div>
+                                    <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+                                        More LLM sources coming soon!
+                                    </span>
+                                    <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
+                                        Todo: Mistral, Alibaba Cloud (Qwen), Openrouter, Amazon Bedrock, Cloudflare etc
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -624,9 +2044,7 @@ export default function SettingsModal({
                                     <input
                                         type="text"
                                         value={discordWebhook}
-                                        onChange={(e) =>
-                                            setDiscordWebhook(e.target.value)
-                                        }
+                                        onChange={(e) => setDiscordWebhook(e.target.value)}
                                         placeholder="https://discord.com/api/webhooks/..."
                                         style={{
                                             flex: 1,
@@ -640,10 +2058,7 @@ export default function SettingsModal({
                                     />
                                     <button
                                         onClick={handleTestDiscord}
-                                        disabled={
-                                            discordTesting ||
-                                            !discordWebhook.trim()
-                                        }
+                                        disabled={discordTesting || !discordWebhook.trim()}
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
@@ -655,24 +2070,11 @@ export default function SettingsModal({
                                             fontSize: "0.82rem",
                                             fontWeight: 500,
                                             color: "var(--text-primary)",
-                                            opacity: !discordWebhook.trim()
-                                                ? 0.6
-                                                : 1,
+                                            opacity: !discordWebhook.trim() ? 0.6 : 1,
                                         }}
                                     >
-                                        <Bell
-                                            size={14}
-                                            className={
-                                                discordTesting
-                                                    ? "typing-dot"
-                                                    : ""
-                                            }
-                                        />
-                                        <span>
-                                            {discordTesting
-                                                ? "Sending..."
-                                                : "Test Webhook"}
-                                        </span>
+                                        <Bell size={14} className={discordTesting ? "typing-dot" : ""} />
+                                        <span>{discordTesting ? "Sending..." : "Test Webhook"}</span>
                                     </button>
                                 </div>
                                 <div
@@ -682,9 +2084,7 @@ export default function SettingsModal({
                                         marginTop: "0.35rem",
                                     }}
                                 >
-                                    Channel webhook for real-time task
-                                    notifications, Scheduled Job alerts, and
-                                    error reports.
+                                    Channel webhook for real-time task notifications, Scheduled Job alerts, and error reports.
                                 </div>
                             </div>
                         </div>
@@ -710,7 +2110,8 @@ export default function SettingsModal({
                                     lineHeight: 1.5,
                                 }}
                             >
-                                <strong>Web Search Provider:</strong> Choose how Marnie retrieves real-time web results. You can switch between DuckDuckGo (instant, no setup required) and a private self-hosted SearXNG instance.
+                                <strong>Web Search Provider:</strong> Choose how Marnie retrieves real-time web results. You can switch between DuckDuckGo (instant, no setup required) and a private self-hosted SearXNG
+                                instance.
                             </div>
 
                             {/* Search Provider Selector */}
@@ -738,20 +2139,14 @@ export default function SettingsModal({
                                         style={{
                                             padding: "0.85rem 1rem",
                                             borderRadius: "var(--radius-sm)",
-                                            border: searchProvider === "duckduckgo"
-                                                ? "2px solid var(--accent-terracotta)"
-                                                : "1px solid var(--border-subtle)",
-                                            backgroundColor: searchProvider === "duckduckgo"
-                                                ? "rgba(200, 91, 56, 0.06)"
-                                                : "var(--bg-card)",
+                                            border: searchProvider === "duckduckgo" ? "2px solid var(--accent-terracotta)" : "1px solid var(--border-subtle)",
+                                            backgroundColor: searchProvider === "duckduckgo" ? "rgba(200, 91, 56, 0.06)" : "var(--bg-card)",
                                             cursor: "pointer",
                                             transition: "all 0.15s ease",
                                         }}
                                     >
                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.3rem" }}>
-                                            <span style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-primary)" }}>
-                                                DuckDuckGo
-                                            </span>
+                                            <span style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-primary)" }}>DuckDuckGo</span>
                                             <span
                                                 style={{
                                                     fontSize: "0.68rem",
@@ -765,9 +2160,7 @@ export default function SettingsModal({
                                                 Default / Ready
                                             </span>
                                         </div>
-                                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
-                                            Fast, privacy-friendly search without needing any local daemon or API key.
-                                        </div>
+                                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: 1.4 }}>Fast, privacy-friendly search without needing any local daemon or API key.</div>
                                     </div>
 
                                     <div
@@ -775,20 +2168,14 @@ export default function SettingsModal({
                                         style={{
                                             padding: "0.85rem 1rem",
                                             borderRadius: "var(--radius-sm)",
-                                            border: searchProvider === "searxng"
-                                                ? "2px solid var(--accent-terracotta)"
-                                                : "1px solid var(--border-subtle)",
-                                            backgroundColor: searchProvider === "searxng"
-                                                ? "rgba(200, 91, 56, 0.06)"
-                                                : "var(--bg-card)",
+                                            border: searchProvider === "searxng" ? "2px solid var(--accent-terracotta)" : "1px solid var(--border-subtle)",
+                                            backgroundColor: searchProvider === "searxng" ? "rgba(200, 91, 56, 0.06)" : "var(--bg-card)",
                                             cursor: "pointer",
                                             transition: "all 0.15s ease",
                                         }}
                                     >
                                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.3rem" }}>
-                                            <span style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-primary)" }}>
-                                                SearXNG
-                                            </span>
+                                            <span style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-primary)" }}>SearXNG</span>
                                             <span
                                                 style={{
                                                     fontSize: "0.68rem",
@@ -801,9 +2188,7 @@ export default function SettingsModal({
                                                 Self-Hosted
                                             </span>
                                         </div>
-                                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
-                                            Self-hosted metasearch instance aggregating 70+ search engines.
-                                        </div>
+                                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: 1.4 }}>Self-hosted metasearch instance aggregating 70+ search engines.</div>
                                     </div>
                                 </div>
                             </div>
@@ -862,270 +2247,6 @@ export default function SettingsModal({
                         </div>
                     )}
 
-                    {/* TAB 3: FUTURE FEATURES */}
-                    {activeTab === "future" && (
-                        <div
-                            style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "1.25rem",
-                            }}
-                        >
-                            <div
-                                style={{
-                                    padding: "0.85rem 1rem",
-                                    backgroundColor: "rgba(200, 91, 56, 0.08)",
-                                    border: "1px solid rgba(200, 91, 56, 0.25)",
-                                    borderRadius: "var(--radius-sm)",
-                                    fontSize: "0.82rem",
-                                    color: "var(--text-primary)",
-                                }}
-                            >
-                                <strong>Future Roadmap & Extensibility:</strong>{" "}
-                                These toggles and endpoints prepare the
-                                workspace for SearXNG private search, recursive
-                                Deep Research pipelines, and Multi-Agent
-                                Orchestration.
-                            </div>
-
-                            <div>
-                                <label
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                        fontSize: "0.82rem",
-                                        fontWeight: 600,
-                                        color: "var(--text-primary)",
-                                        marginBottom: "0.35rem",
-                                    }}
-                                >
-                                    <span>SearXNG Search Endpoint</span>
-                                    <span
-                                        style={{
-                                            fontSize: "0.7rem",
-                                            padding: "0.15rem 0.4rem",
-                                            borderRadius: "4px",
-                                            backgroundColor:
-                                                "var(--bg-tertiary)",
-                                            color: "var(--text-muted)",
-                                        }}
-                                    >
-                                        Future Todo
-                                    </span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={searxngUrl}
-                                    onChange={(e) =>
-                                        setSearxngUrl(e.target.value)
-                                    }
-                                    placeholder="http://localhost:8080"
-                                    style={{
-                                        width: "100%",
-                                        padding: "0.6rem 0.75rem",
-                                        borderRadius: "var(--radius-sm)",
-                                        border: "1px solid var(--border-strong)",
-                                        backgroundColor: "var(--bg-card)",
-                                        fontSize: "0.88rem",
-                                        outline: "none",
-                                    }}
-                                />
-                                <div
-                                    style={{
-                                        fontSize: "0.75rem",
-                                        color: "var(--text-muted)",
-                                        marginTop: "0.35rem",
-                                    }}
-                                >
-                                    Self-hosted SearXNG metasearch instance for
-                                    private, untracked web exploration.
-                                </div>
-                            </div>
-
-                            {/* Deep Research Toggle */}
-                            <div
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    padding: "0.85rem 1rem",
-                                    backgroundColor: "var(--bg-card)",
-                                    borderRadius: "var(--radius-sm)",
-                                    border: "1px solid var(--border-subtle)",
-                                }}
-                            >
-                                <div>
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "0.5rem",
-                                        }}
-                                    >
-                                        <span
-                                            style={{
-                                                fontSize: "0.88rem",
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            Deep Research Mode
-                                        </span>
-                                        <span
-                                            style={{
-                                                fontSize: "0.68rem",
-                                                padding: "0.1rem 0.4rem",
-                                                borderRadius: "4px",
-                                                backgroundColor:
-                                                    "rgba(217, 119, 6, 0.15)",
-                                                color: "var(--accent-gold)",
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            ROADMAP
-                                        </span>
-                                    </div>
-                                    <div
-                                        style={{
-                                            fontSize: "0.76rem",
-                                            color: "var(--text-muted)",
-                                            marginTop: "0.2rem",
-                                        }}
-                                    >
-                                        Multi-step query expansion, web
-                                        crawling, iterative synthesis, and
-                                        citation generation.
-                                    </div>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={deepResearchEnabled}
-                                    onChange={(e) =>
-                                        setDeepResearchEnabled(e.target.checked)
-                                    }
-                                    style={{
-                                        width: "18px",
-                                        height: "18px",
-                                        cursor: "pointer",
-                                        accentColor: "var(--accent-terracotta)",
-                                    }}
-                                />
-                            </div>
-
-                            {/* Agent Mode Toggle */}
-                            <div
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    padding: "0.85rem 1rem",
-                                    backgroundColor: "var(--bg-card)",
-                                    borderRadius: "var(--radius-sm)",
-                                    border: "1px solid var(--border-subtle)",
-                                }}
-                            >
-                                <div>
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "0.5rem",
-                                        }}
-                                    >
-                                        <span
-                                            style={{
-                                                fontSize: "0.88rem",
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            Agent Mode (Sub-Agent Spawner)
-                                        </span>
-                                        <span
-                                            style={{
-                                                fontSize: "0.68rem",
-                                                padding: "0.1rem 0.4rem",
-                                                borderRadius: "4px",
-                                                backgroundColor:
-                                                    "rgba(200, 91, 56, 0.15)",
-                                                color: "var(--accent-terracotta)",
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            ROADMAP
-                                        </span>
-                                    </div>
-                                    <div
-                                        style={{
-                                            fontSize: "0.76rem",
-                                            color: "var(--text-muted)",
-                                            marginTop: "0.2rem",
-                                        }}
-                                    >
-                                        Empower the model to break tasks into
-                                        sub-goals and invoke concurrent
-                                        specialized sub-agents.
-                                    </div>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={agentModeEnabled}
-                                    onChange={(e) =>
-                                        setAgentModeEnabled(e.target.checked)
-                                    }
-                                    style={{
-                                        width: "18px",
-                                        height: "18px",
-                                        cursor: "pointer",
-                                        accentColor: "var(--accent-terracotta)",
-                                    }}
-                                />
-                            </div>
-
-                            {/* Custom API Base */}
-                            <div>
-                                <label
-                                    style={{
-                                        display: "block",
-                                        fontSize: "0.82rem",
-                                        fontWeight: 600,
-                                        color: "var(--text-primary)",
-                                        marginBottom: "0.35rem",
-                                    }}
-                                >
-                                    Custom Backend API Base URL
-                                </label>
-                                <input
-                                    type="text"
-                                    value={apiBaseUrl}
-                                    onChange={(e) =>
-                                        setApiBaseUrl(e.target.value)
-                                    }
-                                    placeholder="/api (Default: auto-proxy)"
-                                    style={{
-                                        width: "100%",
-                                        padding: "0.6rem 0.75rem",
-                                        borderRadius: "var(--radius-sm)",
-                                        border: "1px solid var(--border-strong)",
-                                        backgroundColor: "var(--bg-card)",
-                                        fontSize: "0.88rem",
-                                        outline: "none",
-                                    }}
-                                />
-                                <div
-                                    style={{
-                                        fontSize: "0.75rem",
-                                        color: "var(--text-muted)",
-                                        marginTop: "0.35rem",
-                                    }}
-                                >
-                                    Leave empty to use default local Express
-                                    routes, or specify remote host (e.g.{" "}
-                                    <code>http://192.168.1.50:3000/api</code>).
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     {/* TAB 4: STORAGE / MEMORY */}
                     {activeTab === "storage" && (
                         <div
@@ -1161,10 +2282,7 @@ export default function SettingsModal({
                                             gap: "0.6rem",
                                         }}
                                     >
-                                        <Brain
-                                            size={20}
-                                            color="var(--accent-terracotta)"
-                                        />
+                                        <Brain size={20} color="var(--accent-terracotta)" />
                                         <div>
                                             <div
                                                 style={{
@@ -1195,19 +2313,12 @@ export default function SettingsModal({
                                             position: "relative",
                                         }}
                                     >
-                                        <input
-                                            type="checkbox"
-                                            checked={brainEnabled}
-                                            onChange={(e) => setBrainEnabled(e.target.checked)}
-                                            style={{ display: "none" }}
-                                        />
+                                        <input type="checkbox" checked={brainEnabled} onChange={(e) => setBrainEnabled(e.target.checked)} style={{ display: "none" }} />
                                         <div
                                             style={{
                                                 width: "38px",
                                                 height: "20px",
-                                                backgroundColor: brainEnabled
-                                                    ? "var(--accent-terracotta)"
-                                                    : "var(--border-strong)",
+                                                backgroundColor: brainEnabled ? "var(--accent-terracotta)" : "var(--border-strong)",
                                                 borderRadius: "10px",
                                                 position: "relative",
                                                 transition: "background-color 0.2s ease",
@@ -1237,8 +2348,7 @@ export default function SettingsModal({
                                         lineHeight: 1.6,
                                     }}
                                 >
-                                    Marnie learns and remembers your preferences, project context, and instructions over time.
-                                    After every 5 conversation messages, a background LLM call automatically synthesizes your
+                                    Marnie learns and remembers your preferences, project context, and instructions over time. After every 5 conversation messages, a background LLM call automatically synthesizes your
                                     current memory with recent interactions. This context is injected into all chat and agentic workflows.
                                 </div>
 
@@ -1290,27 +2400,6 @@ export default function SettingsModal({
                                         />
                                         <span>{brainConsolidating ? "Consolidating..." : "Consolidate Memory Now"}</span>
                                     </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setBrainEditing(!brainEditing)}
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "0.4rem",
-                                            padding: "0.45rem 0.85rem",
-                                            borderRadius: "var(--radius-sm)",
-                                            backgroundColor: brainEditing ? "var(--bg-secondary)" : "var(--bg-card)",
-                                            border: "1px solid var(--border-strong)",
-                                            color: brainEditing ? "var(--accent-terracotta)" : "var(--text-primary)",
-                                            fontSize: "0.82rem",
-                                            fontWeight: 500,
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        <Edit3 size={13} />
-                                        <span>{brainEditing ? "Hide Editor" : "View / Edit Memory"}</span>
-                                    </button>
                                 </div>
 
                                 {brainConsolidateMsg && (
@@ -1319,9 +2408,7 @@ export default function SettingsModal({
                                             padding: "0.6rem 0.85rem",
                                             borderRadius: "4px",
                                             fontSize: "0.8rem",
-                                            backgroundColor: brainConsolidateMsg.ok
-                                                ? "rgba(34, 197, 94, 0.1)"
-                                                : "rgba(239, 68, 68, 0.1)",
+                                            backgroundColor: brainConsolidateMsg.ok ? "rgba(34, 197, 94, 0.1)" : "rgba(239, 68, 68, 0.1)",
                                             border: `1px solid ${brainConsolidateMsg.ok ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.3)"}`,
                                             color: brainConsolidateMsg.ok ? "#16a34a" : "#dc2626",
                                             display: "flex",
@@ -1384,77 +2471,6 @@ export default function SettingsModal({
                                     </div>
                                 )}
                             </div>
-                            <div
-                                style={{
-                                    padding: "1.1rem",
-                                    backgroundColor: "var(--bg-secondary)",
-                                    borderRadius: "var(--radius-sm)",
-                                    border: "1px solid var(--border-subtle)",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: "0.65rem",
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "0.5rem",
-                                    }}
-                                >
-                                    <Database
-                                        size={18}
-                                        color="var(--accent-terracotta)"
-                                    />
-                                    <div
-                                        style={{
-                                            fontSize: "0.95rem",
-                                            fontWeight: 600,
-                                        }}
-                                    >
-                                        SQLite Persistent Database
-                                    </div>
-                                </div>
-                                <div
-                                    style={{
-                                        fontSize: "0.84rem",
-                                        color: "var(--text-secondary)",
-                                        lineHeight: 1.6,
-                                    }}
-                                >
-                                    All conversations, user messages, assistant
-                                    tool calls, background tasks, and scheduled
-                                    jobs are written to{" "}
-                                    <code>./data/marnie.db</code> using{" "}
-                                    <code>better-sqlite3</code> with WAL mode
-                                    enabled.
-                                </div>
-                                <div
-                                    style={{
-                                        padding: "0.5rem 0.75rem",
-                                        backgroundColor: "var(--bg-card)",
-                                        borderRadius: "4px",
-                                        fontFamily: "var(--font-mono)",
-                                        fontSize: "0.78rem",
-                                    }}
-                                >
-                                    Schema Tables: <code>conversations</code>,{" "}
-                                    <code>messages</code>, <code>tasks</code>,{" "}
-                                    <code>cron_jobs</code>,{" "}
-                                    <code>settings</code>
-                                </div>
-                            </div>
-
-                            <div
-                                style={{
-                                    fontSize: "0.8rem",
-                                    color: "var(--text-muted)",
-                                }}
-                            >
-                                Conversations are never lost when restarting the
-                                server. You can resume any chat history at any
-                                time from the left sidebar.
-                            </div>
                         </div>
                     )}
                 </div>
@@ -1470,19 +2486,47 @@ export default function SettingsModal({
                         justifyContent: "space-between",
                     }}
                 >
-                    <div>
-                        {saveSuccess && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        {autoSaveStatus === "saving" && (
+                            <span
+                                style={{
+                                    fontSize: "0.82rem",
+                                    color: "var(--accent-terracotta)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.4rem",
+                                    fontWeight: 500,
+                                }}
+                            >
+                                <RefreshCw size={13} className="typing-dot" /> Auto-saving changes in real time...
+                            </span>
+                        )}
+                        {(autoSaveStatus === "saved" || saveSuccess) && (
                             <span
                                 style={{
                                     fontSize: "0.82rem",
                                     color: "#16A34A",
                                     display: "flex",
                                     alignItems: "center",
-                                    gap: "0.35rem",
+                                    gap: "0.4rem",
                                     fontWeight: 500,
                                 }}
                             >
-                                <Check size={14} /> Saved successfully!
+                                <Check size={14} /> Changes saved in real time
+                            </span>
+                        )}
+                        {autoSaveStatus === "error" && (
+                            <span
+                                style={{
+                                    fontSize: "0.82rem",
+                                    color: "#DC2626",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.4rem",
+                                    fontWeight: 500,
+                                }}
+                            >
+                                <AlertCircle size={14} /> Auto-save error
                             </span>
                         )}
                     </div>
@@ -1512,14 +2556,8 @@ export default function SettingsModal({
                                 fontWeight: 500,
                                 boxShadow: "var(--shadow-sm)",
                             }}
-                            onMouseEnter={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                    "var(--accent-terracotta-hover)")
-                            }
-                            onMouseLeave={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                    "var(--accent-terracotta)")
-                            }
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-terracotta-hover)")}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-terracotta)")}
                         >
                             {loading ? "Saving..." : "Save Settings"}
                         </button>

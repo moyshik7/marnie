@@ -1,12 +1,12 @@
-'use strict';
+"use strict";
 
-const router = require('express').Router();
-const axios = require('axios');
-const db = require('../../db/index');
-const discord = require('../../components/tools/discord');
+const router = require("express").Router();
+const axios = require("axios");
+const db = require("../../db/index");
+const discord = require("../../components/tools/discord");
 
-const stmtGetAll = db.prepare('SELECT key, value, updated_at FROM settings');
-const stmtGet = db.prepare('SELECT key, value, updated_at FROM settings WHERE key = ?');
+const stmtGetAll = db.prepare("SELECT key, value, updated_at FROM settings");
+const stmtGet = db.prepare("SELECT key, value, updated_at FROM settings WHERE key = ?");
 const stmtUpsert = db.prepare(`
   INSERT INTO settings (key, value, updated_at)
   VALUES (@key, @value, strftime('%s','now'))
@@ -15,101 +15,184 @@ const stmtUpsert = db.prepare(`
     updated_at = strftime('%s','now')
 `);
 
+const providers = require("../../components/providers");
+
 // GET /api/settings
-router.get('/', (_req, res) => {
-  const rows = stmtGetAll.all();
-  const settings = {};
-  for (const row of rows) {
-    settings[row.key] = row.value;
-  }
-  res.json({
-    settings,
-    updated_at: rows.length ? Math.max(...rows.map(r => r.updated_at)) : null,
-  });
+router.get("/", (_req, res) => {
+    const rows = stmtGetAll.all();
+    const settings = {};
+    for (const row of rows) {
+        settings[row.key] = row.value;
+    }
+    res.json({
+        settings,
+        updated_at: rows.length ? Math.max(...rows.map((r) => r.updated_at)) : null,
+    });
+});
+
+// GET /api/settings/providers
+router.get("/providers", (_req, res) => {
+    res.json({
+        providers: providers.listProviders(),
+        active: providers.getActiveProviderName(),
+    });
 });
 
 // PATCH /api/settings or POST /api/settings
 const updateSettingsHandler = (req, res) => {
-  const updates = req.body;
-  if (!updates || typeof updates !== 'object') {
-    return res.status(400).json({ error: 'Body must be an object with key-value settings' });
-  }
-
-  const allowedKeys = [
-    'ollama_base_url',
-    'default_model',
-    'discord_webhook_url',
-    'searxng_url',
-    'search_provider',
-    'deep_research_enabled',
-    'agent_mode_enabled',
-    'system_prompt',
-    'brain_enabled',
-  ];
-
-  const updatedKeys = [];
-  const runTransaction = db.transaction(() => {
-    for (const [key, value] of Object.entries(updates)) {
-      if (allowedKeys.includes(key)) {
-        stmtUpsert.run({ key, value: String(value) });
-        updatedKeys.push(key);
-      }
+    const updates = req.body;
+    if (!updates || typeof updates !== "object") {
+        return res.status(400).json({ error: "Body must be an object with key-value settings" });
     }
-  });
 
-  runTransaction();
+    const allowedKeys = [
+        "default_provider",
+        "llm_provider",
+        "ollama_base_url",
+        "default_model",
+        "deepseek_api_key",
+        "deepseek_base_url",
+        "deepseek_model",
+        "anthropic_api_key",
+        "anthropic_base_url",
+        "anthropic_model",
+        "openai_api_key",
+        "openai_base_url",
+        "openai_model",
+        "gemini_api_key",
+        "gemini_base_url",
+        "gemini_model",
+        "llamacpp_base_url",
+        "llamacpp_model",
+        "discord_webhook_url",
+        "searxng_url",
+        "search_provider",
+        "deep_research_enabled",
+        "agent_mode_enabled",
+        "system_prompt",
+        "brain_enabled",
+    ];
 
-  // Return new merged state
-  const rows = stmtGetAll.all();
-  const settings = {};
-  for (const row of rows) {
-    settings[row.key] = row.value;
-  }
+    const updatedKeys = [];
+    const runTransaction = db.transaction(() => {
+        for (const [key, value] of Object.entries(updates)) {
+            if (allowedKeys.includes(key)) {
+                stmtUpsert.run({ key, value: String(value) });
+                updatedKeys.push(key);
+            }
+        }
+    });
 
-  res.json({ success: true, updatedKeys, settings });
+    runTransaction();
+
+    // Return new merged state
+    const rows = stmtGetAll.all();
+    const settings = {};
+    for (const row of rows) {
+        settings[row.key] = row.value;
+    }
+
+    res.json({ success: true, updatedKeys, settings });
 };
 
-router.patch('/', updateSettingsHandler);
-router.post('/', updateSettingsHandler);
+router.patch("/", updateSettingsHandler);
+router.post("/", updateSettingsHandler);
 
 // POST /api/settings/test-ollama
-router.post('/test-ollama', async (req, res) => {
-  let url = req.body.url;
-  if (!url) {
-    const row = stmtGet.get('ollama_base_url');
-    url = (row && row.value) || process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
-  }
-  // Trim trailing slash
-  url = url.replace(/\/+$/, '');
+router.post("/test-ollama", async (req, res) => {
+    try {
+        const result = await providers.testProvider("ollama", req.body);
+        res.json(result);
+    } catch (err) {
+        res.status(502).json({
+            ok: false,
+            url: req.body?.url,
+            error: err.message,
+        });
+    }
+});
 
-  try {
-    const response = await axios.get(`${url}/api/tags`, { timeout: 5000 });
-    const models = (response.data.models || []).map((m) => m.name);
-    res.json({ ok: true, url, models, message: `Connected to Ollama! Found ${models.length} model(s).` });
-  } catch (err) {
-    res.status(502).json({
-      ok: false,
-      url,
-      error: `Could not connect to Ollama at ${url}: ${err.message}`,
-    });
-  }
+// POST /api/settings/test-deepseek
+router.post("/test-deepseek", async (req, res) => {
+    try {
+        const result = await providers.testProvider("deepseek", req.body);
+        res.json(result);
+    } catch (err) {
+        res.status(502).json({
+            ok: false,
+            error: err.message,
+        });
+    }
+});
+
+// POST /api/settings/test-anthropic
+router.post("/test-anthropic", async (req, res) => {
+    try {
+        const result = await providers.testProvider("anthropic", req.body);
+        res.json(result);
+    } catch (err) {
+        res.status(502).json({
+            ok: false,
+            error: err.message,
+        });
+    }
+});
+
+// POST /api/settings/test-openai
+router.post("/test-openai", async (req, res) => {
+    try {
+        const result = await providers.testProvider("openai", req.body);
+        res.json(result);
+    } catch (err) {
+        res.status(502).json({
+            ok: false,
+            error: err.message,
+        });
+    }
+});
+
+// POST /api/settings/test-gemini
+router.post("/test-gemini", async (req, res) => {
+    try {
+        const result = await providers.testProvider("gemini", req.body);
+        res.json(result);
+    } catch (err) {
+        res.status(502).json({
+            ok: false,
+            error: err.message,
+        });
+    }
+});
+
+// POST /api/settings/test-llamacpp
+router.post("/test-llamacpp", async (req, res) => {
+    try {
+        const result = await providers.testProvider("llamacpp", req.body);
+        res.json(result);
+    } catch (err) {
+        res.status(502).json({
+            ok: false,
+            url: req.body?.url,
+            error: err.message,
+        });
+    }
 });
 
 // POST /api/settings/test-discord
-router.post('/test-discord', async (req, res) => {
-  const webhookUrl = req.body.webhookUrl;
-  try {
-    await discord.sendNotification({
-      webhookUrl,
-      title: 'Marnie Test Notification',
-      body: 'Your Discord webhook has been successfully configured and verified in Marnie AI Workspace!',
-      level: 'success',
-      username: 'Marnie System',
-    });
-    res.json({ ok: true, message: 'Test alert sent successfully to Discord!' });
-  } catch (err) {
-    res.status(err.status || 500).json({ ok: false, error: err.message });
-  }
+router.post("/test-discord", async (req, res) => {
+    const webhookUrl = req.body.webhookUrl;
+    try {
+        await discord.sendNotification({
+            webhookUrl,
+            title: "Marnie Test Notification",
+            body: "Your Discord webhook has been successfully configured and verified in Marnie AI Workspace!",
+            level: "success",
+            username: "Marnie System",
+        });
+        res.json({ ok: true, message: "Test alert sent successfully to Discord!" });
+    } catch (err) {
+        res.status(err.status || 500).json({ ok: false, error: err.message });
+    }
 });
 
 module.exports = router;

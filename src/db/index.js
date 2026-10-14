@@ -1,21 +1,21 @@
-'use strict';
+"use strict";
 
-const Database = require('better-sqlite3');
-const path = require('path');
-const fs = require('fs');
+const Database = require("better-sqlite3");
+const path = require("path");
+const fs = require("fs");
 
-const DB_PATH = process.env.DB_PATH || './data/marnie.db';
+const DB_PATH = process.env.DB_PATH || "./data/marnie.db";
 const dbDir = path.dirname(path.resolve(DB_PATH));
 
 if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+    fs.mkdirSync(dbDir, { recursive: true });
 }
 
 const db = new Database(path.resolve(DB_PATH));
 
 // Enable WAL mode for better concurrency
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+db.pragma("journal_mode = WAL");
+db.pragma("foreign_keys = ON");
 
 // ────────────────────────────────────────
 // Schema bootstrap
@@ -86,34 +86,69 @@ db.exec(`
   );
 `);
 
-try { db.exec("ALTER TABLE deep_researches ADD COLUMN image TEXT;"); } catch (_) {}
-try { db.exec("ALTER TABLE deep_researches ADD COLUMN duration TEXT;"); } catch (_) {}
-try { db.exec("ALTER TABLE deep_researches ADD COLUMN rounds INTEGER;"); } catch (_) {}
-try { db.exec("ALTER TABLE deep_researches ADD COLUMN queries INTEGER;"); } catch (_) {}
-try { db.exec("ALTER TABLE deep_researches ADD COLUMN urls_analyzed INTEGER;"); } catch (_) {}
-try { db.exec("ALTER TABLE deep_researches ADD COLUMN slug TEXT;"); } catch (_) {}
+try {
+    db.exec("ALTER TABLE deep_researches ADD COLUMN image TEXT;");
+} catch (_) {}
+try {
+    db.exec("ALTER TABLE deep_researches ADD COLUMN duration TEXT;");
+} catch (_) {}
+try {
+    db.exec("ALTER TABLE deep_researches ADD COLUMN rounds INTEGER;");
+} catch (_) {}
+try {
+    db.exec("ALTER TABLE deep_researches ADD COLUMN queries INTEGER;");
+} catch (_) {}
+try {
+    db.exec("ALTER TABLE deep_researches ADD COLUMN urls_analyzed INTEGER;");
+} catch (_) {}
+try {
+    db.exec("ALTER TABLE deep_researches ADD COLUMN slug TEXT;");
+} catch (_) {}
+try {
+    db.exec("ALTER TABLE deep_researches ADD COLUMN provider TEXT;");
+} catch (_) {}
 
 // Seed default settings if not exists
 const seedStmt = db.prepare(`
   INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)
 `);
-seedStmt.run('ollama_base_url', process.env.OLLAMA_BASE_URL || 'http://localhost:11434');
-seedStmt.run('default_model', process.env.DEFAULT_MODEL || 'llama3.2');
-seedStmt.run('discord_webhook_url', process.env.DISCORD_WEBHOOK_URL || '');
-seedStmt.run('searxng_url', process.env.SEARXNG_URL || 'http://localhost:8080');
-seedStmt.run('search_provider', process.env.SEARCH_PROVIDER || 'duckduckgo');
-seedStmt.run('deep_research_enabled', 'false');
-seedStmt.run('agent_mode_enabled', 'true');
-seedStmt.run('brain_enabled', 'true');
-seedStmt.run('system_prompt', 'You are Marnie, an autonomous self-hosted AI workspace assistant. You operate in a real environment with direct access to bash commands, Node.js code runner, filesystem search, file editing, SQLite tasks, web search, and Discord alerts. Never refuse execution by saying you are an AI without access to an environment; always execute user requests using your tools. When searching the web, keep search terms short and concise (strictly 2 to 5 words) for optimal results, and always use the retrieved results to deliver a complete answer. ZERO EMOJIS POLICY: Absolutely DO NOT use any emojis or decorative pictographs under any circumstances. Emojis break the professional look of technical communication. Keep all output strictly professional, clean, direct, and emoji-free. Provide clear mermaid diagrams enclosed in ```mermaid code blocks whenever illustrating workflows, architectures, processes, or systems. You can keep important things, user preferences, tasks, and working directives in workspace/NOTES.md using update_notes (or edit_notes), and fetch_notes can be used to fetch notes whenever you need additional context. You also have access to a local knowledge base called Expanded Capacity stored in a separate SQLite database; use retrieve_expanded_capacity to search (query), retrieve documents (document_name), or list available knowledge (list_only) whenever referencing user notebook files.');
+seedStmt.run("default_provider", process.env.DEFAULT_PROVIDER || "ollama");
+seedStmt.run("ollama_base_url", process.env.OLLAMA_BASE_URL || "http://localhost:11434");
+seedStmt.run("default_model", process.env.DEFAULT_MODEL || "llama3.2");
+seedStmt.run("deepseek_api_key", process.env.DEEPSEEK_API_KEY || "");
+seedStmt.run("deepseek_base_url", process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com");
+seedStmt.run("deepseek_model", process.env.DEEPSEEK_MODEL || "deepseek-chat");
+seedStmt.run("anthropic_api_key", process.env.ANTHROPIC_API_KEY || "");
+seedStmt.run("anthropic_base_url", process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com");
+seedStmt.run("anthropic_model", process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20241022");
+seedStmt.run("openai_api_key", process.env.OPENAI_API_KEY || "");
+seedStmt.run("openai_base_url", process.env.OPENAI_BASE_URL || "https://api.openai.com/v1");
+seedStmt.run("openai_model", process.env.OPENAI_MODEL || "gpt-4o");
+seedStmt.run("gemini_api_key", process.env.GEMINI_API_KEY || "");
+seedStmt.run("gemini_base_url", process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com/v1beta");
+seedStmt.run("gemini_model", process.env.GEMINI_MODEL || "gemini-2.0-flash");
+seedStmt.run("llamacpp_base_url", process.env.LLAMACPP_BASE_URL || "http://localhost:8080");
+seedStmt.run("llamacpp_model", process.env.LLAMACPP_MODEL || "default");
+seedStmt.run("discord_webhook_url", process.env.DISCORD_WEBHOOK_URL || "");
+seedStmt.run("searxng_url", process.env.SEARXNG_URL || "http://localhost:8080");
+seedStmt.run("search_provider", process.env.SEARCH_PROVIDER || "duckduckgo");
+seedStmt.run("deep_research_enabled", "false");
+seedStmt.run("agent_mode_enabled", "true");
+seedStmt.run("brain_enabled", "true");
+seedStmt.run(
+    "system_prompt",
+    "You are Marnie, an autonomous self-hosted AI workspace assistant. You operate in a real environment with direct access to bash commands, Node.js code runner, filesystem search, file editing, SQLite tasks, web search, and Discord alerts. Never refuse execution by saying you are an AI without access to an environment; always execute user requests using your tools. When searching the web, keep search terms short and concise (strictly 2 to 5 words) for optimal results, and always use the retrieved results to deliver a complete answer. ZERO EMOJIS POLICY: Absolutely DO NOT use any emojis or decorative pictographs under any circumstances. Emojis break the professional look of technical communication. Keep all output strictly professional, clean, direct, and emoji-free. Provide clear mermaid diagrams enclosed in ```mermaid code blocks whenever illustrating workflows, architectures, processes, or systems. You can keep important things, user preferences, tasks, and working directives in workspace/NOTES.md using update_notes (or edit_notes), and fetch_notes can be used to fetch notes whenever you need additional context. You also have access to a local knowledge base called Expanded Capacity stored in a separate SQLite database; use retrieve_expanded_capacity to search (query), retrieve documents (document_name), or list available knowledge (list_only) whenever referencing user notebook files.",
+);
 
 // Update existing system_prompt setting if not already containing retrieve_expanded_capacity
 try {
-  const currentPromptRow = db.prepare("SELECT value FROM settings WHERE key = 'system_prompt'").get();
-  if (currentPromptRow && currentPromptRow.value && !currentPromptRow.value.includes('retrieve_expanded_capacity')) {
-    const updatedVal = currentPromptRow.value + ' You also have access to a local knowledge base called Expanded Capacity stored in a separate SQLite database; use retrieve_expanded_capacity to search (query), retrieve documents (document_name), or list available knowledge (list_only) whenever referencing user notebook files.';
-    db.prepare("UPDATE settings SET value = ?, updated_at = strftime('%s','now') WHERE key = 'system_prompt'").run(updatedVal);
-  }
+    const currentPromptRow = db.prepare("SELECT value FROM settings WHERE key = 'system_prompt'").get();
+    if (currentPromptRow && currentPromptRow.value && !currentPromptRow.value.includes("retrieve_expanded_capacity")) {
+        const updatedVal =
+            currentPromptRow.value +
+            " You also have access to a local knowledge base called Expanded Capacity stored in a separate SQLite database; use retrieve_expanded_capacity to search (query), retrieve documents (document_name), or list available knowledge (list_only) whenever referencing user notebook files.";
+        db.prepare("UPDATE settings SET value = ?, updated_at = strftime('%s','now') WHERE key = 'system_prompt'").run(updatedVal);
+    }
 } catch (_) {}
 
 module.exports = db;

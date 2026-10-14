@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-const axios = require('axios');
+const axios = require("axios");
 
 /**
  * Make an arbitrary raw HTTP/API request using Axios.
@@ -18,96 +18,98 @@ const axios = require('axios');
  * @returns {Promise<object>} Response details including status, statusText, headers, and data
  */
 async function callApi(params = {}) {
-  let { url, method = 'GET', headers = {}, params: queryParams, data, body, timeout = 15000 } = params;
+    let { url, method = "GET", headers = {}, params: queryParams, data, body, timeout = 15000 } = params;
 
-  if (!url || typeof url !== 'string' || !url.trim()) {
-    throw Object.assign(new Error('`url` is required for api_call.'), { status: 400 });
-  }
-
-  url = url.trim();
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    url = 'https://' + url;
-  }
-
-  method = (method || 'GET').toUpperCase();
-
-  // Support body alias
-  let requestData = data !== undefined ? data : body;
-  if (typeof requestData === 'string') {
-    try {
-      requestData = JSON.parse(requestData);
-    } catch {}
-  }
-
-  let requestHeaders = headers;
-  if (typeof requestHeaders === 'string') {
-    try {
-      requestHeaders = JSON.parse(requestHeaders);
-    } catch {
-      requestHeaders = {};
+    if (!url || typeof url !== "string" || !url.trim()) {
+        throw Object.assign(new Error("`url` is required for api_call."), { status: 400 });
     }
-  }
-  if (!requestHeaders || typeof requestHeaders !== 'object') {
-    requestHeaders = {};
-  }
 
-  let requestParams = queryParams;
-  if (typeof requestParams === 'string') {
-    try {
-      requestParams = JSON.parse(requestParams);
-    } catch {
-      requestParams = {};
+    url = url.trim();
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        url = "https://" + url;
     }
-  }
 
-  const startTime = Date.now();
-  try {
-    const res = await axios({
-      url,
-      method,
-      headers: {
-        'User-Agent': 'Marnie-AI-Assistant/1.0',
-        ...requestHeaders,
-      },
-      params: requestParams,
-      data: requestData,
-      timeout: Math.min(60000, Math.max(1000, Number(timeout) || 15000)),
-      maxContentLength: 5 * 1024 * 1024,
-      validateStatus: () => true, // Don't throw on 4xx/5xx so LLM sees full error response body
-      transformResponse: [(data) => {
+    method = (method || "GET").toUpperCase();
+
+    // Support body alias
+    let requestData = data !== undefined ? data : body;
+    if (typeof requestData === "string") {
         try {
-          return JSON.parse(data);
+            requestData = JSON.parse(requestData);
+        } catch {}
+    }
+
+    let requestHeaders = headers;
+    if (typeof requestHeaders === "string") {
+        try {
+            requestHeaders = JSON.parse(requestHeaders);
         } catch {
-          return data;
+            requestHeaders = {};
         }
-      }],
-    });
+    }
+    if (!requestHeaders || typeof requestHeaders !== "object") {
+        requestHeaders = {};
+    }
 
-    const durationMs = Date.now() - startTime;
+    let requestParams = queryParams;
+    if (typeof requestParams === "string") {
+        try {
+            requestParams = JSON.parse(requestParams);
+        } catch {
+            requestParams = {};
+        }
+    }
 
-    return {
-      success: res.status >= 200 && res.status < 400,
-      status: res.status,
-      statusText: res.statusText,
-      durationMs,
-      headers: res.headers,
-      data: res.data,
-    };
-  } catch (err) {
-    const durationMs = Date.now() - startTime;
-    return {
-      success: false,
-      status: err.response?.status || null,
-      statusText: err.response?.statusText || null,
-      error: err.message,
-      durationMs,
-      headers: err.response?.headers || null,
-      data: err.response?.data || null,
-    };
-  }
+    const startTime = Date.now();
+    try {
+        const res = await axios({
+            url,
+            method,
+            headers: {
+                "User-Agent": "Marnie-AI-Assistant/1.0",
+                ...requestHeaders,
+            },
+            params: requestParams,
+            data: requestData,
+            timeout: Math.min(60000, Math.max(1000, Number(timeout) || 15000)),
+            maxContentLength: 5 * 1024 * 1024,
+            validateStatus: () => true, // Don't throw on 4xx/5xx so LLM sees full error response body
+            transformResponse: [
+                (data) => {
+                    try {
+                        return JSON.parse(data);
+                    } catch {
+                        return data;
+                    }
+                },
+            ],
+        });
+
+        const durationMs = Date.now() - startTime;
+
+        return {
+            success: res.status >= 200 && res.status < 400,
+            status: res.status,
+            statusText: res.statusText,
+            durationMs,
+            headers: res.headers,
+            data: res.data,
+        };
+    } catch (err) {
+        const durationMs = Date.now() - startTime;
+        return {
+            success: false,
+            status: err.response?.status || null,
+            statusText: err.response?.statusText || null,
+            error: err.message,
+            durationMs,
+            headers: err.response?.headers || null,
+            data: err.response?.data || null,
+        };
+    }
 }
 
 module.exports = {
-  callApi,
-  apiCall: callApi,
+    callApi,
+    apiCall: callApi,
 };

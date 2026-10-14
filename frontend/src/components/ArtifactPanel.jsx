@@ -1,36 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-    X,
-    Code,
-    Eye,
-    Copy,
-    Check,
-    ExternalLink,
-    Save,
-    RotateCw,
-    FileText,
-    FileCode,
-    Monitor,
-    Tablet,
-    Smartphone,
-    Folder,
-    ChevronDown,
-    AlertCircle,
-    Download,
-} from "lucide-react";
-import {
-    getWorkspaceFile,
-    saveWorkspaceFile,
-    listWorkspaceFiles,
-    getWorkspaceRawUrl,
-} from "../services/api";
+import { X, Code, Eye, Copy, Check, ExternalLink, Save, RotateCw, FileText, FileCode, Monitor, Tablet, Smartphone, Folder, ChevronDown, AlertCircle, Download } from "lucide-react";
+import { getWorkspaceFile, saveWorkspaceFile, listWorkspaceFiles, getWorkspaceRawUrl } from "../services/api";
 
-export default function ArtifactPanel({
-    isOpen,
-    filePath,
-    onClose,
-    onFileSelected,
-}) {
+export default function ArtifactPanel({ isOpen, filePath, onClose, onFileSelected }) {
     const [currentPath, setCurrentPath] = useState(filePath || "");
     const [content, setContent] = useState("");
     const [savedContent, setSavedContent] = useState("");
@@ -183,13 +155,11 @@ export default function ArtifactPanel({
             const end = target.selectionEnd;
             const spaces = "  ";
 
-            const newContent =
-                content.substring(0, start) + spaces + content.substring(end);
+            const newContent = content.substring(0, start) + spaces + content.substring(end);
             setContent(newContent);
 
             requestAnimationFrame(() => {
-                target.selectionStart = target.selectionEnd =
-                    start + spaces.length;
+                target.selectionStart = target.selectionEnd = start + spaces.length;
             });
         }
     };
@@ -314,9 +284,7 @@ export default function ArtifactPanel({
                             <ChevronDown size={14} style={{ color: "var(--text-muted)" }} />
                         </button>
 
-                        <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", paddingLeft: "0.4rem" }}>
-                            workspace/{currentPath}
-                        </div>
+                        <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", paddingLeft: "0.4rem" }}>workspace/{currentPath}</div>
                     </div>
 
                     {/* Workspace Files dropdown menu */}
@@ -355,9 +323,7 @@ export default function ArtifactPanel({
                                 <span>Workspace Files</span>
                             </div>
                             {workspaceFiles.length === 0 ? (
-                                <div style={{ padding: "0.75rem", fontSize: "0.78rem", color: "var(--text-muted)", textAlign: "center" }}>
-                                    No files in workspace
-                                </div>
+                                <div style={{ padding: "0.75rem", fontSize: "0.78rem", color: "var(--text-muted)", textAlign: "center" }}>No files in workspace</div>
                             ) : (
                                 workspaceFiles.map((f) => (
                                     <div
@@ -378,17 +344,10 @@ export default function ArtifactPanel({
                                             cursor: "pointer",
                                         }}
                                         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-card-hover)")}
-                                        onMouseLeave={(e) =>
-                                            (e.currentTarget.style.backgroundColor =
-                                                f.path === currentPath ? "var(--bg-secondary)" : "transparent")
-                                        }
+                                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = f.path === currentPath ? "var(--bg-secondary)" : "transparent")}
                                     >
-                                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                            {f.path}
-                                        </span>
-                                        <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
-                                            {f.size ? `${(f.size / 1024).toFixed(1)}k` : ""}
-                                        </span>
+                                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.path}</span>
+                                        <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>{f.size ? `${(f.size / 1024).toFixed(1)}k` : ""}</span>
                                     </div>
                                 ))
                             )}
@@ -609,9 +568,7 @@ export default function ArtifactPanel({
                                 }}
                             >
                                 <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                                    <span style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                                        Interactive Web Preview
-                                    </span>
+                                    <span style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em" }}>Interactive Web Preview</span>
                                 </div>
 
                                 <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
@@ -786,11 +743,7 @@ export default function ArtifactPanel({
                                         overflow: "auto",
                                     }}
                                 >
-                                    <img
-                                        src={getWorkspaceRawUrl(currentPath)}
-                                        alt={currentPath}
-                                        style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
-                                    />
+                                    <img src={getWorkspaceRawUrl(currentPath)} alt={currentPath} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
                                 </div>
                             ) : (
                                 /* Plain code preview fallback */
@@ -901,11 +854,7 @@ export default function ArtifactPanel({
 
                             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                                 <span style={{ opacity: 0.8 }}>Ctrl+S to save • Tab to indent</span>
-                                {isDirty ? (
-                                    <span style={{ color: "#f59e0b", fontWeight: 500 }}>Unsaved changes</span>
-                                ) : (
-                                    <span style={{ color: "#16a34a", fontWeight: 500 }}>All changes saved</span>
-                                )}
+                                {isDirty ? <span style={{ color: "#f59e0b", fontWeight: 500 }}>Unsaved changes</span> : <span style={{ color: "#16a34a", fontWeight: 500 }}>All changes saved</span>}
                             </div>
                         </footer>
                     </div>

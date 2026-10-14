@@ -1,383 +1,394 @@
-'use strict';
+"use strict";
 
-const bash = require('./bash');
-const codeRunner = require('./codeRunner');
-const filesystem = require('./filesystem');
-const fileCreate = require('./fileCreate');
-const fileRead = require('./fileRead');
-const fileWrite = require('./fileWrite');
-const tasks = require('./tasks');
-const cronManager = require('./cronManager');
-const discord = require('./discord');
-const timer = require('./timer');
-const webSearch = require('./webSearch');
-const apiCall = require('./apiCall');
-const brainMemory = require('./brainMemory');
-const notesManager = require('./notesManager');
-const expandedCapacity = require('./expandedCapacity');
+const bash = require("./bash");
+const codeRunner = require("./codeRunner");
+const filesystem = require("./filesystem");
+const fileCreate = require("./fileCreate");
+const fileRead = require("./fileRead");
+const fileWrite = require("./fileWrite");
+const tasks = require("./tasks");
+const cronManager = require("./cronManager");
+const discord = require("./discord");
+const timer = require("./timer");
+const webSearch = require("./webSearch");
+const apiCall = require("./apiCall");
+const brainMemory = require("./brainMemory");
+const notesManager = require("./notesManager");
+const expandedCapacity = require("./expandedCapacity");
 
 const TOOLS = {
-  run_javascript: {
-    description: 'Execute JavaScript code in a fresh, isolated Node.js child process.',
-    parameters: {
-      code: { type: 'string', description: 'JavaScript code snippet to execute', required: true },
-      timeout: { type: 'number', description: 'Timeout in ms (default 15000)' },
+    run_javascript: {
+        description: "Execute JavaScript code in a fresh, isolated Node.js child process.",
+        parameters: {
+            code: { type: "string", description: "JavaScript code snippet to execute", required: true },
+            timeout: { type: "number", description: "Timeout in ms (default 15000)" },
+        },
+        execute: async ({ code, timeout }) => codeRunner.runJS({ code, timeout }),
     },
-    execute: async ({ code, timeout }) => codeRunner.runJS({ code, timeout }),
-  },
-  run_bash: {
-    description: 'Execute a terminal command in the host shell (bash/sh).',
-    parameters: {
-      command: { type: 'string', description: 'The shell command to run', required: true },
-      cwd: { type: 'string', description: 'Working directory path (default: workspace)' },
+    run_bash: {
+        description: "Execute a terminal command in the host shell (bash/sh).",
+        parameters: {
+            command: { type: "string", description: "The shell command to run", required: true },
+            cwd: { type: "string", description: "Working directory path (default: workspace)" },
+        },
+        execute: async ({ command, cwd }) => bash.run({ command, cwd }),
     },
-    execute: async ({ command, cwd }) => bash.run({ command, cwd }),
-  },
-  search_filesystem: {
-    description: 'Recursively search files and directories matching a pattern.',
-    parameters: {
-      directory: { type: 'string', description: 'Directory to search in', required: true },
-      pattern: { type: 'string', description: 'Filename pattern or substring' },
+    search_filesystem: {
+        description: "Recursively search files and directories matching a pattern.",
+        parameters: {
+            directory: { type: "string", description: "Directory to search in", required: true },
+            pattern: { type: "string", description: "Filename pattern or substring" },
+        },
+        execute: async ({ directory, pattern }) => filesystem.search({ directory, pattern }),
     },
-    execute: async ({ directory, pattern }) => filesystem.search({ directory, pattern }),
-  },
-  read_file: {
-    description: 'Read the contents of a local file in workspace or repository (full or specific line range).',
-    parameters: {
-      filePath: { type: 'string', description: 'Path to file to read (relative to workspace or repo)', required: true },
-      startLine: { type: 'number', description: '1-based starting line number (optional)' },
-      endLine: { type: 'number', description: '1-based ending line number (optional)' },
+    read_file: {
+        description: "Read the contents of a local file in workspace or repository (full or specific line range).",
+        parameters: {
+            filePath: { type: "string", description: "Path to file to read (relative to workspace or repo)", required: true },
+            startLine: { type: "number", description: "1-based starting line number (optional)" },
+            endLine: { type: "number", description: "1-based ending line number (optional)" },
+        },
+        execute: async ({ filePath, startLine, endLine }) => fileRead.read({ filePath, startLine, endLine }),
     },
-    execute: async ({ filePath, startLine, endLine }) => fileRead.read({ filePath, startLine, endLine }),
-  },
-  create_file: {
-    description: 'Create a new local file strictly in the workspace directory with initial content. Opened in the browser and in-app preview/edit panel.',
-    parameters: {
-      filePath: { type: 'string', description: 'Path to the new file (must be inside workspace, e.g. "index.html" or "src/app.js")', required: true },
-      content: { type: 'string', description: 'Initial file content' },
-      overwrite: { type: 'boolean', description: 'Overwrite if file exists (default false)' },
+    create_file: {
+        description: "Create a new local file strictly in the workspace directory with initial content. Opened in the browser and in-app preview/edit panel.",
+        parameters: {
+            filePath: { type: "string", description: 'Path to the new file (must be inside workspace, e.g. "index.html" or "src/app.js")', required: true },
+            content: { type: "string", description: "Initial file content" },
+            overwrite: { type: "boolean", description: "Overwrite if file exists (default false)" },
+        },
+        execute: async ({ filePath, content, overwrite }) => fileCreate.create({ filePath, content, overwrite }),
     },
-    execute: async ({ filePath, content, overwrite }) => fileCreate.create({ filePath, content, overwrite }),
-  },
-  write_file: {
-    description: 'Write, append, or replace specific lines in a workspace file. Strictly restricted to workspace directory. Opened in browser and in-app preview/edit panel.',
-    parameters: {
-      filePath: { type: 'string', description: 'Path to the file to modify in workspace', required: true },
-      content: { type: 'string', description: 'Content to insert or overwrite', required: true },
-      startLine: { type: 'number', description: '1-based start line to replace (optional)' },
-      endLine: { type: 'number', description: '1-based end line to replace (optional)' },
-      append: { type: 'boolean', description: 'Append content to end of file (optional)' },
+    write_file: {
+        description: "Write, append, or replace specific lines in a workspace file. Strictly restricted to workspace directory. Opened in browser and in-app preview/edit panel.",
+        parameters: {
+            filePath: { type: "string", description: "Path to the file to modify in workspace", required: true },
+            content: { type: "string", description: "Content to insert or overwrite", required: true },
+            startLine: { type: "number", description: "1-based start line to replace (optional)" },
+            endLine: { type: "number", description: "1-based end line to replace (optional)" },
+            append: { type: "boolean", description: "Append content to end of file (optional)" },
+        },
+        execute: async ({ filePath, content, startLine, endLine, append }) => fileWrite.write({ filePath, content, startLine, endLine, append }),
     },
-    execute: async ({ filePath, content, startLine, endLine, append }) => fileWrite.write({ filePath, content, startLine, endLine, append }),
-  },
-  create_task: {
-    description: 'Create a persistent task saved in SQLite.',
-    parameters: {
-      title: { type: 'string', description: 'Task title', required: true },
-      description: { type: 'string', description: 'Task details or steps' },
-      priority: { type: 'string', description: "'low' | 'medium' | 'high' (default 'medium')" },
+    create_task: {
+        description: "Create a persistent task saved in SQLite.",
+        parameters: {
+            title: { type: "string", description: "Task title", required: true },
+            description: { type: "string", description: "Task details or steps" },
+            priority: { type: "string", description: "'low' | 'medium' | 'high' (default 'medium')" },
+        },
+        execute: async ({ title, description, priority }) => tasks.createTask({ title, description, priority }),
     },
-    execute: async ({ title, description, priority }) => tasks.createTask({ title, description, priority }),
-  },
-  list_tasks: {
-    description: 'List existing tasks from SQLite storage.',
-    parameters: {
-      status: { type: 'string', description: "'pending' | 'in_progress' | 'done' | 'cancelled' (optional)" },
+    list_tasks: {
+        description: "List existing tasks from SQLite storage.",
+        parameters: {
+            status: { type: "string", description: "'pending' | 'in_progress' | 'done' | 'cancelled' (optional)" },
+        },
+        execute: async ({ status }) => tasks.listTasks({ status }),
     },
-    execute: async ({ status }) => tasks.listTasks({ status }),
-  },
-  create_cron: {
-    description: 'Schedule a persistent recurring cron job.',
-    parameters: {
-      name: { type: 'string', description: 'Name of the job', required: true },
-      expression: { type: 'string', description: "5-field cron expression (e.g. '0 9 * * *')", required: true },
-      action_type: { type: 'string', description: "'bash' | 'discord' | 'http'", required: true },
-      action_data: { type: 'object', description: 'Configuration object for the action', required: true },
+    create_cron: {
+        description: "Schedule a persistent recurring cron job.",
+        parameters: {
+            name: { type: "string", description: "Name of the job", required: true },
+            expression: { type: "string", description: "5-field cron expression (e.g. '0 9 * * *')", required: true },
+            action_type: { type: "string", description: "'bash' | 'discord' | 'http'", required: true },
+            action_data: { type: "object", description: "Configuration object for the action", required: true },
+        },
+        execute: async ({ name, expression, action_type, action_data }) => cronManager.createJob({ name, expression, action_type, action_data }),
     },
-    execute: async ({ name, expression, action_type, action_data }) => cronManager.createJob({ name, expression, action_type, action_data }),
-  },
-  send_alert: {
-    description: 'Send a notification or alert embed to the configured Discord webhook channel.',
-    parameters: {
-      message: { type: 'string', description: 'Message content for the embed', required: true },
-      title: { type: 'string', description: 'Optional title for the embed' },
-      level: { type: 'string', description: "'info' | 'success' | 'warning' | 'error' (default 'info')" },
+    send_alert: {
+        description: "Send a notification or alert embed to the configured Discord webhook channel.",
+        parameters: {
+            message: { type: "string", description: "Message content for the embed", required: true },
+            title: { type: "string", description: "Optional title for the embed" },
+            level: { type: "string", description: "'info' | 'success' | 'warning' | 'error' (default 'info')" },
+        },
+        execute: async ({ message, title, level }) => discord.sendAlert({ message, title, level }),
     },
-    execute: async ({ message, title, level }) => discord.sendAlert({ message, title, level }),
-  },
-  set_timer: {
-    description: 'Set a countdown timer that sends a Discord alert notification when the time expires.',
-    parameters: {
-      seconds: { type: 'number', description: 'Duration in seconds (e.g. 60)' },
-      duration: { type: 'string', description: "Duration string (e.g. '30s', '5m', '1h') if seconds not provided" },
-      message: { type: 'string', description: 'Message to send to Discord when the timer finishes', required: true },
-      title: { type: 'string', description: "Optional title for the Discord alert embed (default 'Timer Alert')" },
+    set_timer: {
+        description: "Set a countdown timer that sends a Discord alert notification when the time expires.",
+        parameters: {
+            seconds: { type: "number", description: "Duration in seconds (e.g. 60)" },
+            duration: { type: "string", description: "Duration string (e.g. '30s', '5m', '1h') if seconds not provided" },
+            message: { type: "string", description: "Message to send to Discord when the timer finishes", required: true },
+            title: { type: "string", description: "Optional title for the Discord alert embed (default 'Timer Alert')" },
+        },
+        execute: async ({ seconds, duration, message, title }) => timer.setTimer({ seconds, duration, message, title }),
     },
-    execute: async ({ seconds, duration, message, title }) => timer.setTimer({ seconds, duration, message, title }),
-  },
-  web_search: {
-    description: 'Search the live web for up-to-date information, documentation, news, or answers using DuckDuckGo or SearXNG. Keep search queries short and focused (2 to 5 words, e.g. "latest nodejs release" or "deepseek r1 architecture") for best results.',
-    parameters: {
-      query: { type: 'string', description: 'The search keywords to look up. Keep search terms short and concise (strictly 2 to 5 words). Do NOT use long sentences, questions, or conversational queries.', required: true },
-      max_results: { type: 'number', description: 'Maximum number of results to return (default 5)' },
-      provider: { type: 'string', description: "Search provider override ('duckduckgo' or 'searxng')" },
+    web_search: {
+        description:
+            'Search the live web for up-to-date information, documentation, news, or answers using DuckDuckGo or SearXNG. Keep search queries short and focused (2 to 5 words, e.g. "latest nodejs release" or "deepseek r1 architecture") for best results.',
+        parameters: {
+            query: {
+                type: "string",
+                description: "The search keywords to look up. Keep search terms short and concise (strictly 2 to 5 words). Do NOT use long sentences, questions, or conversational queries.",
+                required: true,
+            },
+            max_results: { type: "number", description: "Maximum number of results to return (default 5)" },
+            provider: { type: "string", description: "Search provider override ('duckduckgo' or 'searxng')" },
+        },
+        execute: async ({ query, max_results, provider }) => webSearch.search({ query, maxResults: max_results, provider }),
     },
-    execute: async ({ query, max_results, provider }) => webSearch.search({ query, maxResults: max_results, provider }),
-  },
-  fetch_webpage: {
-    description: 'Fetch and extract the core textual content of a specific webpage using a lightweight scraper (Cheerio). Useful when you have a specific URL and want its body text.',
-    parameters: {
-      url: { type: 'string', description: 'The absolute HTTP/HTTPS URL of the webpage to scrape', required: true },
-      max_length: { type: 'number', description: 'Maximum characters of text to extract (default 2000)' },
+    fetch_webpage: {
+        description: "Fetch and extract the core textual content of a specific webpage using a lightweight scraper (Cheerio). Useful when you have a specific URL and want its body text.",
+        parameters: {
+            url: { type: "string", description: "The absolute HTTP/HTTPS URL of the webpage to scrape", required: true },
+            max_length: { type: "number", description: "Maximum characters of text to extract (default 2000)" },
+        },
+        execute: async ({ url, max_length }) => {
+            const content = await webSearch.fetchPageContent(url, max_length || 2000);
+            return {
+                url,
+                content: content || "Could not extract content from the specified URL.",
+            };
+        },
     },
-    execute: async ({ url, max_length }) => {
-      const content = await webSearch.fetchPageContent(url, max_length || 2000);
-      return {
-        url,
-        content: content || 'Could not extract content from the specified URL.',
-      };
+    api_call: {
+        description: "Make a raw HTTP/API request (GET, POST, PUT, PATCH, DELETE, etc.) with custom headers, query params, and body data using axios.",
+        parameters: {
+            url: { type: "string", description: "The full HTTP/HTTPS URL to request", required: true },
+            method: { type: "string", description: "HTTP method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' (default 'GET')" },
+            headers: { type: "object", description: "Optional key-value object of custom request headers" },
+            params: { type: "object", description: "Optional URL query parameters key-value object" },
+            data: { type: "object", description: "Optional request body payload (JSON object, string, or array)" },
+            timeout: { type: "number", description: "Request timeout in milliseconds (default 15000)" },
+        },
+        execute: async (args) => apiCall.callApi(args),
     },
-  },
-  api_call: {
-    description: 'Make a raw HTTP/API request (GET, POST, PUT, PATCH, DELETE, etc.) with custom headers, query params, and body data using axios.',
-    parameters: {
-      url: { type: 'string', description: 'The full HTTP/HTTPS URL to request', required: true },
-      method: { type: 'string', description: "HTTP method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' (default 'GET')" },
-      headers: { type: 'object', description: 'Optional key-value object of custom request headers' },
-      params: { type: 'object', description: 'Optional URL query parameters key-value object' },
-      data: { type: 'object', description: 'Optional request body payload (JSON object, string, or array)' },
-      timeout: { type: 'number', description: 'Request timeout in milliseconds (default 15000)' },
+    read_brain_memory: {
+        description: "Read the persistent user memory file from workspace/BRAIN.md.",
+        parameters: {},
+        execute: async () => {
+            const content = brainMemory.getBrainContent();
+            return { filePath: "workspace/BRAIN.md", content };
+        },
     },
-    execute: async (args) => apiCall.callApi(args),
-  },
-  read_brain_memory: {
-    description: 'Read the persistent user memory file from workspace/BRAIN.md.',
-    parameters: {},
-    execute: async () => {
-      const content = brainMemory.getBrainContent();
-      return { filePath: 'workspace/BRAIN.md', content };
+    update_brain_memory: {
+        description: "Update or append new facts, preferences, or context about the user to persistent workspace/BRAIN.md memory.",
+        parameters: {
+            content: { type: "string", description: "The updated markdown memory to save in workspace/BRAIN.md", required: true },
+        },
+        execute: async ({ content }) => {
+            const ok = brainMemory.saveBrainContent(content);
+            return { success: ok, filePath: "workspace/BRAIN.md", message: "Persistent memory updated successfully." };
+        },
     },
-  },
-  update_brain_memory: {
-    description: 'Update or append new facts, preferences, or context about the user to persistent workspace/BRAIN.md memory.',
-    parameters: {
-      content: { type: 'string', description: 'The updated markdown memory to save in workspace/BRAIN.md', required: true },
-    },
-    execute: async ({ content }) => {
-      const ok = brainMemory.saveBrainContent(content);
-      return { success: ok, filePath: 'workspace/BRAIN.md', message: 'Persistent memory updated successfully.' };
-    },
-  },
-  fetch_notes: {
-    description: 'Fetch persistent user notes, task lists, and reference data from workspace/NOTES.md. Use this tool when you need additional user information, task lists, or reference data not included in the standard prompt.',
-    parameters: {
-      section: { type: 'string', description: 'Optional specific section header to retrieve (e.g. "Active Tasks", "Project Notes")' },
-    },
-    execute: async ({ section } = {}) => {
-      const content = notesManager.getNotesContent();
-      const meta = notesManager.getNotesMetadata();
-      if (section && typeof section === 'string') {
-        const lines = content.split('\n');
-        let capturing = false;
-        const captured = [];
-        const normSection = section.toLowerCase().trim();
-        for (const line of lines) {
-          if (line.startsWith('#')) {
-            const headingText = line.replace(/^#+\s*/, '').toLowerCase().trim();
-            if (headingText.includes(normSection)) {
-              capturing = true;
-              captured.push(line);
-              continue;
-            } else if (capturing) {
-              break;
+    fetch_notes: {
+        description:
+            "Fetch persistent user notes, task lists, and reference data from workspace/NOTES.md. Use this tool when you need additional user information, task lists, or reference data not included in the standard prompt.",
+        parameters: {
+            section: { type: "string", description: 'Optional specific section header to retrieve (e.g. "Active Tasks", "Project Notes")' },
+        },
+        execute: async ({ section } = {}) => {
+            const content = notesManager.getNotesContent();
+            const meta = notesManager.getNotesMetadata();
+            if (section && typeof section === "string") {
+                const lines = content.split("\n");
+                let capturing = false;
+                const captured = [];
+                const normSection = section.toLowerCase().trim();
+                for (const line of lines) {
+                    if (line.startsWith("#")) {
+                        const headingText = line
+                            .replace(/^#+\s*/, "")
+                            .toLowerCase()
+                            .trim();
+                        if (headingText.includes(normSection)) {
+                            capturing = true;
+                            captured.push(line);
+                            continue;
+                        } else if (capturing) {
+                            break;
+                        }
+                    }
+                    if (capturing) {
+                        captured.push(line);
+                    }
+                }
+                if (captured.length > 0) {
+                    return {
+                        filePath: "workspace/NOTES.md",
+                        section,
+                        content: captured.join("\n").trim(),
+                        totalLines: meta.lines,
+                    };
+                }
             }
-          }
-          if (capturing) {
-            captured.push(line);
-          }
-        }
-        if (captured.length > 0) {
-          return {
-            filePath: 'workspace/NOTES.md',
-            section,
-            content: captured.join('\n').trim(),
-            totalLines: meta.lines,
-          };
-        }
-      }
-      return {
-        filePath: 'workspace/NOTES.md',
-        content,
-        totalLines: meta.lines,
-      };
+            return {
+                filePath: "workspace/NOTES.md",
+                content,
+                totalLines: meta.lines,
+            };
+        },
     },
-  },
-  edit_notes: {
-    description: 'Edit, update, or append notes, tasks, directives, and reference information in workspace/NOTES.md. Always use this tool to persist important findings, user instructions, multi-step progress, or task checklists so they are not lost.',
-    parameters: {
-      content: { type: 'string', description: 'Full markdown content to overwrite workspace/NOTES.md with' },
-      text: { type: 'string', description: 'Note, bullet point, or task item to append to workspace/NOTES.md (if content is omitted or append is true)' },
-      append: { type: 'boolean', description: 'Set to true to append text to the end of notes instead of overwriting (defaults to true if text is provided)' },
-      section: { type: 'string', description: 'Optional section header (e.g. "Active Tasks & Checklist") to append under' },
+    edit_notes: {
+        description:
+            "Edit, update, or append notes, tasks, directives, and reference information in workspace/NOTES.md. Always use this tool to persist important findings, user instructions, multi-step progress, or task checklists so they are not lost.",
+        parameters: {
+            content: { type: "string", description: "Full markdown content to overwrite workspace/NOTES.md with" },
+            text: { type: "string", description: "Note, bullet point, or task item to append to workspace/NOTES.md (if content is omitted or append is true)" },
+            append: { type: "boolean", description: "Set to true to append text to the end of notes instead of overwriting (defaults to true if text is provided)" },
+            section: { type: "string", description: 'Optional section header (e.g. "Active Tasks & Checklist") to append under' },
+        },
+        execute: async ({ content, text, append, section } = {}) => {
+            let ok = false;
+            const shouldAppend = append !== undefined ? append : !content && Boolean(text);
+            if (shouldAppend) {
+                ok = notesManager.appendNotesContent(text || content || "", section || "");
+            } else if (content !== undefined) {
+                ok = notesManager.saveNotesContent(content);
+            }
+            const meta = notesManager.getNotesMetadata();
+            return {
+                success: ok,
+                filePath: "workspace/NOTES.md",
+                totalLines: meta.lines,
+                message: "Notes updated successfully in workspace/NOTES.md.",
+            };
+        },
     },
-    execute: async ({ content, text, append, section } = {}) => {
-      let ok = false;
-      const shouldAppend = append !== undefined ? append : (!content && Boolean(text));
-      if (shouldAppend) {
-        ok = notesManager.appendNotesContent(text || content || '', section || '');
-      } else if (content !== undefined) {
-        ok = notesManager.saveNotesContent(content);
-      }
-      const meta = notesManager.getNotesMetadata();
-      return {
-        success: ok,
-        filePath: 'workspace/NOTES.md',
-        totalLines: meta.lines,
-        message: 'Notes updated successfully in workspace/NOTES.md.',
-      };
+    update_notes: {
+        description: "Update, replace, or append information in the persistent workspace/NOTES.md file. Use this to keep important things, track tasks, or save reference notes.",
+        parameters: {
+            content: { type: "string", description: "Full markdown content to overwrite workspace/NOTES.md with" },
+            text: { type: "string", description: "Text or task to append to workspace/NOTES.md (if content is omitted or append is true)" },
+            append: { type: "boolean", description: "Set to true to append text instead of overwriting" },
+            section: { type: "string", description: "Optional section header to append under" },
+        },
+        execute: async ({ content, text, append, section } = {}) => {
+            let ok = false;
+            const shouldAppend = append !== undefined ? append : !content && Boolean(text);
+            if (shouldAppend) {
+                ok = notesManager.appendNotesContent(text || content || "", section || "");
+            } else if (content !== undefined) {
+                ok = notesManager.saveNotesContent(content);
+            }
+            const meta = notesManager.getNotesMetadata();
+            return {
+                success: ok,
+                filePath: "workspace/NOTES.md",
+                totalLines: meta.lines,
+                message: "Notes updated successfully in workspace/NOTES.md.",
+            };
+        },
     },
-  },
-  update_notes: {
-    description: 'Update, replace, or append information in the persistent workspace/NOTES.md file. Use this to keep important things, track tasks, or save reference notes.',
-    parameters: {
-      content: { type: 'string', description: 'Full markdown content to overwrite workspace/NOTES.md with' },
-      text: { type: 'string', description: 'Text or task to append to workspace/NOTES.md (if content is omitted or append is true)' },
-      append: { type: 'boolean', description: 'Set to true to append text instead of overwriting' },
-      section: { type: 'string', description: 'Optional section header to append under' },
+    retrieve_expanded_capacity: {
+        description:
+            "Retrieve or search reference documents from the local Expanded Capacity database (local RAG knowledge base). Use this to query uploaded markdown or text files, search for topics, inspect document lists, or fetch full file content.",
+        parameters: {
+            query: { type: "string", description: "Search keywords, questions, or topics to look up in Expanded Capacity" },
+            document_name: { type: "string", description: 'Specific filename to retrieve in full (e.g. "notes.txt" or "api.md")' },
+            list_only: { type: "boolean", description: "Set to true to list all documents available in Expanded Capacity" },
+            limit: { type: "number", description: "Maximum matching results to return (default 5)" },
+        },
+        execute: async (args) => expandedCapacity.retrieveCapacity(args),
     },
-    execute: async ({ content, text, append, section } = {}) => {
-      let ok = false;
-      const shouldAppend = append !== undefined ? append : (!content && Boolean(text));
-      if (shouldAppend) {
-        ok = notesManager.appendNotesContent(text || content || '', section || '');
-      } else if (content !== undefined) {
-        ok = notesManager.saveNotesContent(content);
-      }
-      const meta = notesManager.getNotesMetadata();
-      return {
-        success: ok,
-        filePath: 'workspace/NOTES.md',
-        totalLines: meta.lines,
-        message: 'Notes updated successfully in workspace/NOTES.md.',
-      };
-    },
-  },
-  retrieve_expanded_capacity: {
-    description: 'Retrieve or search reference documents from the local Expanded Capacity database (local RAG knowledge base). Use this to query uploaded markdown or text files, search for topics, inspect document lists, or fetch full file content.',
-    parameters: {
-      query: { type: 'string', description: 'Search keywords, questions, or topics to look up in Expanded Capacity' },
-      document_name: { type: 'string', description: 'Specific filename to retrieve in full (e.g. "notes.txt" or "api.md")' },
-      list_only: { type: 'boolean', description: 'Set to true to list all documents available in Expanded Capacity' },
-      limit: { type: 'number', description: 'Maximum matching results to return (default 5)' },
-    },
-    execute: async (args) => expandedCapacity.retrieveCapacity(args),
-  },
 };
 
 /**
  * Execute a tool by name with arguments.
  */
 async function executeTool(name, args = {}) {
-  // Normalize tool aliases
-  const aliasMap = {
-    javascript: 'run_javascript',
-    js: 'run_javascript',
-    code_run: 'run_javascript',
-    bash: 'run_bash',
-    terminal: 'run_bash',
-    search_file: 'search_filesystem',
-    search_files: 'search_filesystem',
-    find_files: 'search_filesystem',
-    file_create: 'create_file',
-    file_read: 'read_file',
-    file_write: 'write_file',
-    task_create: 'create_task',
-    task_list: 'list_tasks',
-    cron_create: 'create_cron',
-    discord_alert: 'send_alert',
-    timer: 'set_timer',
-    create_timer: 'set_timer',
-    countdown: 'set_timer',
-    search: 'web_search',
-    duckduckgo: 'web_search',
-    duckduckgo_search: 'web_search',
-    ddg: 'web_search',
-    ddg_search: 'web_search',
-    searxng: 'web_search',
-    searxng_search: 'web_search',
-    google: 'web_search',
-    scrape_webpage: 'fetch_webpage',
-    scrape_url: 'fetch_webpage',
-    fetch_url: 'fetch_webpage',
-    scrape: 'fetch_webpage',
-    api: 'api_call',
-    http_request: 'api_call',
-    curl: 'api_call',
-    http: 'api_call',
-    fetch: 'api_call',
-    request: 'api_call',
-    read_brain_memory: 'read_brain_memory',
-    read_brain: 'read_brain_memory',
-    read_memory: 'read_brain_memory',
-    get_brain: 'read_brain_memory',
-    get_memory: 'read_brain_memory',
-    update_brain_memory: 'update_brain_memory',
-    update_brain: 'update_brain_memory',
-    save_brain: 'update_brain_memory',
-    save_memory: 'update_brain_memory',
-    write_brain: 'update_brain_memory',
-    fetch_notes: 'fetch_notes',
-    get_notes: 'fetch_notes',
-    read_notes: 'fetch_notes',
-    notes: 'fetch_notes',
-    notes_read: 'fetch_notes',
-    notes_fetch: 'fetch_notes',
-    edit_notes: 'edit_notes',
-    notes_edit: 'edit_notes',
-    add_note: 'edit_notes',
-    add_notes: 'edit_notes',
-    update_notes: 'update_notes',
-    save_notes: 'update_notes',
-    append_notes: 'update_notes',
-    write_notes: 'update_notes',
-    notes_update: 'update_notes',
-    notes_append: 'update_notes',
-    retrieve_expanded_capacity: 'retrieve_expanded_capacity',
-    expanded_capacity: 'retrieve_expanded_capacity',
-    query_expanded_capacity: 'retrieve_expanded_capacity',
-    search_expanded_capacity: 'retrieve_expanded_capacity',
-    capacity_retrieve: 'retrieve_expanded_capacity',
-    capacity_search: 'retrieve_expanded_capacity',
-    capacity_query: 'retrieve_expanded_capacity',
-    retrieve_capacity: 'retrieve_expanded_capacity',
-    rag_search: 'retrieve_expanded_capacity',
-    rag_query: 'retrieve_expanded_capacity',
-    expanded_capacity_query: 'retrieve_expanded_capacity',
-  };
+    // Normalize tool aliases
+    const aliasMap = {
+        javascript: "run_javascript",
+        js: "run_javascript",
+        code_run: "run_javascript",
+        bash: "run_bash",
+        terminal: "run_bash",
+        search_file: "search_filesystem",
+        search_files: "search_filesystem",
+        find_files: "search_filesystem",
+        file_create: "create_file",
+        file_read: "read_file",
+        file_write: "write_file",
+        task_create: "create_task",
+        task_list: "list_tasks",
+        cron_create: "create_cron",
+        discord_alert: "send_alert",
+        timer: "set_timer",
+        create_timer: "set_timer",
+        countdown: "set_timer",
+        search: "web_search",
+        duckduckgo: "web_search",
+        duckduckgo_search: "web_search",
+        ddg: "web_search",
+        ddg_search: "web_search",
+        searxng: "web_search",
+        searxng_search: "web_search",
+        google: "web_search",
+        scrape_webpage: "fetch_webpage",
+        scrape_url: "fetch_webpage",
+        fetch_url: "fetch_webpage",
+        scrape: "fetch_webpage",
+        api: "api_call",
+        http_request: "api_call",
+        curl: "api_call",
+        http: "api_call",
+        fetch: "api_call",
+        request: "api_call",
+        read_brain_memory: "read_brain_memory",
+        read_brain: "read_brain_memory",
+        read_memory: "read_brain_memory",
+        get_brain: "read_brain_memory",
+        get_memory: "read_brain_memory",
+        update_brain_memory: "update_brain_memory",
+        update_brain: "update_brain_memory",
+        save_brain: "update_brain_memory",
+        save_memory: "update_brain_memory",
+        write_brain: "update_brain_memory",
+        fetch_notes: "fetch_notes",
+        get_notes: "fetch_notes",
+        read_notes: "fetch_notes",
+        notes: "fetch_notes",
+        notes_read: "fetch_notes",
+        notes_fetch: "fetch_notes",
+        edit_notes: "edit_notes",
+        notes_edit: "edit_notes",
+        add_note: "edit_notes",
+        add_notes: "edit_notes",
+        update_notes: "update_notes",
+        save_notes: "update_notes",
+        append_notes: "update_notes",
+        write_notes: "update_notes",
+        notes_update: "update_notes",
+        notes_append: "update_notes",
+        retrieve_expanded_capacity: "retrieve_expanded_capacity",
+        expanded_capacity: "retrieve_expanded_capacity",
+        query_expanded_capacity: "retrieve_expanded_capacity",
+        search_expanded_capacity: "retrieve_expanded_capacity",
+        capacity_retrieve: "retrieve_expanded_capacity",
+        capacity_search: "retrieve_expanded_capacity",
+        capacity_query: "retrieve_expanded_capacity",
+        retrieve_capacity: "retrieve_expanded_capacity",
+        rag_search: "retrieve_expanded_capacity",
+        rag_query: "retrieve_expanded_capacity",
+        expanded_capacity_query: "retrieve_expanded_capacity",
+    };
 
-  const toolName = aliasMap[name] || name;
-  const tool = TOOLS[toolName];
-  if (!tool) {
-    throw new Error(`Unknown tool "${name}". Available tools: ${Object.keys(TOOLS).join(', ')}`);
-  }
+    const toolName = aliasMap[name] || name;
+    const tool = TOOLS[toolName];
+    if (!tool) {
+        throw new Error(`Unknown tool "${name}". Available tools: ${Object.keys(TOOLS).join(", ")}`);
+    }
 
-  return tool.execute(args);
+    return tool.execute(args);
 }
 
 /**
  * Build the system prompt detailing persona, live environment, and tools.
  */
-function buildSystemPrompt(customSystemPrompt = '') {
-  const toolsDescription = Object.entries(TOOLS)
-    .map(([name, def]) => {
-      const params = Object.entries(def.parameters)
-        .map(([pName, pDef]) => `    - \`${pName}\` (${pDef.type}${pDef.required ? ', required' : ''}): ${pDef.description}`)
-        .join('\n');
-      return `- **\`${name}\`**: ${def.description}\n  Parameters:\n${params}`;
-    })
-    .join('\n\n');
+function buildSystemPrompt(customSystemPrompt = "") {
+    const toolsDescription = Object.entries(TOOLS)
+        .map(([name, def]) => {
+            const params = Object.entries(def.parameters)
+                .map(([pName, pDef]) => `    - \`${pName}\` (${pDef.type}${pDef.required ? ", required" : ""}): ${pDef.description}`)
+                .join("\n");
+            return `- **\`${name}\`**: ${def.description}\n  Parameters:\n${params}`;
+        })
+        .join("\n\n");
 
-  return `You are Marnie, an advanced self-hosted AI workspace assistant.
+    return `You are Marnie, an advanced self-hosted AI workspace assistant.
 You operate inside a real Linux environment and are equipped with native tools to interact directly with the operating system, terminal, filesystem, code runner, tasks, and integrations.
 
 CRITICAL INSTRUCTIONS:
@@ -427,7 +438,7 @@ TOOL USAGE GUIDELINES:
 - IN-APP EDIT & PREVIEW PANEL (CLAUDE ARTIFACTS): When you create or edit files in the workspace (such as HTML, JavaScript, CSS, SVG, or Markdown), the user can immediately open them in the browser or view them in the Claude-like in-app Edit and Preview panel where code can be edited, tested, and copied. Always write complete, functional code.
 - When you emit a tool call, the system will execute it and deliver the real stdout/stderr back to the workspace.
 
-${customSystemPrompt ? `\nADDITIONAL USER INSTRUCTIONS:\n${customSystemPrompt}` : ''}`.trim();
+${customSystemPrompt ? `\nADDITIONAL USER INSTRUCTIONS:\n${customSystemPrompt}` : ""}`.trim();
 }
 
 /**
@@ -435,103 +446,147 @@ ${customSystemPrompt ? `\nADDITIONAL USER INSTRUCTIONS:\n${customSystemPrompt}` 
  * Handles <tool_call>...</tool_call> or ```tool_call...```
  */
 function parseToolCalls(text) {
-  if (!text || typeof text !== 'string') return [];
-  const calls = [];
+    if (!text || typeof text !== "string") return [];
+    const calls = [];
 
-  // 1. Check <tool_call>...</tool_call>
-  const xmlRegex = /<tool_call>([\s\S]*?)<\/tool_call>/gi;
-  let match;
-  while ((match = xmlRegex.exec(text)) !== null) {
-    try {
-      const parsed = JSON.parse(match[1].trim());
-      if (parsed.name) {
-        calls.push({
-          raw: match[0],
-          name: parsed.name,
-          arguments: parsed.arguments || parsed.parameters || {},
-        });
-      }
-    } catch {}
-  }
+    // 1. Check <tool_call>...</tool_call>
+    const xmlRegex = /<tool_call>([\s\S]*?)<\/tool_call>/gi;
+    let match;
+    while ((match = xmlRegex.exec(text)) !== null) {
+        try {
+            const parsed = JSON.parse(match[1].trim());
+            if (parsed.name) {
+                calls.push({
+                    raw: match[0],
+                    name: parsed.name,
+                    arguments: parsed.arguments || parsed.parameters || {},
+                });
+            }
+        } catch {}
+    }
 
-  // 2. Check ```tool_call ... ```
-  const mdRegex = /```(?:tool_call|json:tool_call)\s*([\s\S]*?)```/gi;
-  while ((match = mdRegex.exec(text)) !== null) {
-    try {
-      const parsed = JSON.parse(match[1].trim());
-      const toolName = parsed.name || parsed.tool;
-      if (toolName) {
-        calls.push({
-          raw: match[0],
-          name: toolName,
-          arguments: parsed.arguments || parsed.parameters || {},
-        });
-      }
-    } catch {}
-  }
+    // 2. Check ```tool_call ... ```
+    const mdRegex = /```(?:tool_call|json:tool_call)\s*([\s\S]*?)```/gi;
+    while ((match = mdRegex.exec(text)) !== null) {
+        try {
+            const parsed = JSON.parse(match[1].trim());
+            const toolName = parsed.name || parsed.tool;
+            if (toolName) {
+                calls.push({
+                    raw: match[0],
+                    name: toolName,
+                    arguments: parsed.arguments || parsed.parameters || {},
+                });
+            }
+        } catch {}
+    }
 
-  // 3. Check generic ```json ... ``` blocks containing a tool name
-  const jsonRegex = /```json\s*([\s\S]*?)```/gi;
-  while ((match = jsonRegex.exec(text)) !== null) {
-    try {
-      const parsed = JSON.parse(match[1].trim());
-      const toolName = parsed.name || parsed.tool;
-      if (toolName && typeof toolName === 'string') {
-        const knownTools = [
-          'run_javascript', 'run_bash', 'search_filesystem', 'read_file', 'create_file', 'write_file',
-          'create_task', 'list_tasks', 'create_cron', 'send_alert', 'set_timer', 'timer',
-          'web_search', 'search', 'javascript', 'bash', 'terminal', 'js',
-          'fetch_webpage', 'scrape_webpage', 'scrape_url', 'fetch_url', 'scrape',
-          'api_call', 'api', 'http_request', 'curl', 'http', 'fetch', 'request',
-          'read_brain_memory', 'read_brain', 'update_brain_memory', 'update_brain',
-          'read_memory', 'save_memory', 'write_brain', 'save_brain',
-          'fetch_notes', 'read_notes', 'get_notes', 'notes', 'update_notes',
-          'edit_notes', 'notes_edit', 'add_note', 'add_notes',
-          'save_notes', 'append_notes', 'write_notes',
-          'retrieve_expanded_capacity', 'expanded_capacity', 'query_expanded_capacity',
-          'search_expanded_capacity', 'retrieve_capacity', 'capacity_search'
-        ];
-        if (knownTools.includes(toolName.toLowerCase()) && !calls.some(c => c.raw === match[0])) {
-          calls.push({
-            raw: match[0],
-            name: toolName,
-            arguments: parsed.arguments || parsed.parameters || {},
-          });
-        }
-      }
-    } catch {}
-  }
+    // 3. Check generic ```json ... ``` blocks containing a tool name
+    const jsonRegex = /```json\s*([\s\S]*?)```/gi;
+    while ((match = jsonRegex.exec(text)) !== null) {
+        try {
+            const parsed = JSON.parse(match[1].trim());
+            const toolName = parsed.name || parsed.tool;
+            if (toolName && typeof toolName === "string") {
+                const knownTools = [
+                    "run_javascript",
+                    "run_bash",
+                    "search_filesystem",
+                    "read_file",
+                    "create_file",
+                    "write_file",
+                    "create_task",
+                    "list_tasks",
+                    "create_cron",
+                    "send_alert",
+                    "set_timer",
+                    "timer",
+                    "web_search",
+                    "search",
+                    "javascript",
+                    "bash",
+                    "terminal",
+                    "js",
+                    "fetch_webpage",
+                    "scrape_webpage",
+                    "scrape_url",
+                    "fetch_url",
+                    "scrape",
+                    "api_call",
+                    "api",
+                    "http_request",
+                    "curl",
+                    "http",
+                    "fetch",
+                    "request",
+                    "read_brain_memory",
+                    "read_brain",
+                    "update_brain_memory",
+                    "update_brain",
+                    "read_memory",
+                    "save_memory",
+                    "write_brain",
+                    "save_brain",
+                    "fetch_notes",
+                    "read_notes",
+                    "get_notes",
+                    "notes",
+                    "update_notes",
+                    "edit_notes",
+                    "notes_edit",
+                    "add_note",
+                    "add_notes",
+                    "save_notes",
+                    "append_notes",
+                    "write_notes",
+                    "retrieve_expanded_capacity",
+                    "expanded_capacity",
+                    "query_expanded_capacity",
+                    "search_expanded_capacity",
+                    "retrieve_capacity",
+                    "capacity_search",
+                ];
+                if (knownTools.includes(toolName.toLowerCase()) && !calls.some((c) => c.raw === match[0])) {
+                    calls.push({
+                        raw: match[0],
+                        name: toolName,
+                        arguments: parsed.arguments || parsed.parameters || {},
+                    });
+                }
+            }
+        } catch {}
+    }
 
-  return calls;
+    return calls;
 }
 
 const OLLAMA_TOOLS = Object.entries(TOOLS).map(([name, def]) => ({
-  type: 'function',
-  function: {
-    name,
-    description: def.description,
-    parameters: {
-      type: 'object',
-      properties: Object.fromEntries(
-        Object.entries(def.parameters).map(([pName, pDef]) => [
-          pName,
-          {
-            type: pDef.type,
-            description: pDef.description,
-          },
-        ])
-      ),
-      required: Object.entries(def.parameters)
-        .filter(([_, pDef]) => pDef.required)
-        .map(([pName]) => pName),
+    type: "function",
+    function: {
+        name,
+        description: def.description,
+        parameters: {
+            type: "object",
+            properties: Object.fromEntries(
+                Object.entries(def.parameters).map(([pName, pDef]) => [
+                    pName,
+                    {
+                        type: pDef.type,
+                        description: pDef.description,
+                    },
+                ]),
+            ),
+            required: Object.entries(def.parameters)
+                .filter(([_, pDef]) => pDef.required)
+                .map(([pName]) => pName),
+        },
     },
-  },
 }));
 
 module.exports = {
-  TOOLS,
-  OLLAMA_TOOLS,
-  executeTool,
-  buildSystemPrompt,
-  parseToolCalls,
+    TOOLS,
+    OLLAMA_TOOLS,
+    executeTool,
+    buildSystemPrompt,
+    parseToolCalls,
 };

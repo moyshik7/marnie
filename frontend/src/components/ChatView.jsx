@@ -39,17 +39,7 @@ import {
 } from "lucide-react";
 import katex from "katex";
 import mermaid from "mermaid";
-import {
-    sendMessageStream,
-    getSettings,
-    getWorkspaceFile,
-    getWorkspaceRawUrl,
-    listWorkspaceFiles,
-    forkConversation,
-    compactConversation,
-    renameConversation,
-    createConversation,
-} from "../services/api";
+import { sendMessageStream, getSettings, getWorkspaceFile, getWorkspaceRawUrl, listWorkspaceFiles, forkConversation, compactConversation, renameConversation, createConversation } from "../services/api";
 import ThemeToggle from "./ThemeToggle";
 import ArtifactPanel from "./ArtifactPanel";
 
@@ -156,9 +146,7 @@ function MermaidBlock({ chart }) {
                     color: "var(--text-muted)",
                 }}
             >
-                <span style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                    Diagram (Mermaid)
-                </span>
+                <span style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Diagram (Mermaid)</span>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                     <button
                         onClick={() => setViewRaw(!viewRaw)}
@@ -209,8 +197,7 @@ function MermaidBlock({ chart }) {
 }
 
 function parseMessageContent(rawContent) {
-    if (!rawContent || typeof rawContent !== "string")
-        return { thinking: "", answer: "", toolOutputs: [], artifacts: [] };
+    if (!rawContent || typeof rawContent !== "string") return { thinking: "", answer: "", toolOutputs: [], artifacts: [] };
 
     let content = rawContent;
     let thinking = "";
@@ -255,9 +242,7 @@ function parseMessageContent(rawContent) {
         });
     }
 
-    let cleanAnswer = content
-        .replace(/<!-- tool-output:?(\w*) -->[\s\S]*?<!-- \/tool-output -->/gi, "")
-        .trim();
+    let cleanAnswer = content.replace(/<!-- tool-output:?(\w*) -->[\s\S]*?<!-- \/tool-output -->/gi, "").trim();
 
     // 4. CRITICAL RECOVERY: If cleanAnswer is completely empty but thinking has content,
     // the model generated its response inside the thinking tokens (or finished during deliberation).
@@ -347,9 +332,7 @@ function ArtifactCard({ artifact, onOpenArtifact }) {
 
                 <div style={{ minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
-                        <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--text-primary)" }}>
-                            {fileName}
-                        </span>
+                        <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--text-primary)" }}>{fileName}</span>
                         <span
                             style={{
                                 fontSize: "0.66rem",
@@ -364,9 +347,7 @@ function ArtifactCard({ artifact, onOpenArtifact }) {
                             {isActionCreated ? "Created" : "Edited"}
                         </span>
                     </div>
-                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "1px" }}>
-                        workspace/{artifact.path} • Click to open preview & editor
-                    </div>
+                    <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "1px" }}>workspace/{artifact.path} • Click to open preview & editor</div>
                 </div>
             </div>
 
@@ -469,9 +450,7 @@ function CollapsibleToolOutput({ toolName, output, defaultExpanded = false }) {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: isExpanded
-                        ? "0.45rem 0.75rem 0.35rem 0.75rem"
-                        : "0.45rem 0.75rem",
+                    padding: isExpanded ? "0.45rem 0.75rem 0.35rem 0.75rem" : "0.45rem 0.75rem",
                     cursor: "pointer",
                     userSelect: "none",
                     fontWeight: 600,
@@ -508,9 +487,7 @@ function CollapsibleToolOutput({ toolName, output, defaultExpanded = false }) {
                         fontSize: "0.72rem",
                     }}
                 >
-                    <span style={{ opacity: 0.8 }}>
-                        {isExpanded ? "Hide raw results" : "Show raw results"}
-                    </span>
+                    <span style={{ opacity: 0.8 }}>{isExpanded ? "Hide raw results" : "Show raw results"}</span>
                     {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                 </div>
             </div>
@@ -527,9 +504,7 @@ function CollapsibleToolOutput({ toolName, output, defaultExpanded = false }) {
                         overflowY: "auto",
                     }}
                 >
-                    <div className="markdown-body">
-                        {formatMarkdown(output)}
-                    </div>
+                    <div className="markdown-body">{formatMarkdown(output)}</div>
                 </div>
             )}
         </div>
@@ -560,9 +535,7 @@ function ThinkingBox({ thinking, isStreaming = false, defaultExpanded = false })
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: isExpanded
-                        ? "0.5rem 0.75rem 0.4rem 0.75rem"
-                        : "0.5rem 0.75rem",
+                    padding: isExpanded ? "0.5rem 0.75rem 0.4rem 0.75rem" : "0.5rem 0.75rem",
                     cursor: "pointer",
                     userSelect: "none",
                     fontWeight: 600,
@@ -611,9 +584,7 @@ function ThinkingBox({ thinking, isStreaming = false, defaultExpanded = false })
                         fontSize: "0.72rem",
                     }}
                 >
-                    <span style={{ opacity: 0.8 }}>
-                        {isExpanded ? "Collapse" : "Expand"}
-                    </span>
+                    <span style={{ opacity: 0.8 }}>{isExpanded ? "Collapse" : "Expand"}</span>
                     {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                 </div>
             </div>
@@ -820,16 +791,12 @@ export default function ChatView({
     useEffect(() => {
         if (!modelDropdownOpen) return;
         const handleClickOutside = (e) => {
-            if (
-                modelDropdownRef.current &&
-                !modelDropdownRef.current.contains(e.target)
-            ) {
+            if (modelDropdownRef.current && !modelDropdownRef.current.contains(e.target)) {
                 setModelDropdownOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
-        return () =>
-            document.removeEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [modelDropdownOpen]);
 
     // Clean up Web Speech recognition on unmount
@@ -844,14 +811,12 @@ export default function ChatView({
     }, []);
 
     const toggleSpeechRecognition = () => {
-        const SpeechRecognition =
-            window.SpeechRecognition || window.webkitSpeechRecognition;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             setSpeechModalInfo({
                 type: "unsupported",
                 title: "Speech Recognition Not Supported",
-                description:
-                    "Your browser does not support the Web Speech API. Please use Google Chrome, Microsoft Edge, or Brave Browser (with speech services enabled).",
+                description: "Your browser does not support the Web Speech API. Please use Google Chrome, Microsoft Edge, or Brave Browser (with speech services enabled).",
             });
             return;
         }
@@ -905,38 +870,28 @@ export default function ChatView({
                     return;
                 }
 
-                const isBrave = Boolean(
-                    (window.navigator?.brave &&
-                        typeof window.navigator.brave.isBrave === "function") ||
-                    navigator.userAgent.includes("Brave"),
-                );
+                const isBrave = Boolean((window.navigator?.brave && typeof window.navigator.brave.isBrave === "function") || navigator.userAgent.includes("Brave"));
 
                 if (event.error === "network") {
                     setSpeechModalInfo({
                         type: "network",
                         title: "Speech Recognition Network Error",
                         isBrave,
-                        description:
-                            "The browser failed to reach the speech-to-text service.",
+                        description: "The browser failed to reach the speech-to-text service.",
                     });
-                } else if (
-                    event.error === "not-allowed" ||
-                    event.error === "service-not-allowed"
-                ) {
+                } else if (event.error === "not-allowed" || event.error === "service-not-allowed") {
                     setSpeechModalInfo({
                         type: "permission",
                         title: "Microphone Permission Denied",
                         isBrave,
-                        description:
-                            "Microphone access is blocked. Please allow microphone permissions for this site in your browser address bar settings.",
+                        description: "Microphone access is blocked. Please allow microphone permissions for this site in your browser address bar settings.",
                     });
                 } else if (event.error === "audio-capture") {
                     setSpeechModalInfo({
                         type: "audio-capture",
                         title: "Microphone Not Found",
                         isBrave,
-                        description:
-                            "No microphone was detected on your system, or it is currently being used by another application.",
+                        description: "No microphone was detected on your system, or it is currently being used by another application.",
                     });
                 } else {
                     setSpeechModalInfo({
@@ -960,9 +915,7 @@ export default function ChatView({
             setSpeechModalInfo({
                 type: "start-failed",
                 title: "Could Not Start Speech Recognition",
-                description:
-                    err.message ||
-                    "An error occurred while launching speech recognition.",
+                description: err.message || "An error occurred while launching speech recognition.",
             });
         }
     };
@@ -987,9 +940,7 @@ export default function ChatView({
 
     const ensureConversation = async () => {
         if (conversation?.id) return conversation;
-        const modelToUse =
-            activeModel ||
-            (availableModels.length > 0 ? availableModels[0] : "llama3.2");
+        const modelToUse = activeModel || (availableModels.length > 0 ? availableModels[0] : "llama3.2");
         const newConv = await createConversation("New conversation", modelToUse);
         if (onSelectConversation) {
             onSelectConversation(newConv.id, newConv);
@@ -1001,9 +952,7 @@ export default function ChatView({
     };
 
     const handleSend = async (customPrompt, extraSystem = "", targetConversation = null) => {
-        const textToSend = (
-            typeof customPrompt === "string" ? customPrompt : input
-        ).trim();
+        const textToSend = (typeof customPrompt === "string" ? customPrompt : input).trim();
         if (!textToSend || isStreaming) return;
 
         let activeConv = targetConversation || conversation;
@@ -1024,7 +973,8 @@ export default function ChatView({
             const cmdArg = (spaceIdx !== -1 ? textToSend.slice(spaceIdx + 1) : "").trim();
 
             if (cmdName === "/elim5") {
-                const elim5Instruction = "Explain like I am five years old, make things easier to understand, avoid jargon, use simple everyday analogies, and break down complex concepts into bite-sized, playful explanations.";
+                const elim5Instruction =
+                    "Explain like I am five years old, make things easier to understand, avoid jargon, use simple everyday analogies, and break down complex concepts into bite-sized, playful explanations.";
                 const question = cmdArg;
                 if (!question) {
                     setInput("/elim5 ");
@@ -1070,9 +1020,7 @@ export default function ChatView({
             if (cmdName === "/output-style") {
                 setInput("");
                 if (cmdArg) {
-                    const matchedStyle = OUTPUT_STYLES.find(
-                        (s) => s.id === cmdArg.toLowerCase() || s.name.toLowerCase() === cmdArg.toLowerCase()
-                    );
+                    const matchedStyle = OUTPUT_STYLES.find((s) => s.id === cmdArg.toLowerCase() || s.name.toLowerCase() === cmdArg.toLowerCase());
                     if (matchedStyle) {
                         setOutputStyle(matchedStyle.id);
                         localStorage.setItem("marnie_output_style", matchedStyle.id);
@@ -1111,8 +1059,7 @@ export default function ChatView({
         let augmentedSystem = "";
         if (webSearchActive) {
             const providerLabel = searchProvider === "searxng" ? "SearXNG" : "DuckDuckGo";
-            augmentedSystem +=
-                `\n[Mode: ${providerLabel} Web Search enabled for verified web answers. Keep search terms short and concise (strictly 2 to 5 words). After running the search, you MUST use the search results to formulate a complete and detailed answer to the user's question.]`;
+            augmentedSystem += `\n[Mode: ${providerLabel} Web Search enabled for verified web answers. Keep search terms short and concise (strictly 2 to 5 words). After running the search, you MUST use the search results to formulate a complete and detailed answer to the user's question.]`;
         }
         if (agentModeActive) {
             augmentedSystem +=
@@ -1147,9 +1094,7 @@ export default function ChatView({
                     setIsStreaming(false);
                     setStreamingContent("");
                     setStreamingThinking("");
-                    const combined = finalContent?.trim()
-                        ? (finalThinking?.trim() ? `<think>\n${finalThinking.trim()}\n</think>\n\n${finalContent.trim()}` : finalContent.trim())
-                        : (finalThinking?.trim() || "");
+                    const combined = finalContent?.trim() ? (finalThinking?.trim() ? `<think>\n${finalThinking.trim()}\n</think>\n\n${finalContent.trim()}` : finalContent.trim()) : finalThinking?.trim() || "";
                     setMessages((prev) => [
                         ...prev,
                         {
@@ -1217,7 +1162,10 @@ export default function ChatView({
         setStreamingThinking("");
 
         // Build brief side prompt referencing conversation context without storing it permanently in DB
-        const recentContext = messages.slice(-6).map(m => `${m.role.toUpperCase()}: ${(m.content || '').slice(0, 300)}`).join("\n\n");
+        const recentContext = messages
+            .slice(-6)
+            .map((m) => `${m.role.toUpperCase()}: ${(m.content || "").slice(0, 300)}`)
+            .join("\n\n");
         const sideSystemPrompt = `You are answering a quick side-question ("/btw") for the user. Here is the background conversation context for reference only:\n\n${recentContext}\n\nProvide a direct, helpful, and concise answer to the side question without altering previous tasks. ZERO EMOJIS POLICY: Absolutely DO NOT use any emojis.`;
 
         const abortController = new AbortController();
@@ -1238,9 +1186,7 @@ export default function ChatView({
                     setIsStreaming(false);
                     setStreamingContent("");
                     setStreamingThinking("");
-                    const combined = finalContent?.trim()
-                        ? (finalThinking?.trim() ? `<think>\n${finalThinking.trim()}\n</think>\n\n${finalContent.trim()}` : finalContent.trim())
-                        : (finalThinking?.trim() || "");
+                    const combined = finalContent?.trim() ? (finalThinking?.trim() ? `<think>\n${finalThinking.trim()}\n</think>\n\n${finalContent.trim()}` : finalContent.trim()) : finalThinking?.trim() || "";
                     setMessages((prev) => [
                         ...prev,
                         {
@@ -1286,7 +1232,7 @@ export default function ChatView({
         if (!activeConv?.id || isForking) return;
         setIsForking(true);
         try {
-            const forkTitle = customTitle || `Fork of ${activeConv.title || 'Conversation'}`;
+            const forkTitle = customTitle || `Fork of ${activeConv.title || "Conversation"}`;
             const newConv = await forkConversation(activeConv.id, { title: forkTitle });
             if (newConv && newConv.id) {
                 if (onRefreshConversations) await onRefreshConversations();
@@ -1399,9 +1345,7 @@ export default function ChatView({
     // Filter matching slash commands when typing starts with /
     const isSlashMenuOpen = input.startsWith("/") && !input.includes(" ");
     const slashSearchTerm = input.startsWith("/") ? input.slice(1).toLowerCase() : "";
-    const filteredSlashCommands = isSlashMenuOpen
-        ? SLASH_COMMANDS.filter((cmd) => cmd.name.slice(1).toLowerCase().startsWith(slashSearchTerm))
-        : [];
+    const filteredSlashCommands = isSlashMenuOpen ? SLASH_COMMANDS.filter((cmd) => cmd.name.slice(1).toLowerCase().startsWith(slashSearchTerm)) : [];
 
     const handleSelectSlashCommand = (cmd) => {
         if (cmd.execute === "action" && (cmd.name === "/fork" || cmd.name === "/compact")) {
@@ -1461,9 +1405,13 @@ export default function ChatView({
     };
 
     const handleCopy = (text, idx) => {
-        const cleaned = typeof text === "string"
-            ? text.replace(/<think>[\s\S]*?<\/think>\s*/gi, "").replace(/<!-- tool-output:?(\w*) -->[\s\S]*?<!-- \/tool-output -->/gi, "").trim()
-            : text;
+        const cleaned =
+            typeof text === "string"
+                ? text
+                      .replace(/<think>[\s\S]*?<\/think>\s*/gi, "")
+                      .replace(/<!-- tool-output:?(\w*) -->[\s\S]*?<!-- \/tool-output -->/gi, "")
+                      .trim()
+                : text;
         navigator.clipboard.writeText(cleaned);
         setCopiedIndex(idx);
         setTimeout(() => setCopiedIndex(null), 2000);
@@ -1491,662 +1439,483 @@ export default function ChatView({
                     minWidth: 0,
                 }}
             >
-            {/* Top Header Bar */}
-            <header
-                style={{
-                    padding: "0.8rem 1.5rem",
-                    borderBottom: "1px solid var(--border-subtle)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    backgroundColor: "var(--bg-primary)",
-                    zIndex: 10,
-                    gap: "1rem",
-                }}
-            >
-                {/* Chat title */}
-                <div
+                {/* Top Header Bar */}
+                <header
                     style={{
+                        padding: "0.8rem 1.5rem",
+                        borderBottom: "1px solid var(--border-subtle)",
                         display: "flex",
                         alignItems: "center",
-                        gap: "0.75rem",
-                        minWidth: 0,
+                        justifyContent: "space-between",
+                        backgroundColor: "var(--bg-primary)",
+                        zIndex: 10,
+                        gap: "1rem",
                     }}
                 >
-                    <span
-                        style={{
-                            fontSize: "0.92rem",
-                            fontWeight: 600,
-                            color: "var(--text-primary)",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                        }}
-                    >
-                        {conversation?.title || "New Session"}
-                    </span>
-                </div>
-
-                {/* Right side: Workspace Files, Theme Switcher & Tools */}
-                <div
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.6rem",
-                        flexShrink: 0,
-                    }}
-                >
-                    {/* Workspace Files & Live Preview button */}
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (artifactOpen) {
-                                handleCloseArtifact();
-                            } else {
-                                handleOpenArtifact(currentArtifactPath || "");
-                            }
-                        }}
-                        title="Workspace Files & Live Preview"
+                    {/* Chat title */}
+                    <div
                         style={{
                             display: "flex",
                             alignItems: "center",
-                            gap: "0.35rem",
-                            padding: "0.35rem 0.65rem",
-                            borderRadius: "6px",
-                            border: "1px solid var(--border-subtle)",
-                            backgroundColor: artifactOpen ? "var(--bg-secondary)" : "transparent",
-                            color: artifactOpen ? "var(--accent-terracotta)" : "var(--text-secondary)",
-                            fontSize: "0.78rem",
-                            fontWeight: 500,
-                            cursor: "pointer",
-                            transition: "all 0.15s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                            if (!artifactOpen) {
-                                e.currentTarget.style.color = "var(--text-primary)";
-                                e.currentTarget.style.borderColor = "var(--border-strong)";
-                            }
-                        }}
-                        onMouseLeave={(e) => {
-                            if (!artifactOpen) {
-                                e.currentTarget.style.color = "var(--text-secondary)";
-                                e.currentTarget.style.borderColor = "var(--border-subtle)";
-                            }
+                            gap: "0.75rem",
+                            minWidth: 0,
                         }}
                     >
-                        <FileCode size={14} />
-                        <span>Workspace Files</span>
-                    </button>
-
-                    {/* Brain Memory (workspace/BRAIN.md) button */}
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (artifactOpen && currentArtifactPath === "BRAIN.md") {
-                                handleCloseArtifact();
-                            } else {
-                                handleOpenArtifact("BRAIN.md");
-                            }
-                        }}
-                        title="Brain Memory (workspace/BRAIN.md)"
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.35rem",
-                            padding: "0.35rem 0.65rem",
-                            borderRadius: "6px",
-                            border: "1px solid var(--border-subtle)",
-                            backgroundColor:
-                                artifactOpen && currentArtifactPath === "BRAIN.md"
-                                    ? "var(--bg-secondary)"
-                                    : "transparent",
-                            color:
-                                artifactOpen && currentArtifactPath === "BRAIN.md"
-                                    ? "var(--accent-terracotta)"
-                                    : "var(--text-secondary)",
-                            fontSize: "0.78rem",
-                            fontWeight: 500,
-                            cursor: "pointer",
-                            transition: "all 0.15s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                            if (!artifactOpen || currentArtifactPath !== "BRAIN.md") {
-                                e.currentTarget.style.color = "var(--text-primary)";
-                                e.currentTarget.style.borderColor = "var(--border-strong)";
-                            }
-                        }}
-                        onMouseLeave={(e) => {
-                            if (!artifactOpen || currentArtifactPath !== "BRAIN.md") {
-                                e.currentTarget.style.color = "var(--text-secondary)";
-                                e.currentTarget.style.borderColor = "var(--border-subtle)";
-                            }
-                        }}
-                    >
-                        <Brain size={14} />
-                        <span>Brain Memory</span>
-                    </button>
-
-                    {/* AI Notes (workspace/NOTES.md) button */}
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (artifactOpen && currentArtifactPath === "NOTES.md") {
-                                handleCloseArtifact();
-                            } else {
-                                handleOpenArtifact("NOTES.md");
-                            }
-                        }}
-                        title="AI Notes & Tasks (workspace/NOTES.md)"
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.35rem",
-                            padding: "0.35rem 0.65rem",
-                            borderRadius: "6px",
-                            border: "1px solid var(--border-subtle)",
-                            backgroundColor:
-                                artifactOpen && currentArtifactPath === "NOTES.md"
-                                    ? "var(--bg-secondary)"
-                                    : "transparent",
-                            color:
-                                artifactOpen && currentArtifactPath === "NOTES.md"
-                                    ? "var(--accent-terracotta)"
-                                    : "var(--text-secondary)",
-                            fontSize: "0.78rem",
-                            fontWeight: 500,
-                            cursor: "pointer",
-                            transition: "all 0.15s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                            if (!artifactOpen || currentArtifactPath !== "NOTES.md") {
-                                e.currentTarget.style.color = "var(--text-primary)";
-                                e.currentTarget.style.borderColor = "var(--border-strong)";
-                            }
-                        }}
-                        onMouseLeave={(e) => {
-                            if (!artifactOpen || currentArtifactPath !== "NOTES.md") {
-                                e.currentTarget.style.color = "var(--text-secondary)";
-                                e.currentTarget.style.borderColor = "var(--border-subtle)";
-                            }
-                        }}
-                    >
-                        <FileText size={14} />
-                        <span>Notes</span>
-                    </button>
-
-                    {/* Top Light/Dark Theme Switcher Toggle */}
-                    <ThemeToggle theme={theme} onToggle={onToggleTheme} />
-                </div>
-            </header>
-
-            {/* Messages Scroll Area */}
-            <div
-                style={{
-                    flex: 1,
-                    overflowY: "auto",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent:
-                        messages.length === 0 && !isStreaming
-                            ? "center"
-                            : "flex-start",
-                    padding:
-                        messages.length === 0 && !isStreaming
-                            ? "1.5rem 1rem 8rem 1rem"
-                            : "2.75rem 1rem 10rem 1rem",
-                }}
-            >
-                <div
-                    style={{
-                        width: "100%",
-                        maxWidth: "800px",
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent:
-                            messages.length === 0 && !isStreaming
-                                ? "center"
-                                : "flex-start",
-                        paddingTop:
-                            messages.length > 0 || isStreaming
-                                ? "1.5rem"
-                                : "0",
-                    }}
-                >
-                    {/* Welcome Screen when no messages */}
-                    {messages.length === 0 && !isStreaming ? (
-                        <div
+                        <span
                             style={{
-                                padding: "3rem 1rem 1rem 1rem",
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                textAlign: "center",
-                                animation: "fadeIn 0.3s ease-out",
+                                fontSize: "0.92rem",
+                                fontWeight: 600,
+                                color: "var(--text-primary)",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
                             }}
                         >
-                            <h1
-                                style={{
-                                    fontFamily: "var(--font-display)",
-                                    fontSize: "2.4rem",
-                                    fontWeight: 700,
-                                    color: "var(--text-primary)",
-                                    letterSpacing: "-0.025em",
-                                    marginBottom: "0.6rem",
-                                }}
-                            >
-                                {getGreeting()}
-                            </h1>
+                            {conversation?.title || "New Session"}
+                        </span>
+                    </div>
 
-                            <p
-                                style={{
-                                    fontSize: "1.05rem",
-                                    color: "var(--text-secondary)",
-                                    maxWidth: "540px",
-                                    lineHeight: 1.6,
-                                    marginBottom: "2.5rem",
-                                    fontFamily: "monospace",
-                                }}
-                            >
-                                The world is yours
-                            </p>
+                    {/* Right side: Workspace Files, Theme Switcher & Tools */}
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.6rem",
+                            flexShrink: 0,
+                        }}
+                    >
+                        {/* Workspace Files & Live Preview button */}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (artifactOpen) {
+                                    handleCloseArtifact();
+                                } else {
+                                    handleOpenArtifact(currentArtifactPath || "");
+                                }
+                            }}
+                            title="Workspace Files & Live Preview"
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.35rem",
+                                padding: "0.35rem 0.65rem",
+                                borderRadius: "6px",
+                                border: "1px solid var(--border-subtle)",
+                                backgroundColor: artifactOpen ? "var(--bg-secondary)" : "transparent",
+                                color: artifactOpen ? "var(--accent-terracotta)" : "var(--text-secondary)",
+                                fontSize: "0.78rem",
+                                fontWeight: 500,
+                                cursor: "pointer",
+                                transition: "all 0.15s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                                if (!artifactOpen) {
+                                    e.currentTarget.style.color = "var(--text-primary)";
+                                    e.currentTarget.style.borderColor = "var(--border-strong)";
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                if (!artifactOpen) {
+                                    e.currentTarget.style.color = "var(--text-secondary)";
+                                    e.currentTarget.style.borderColor = "var(--border-subtle)";
+                                }
+                            }}
+                        >
+                            <FileCode size={14} />
+                            <span>Workspace Files</span>
+                        </button>
 
-                            {/* Quick Prompt Suggestions */}
+                        {/* Brain Memory (workspace/BRAIN.md) button */}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (artifactOpen && currentArtifactPath === "BRAIN.md") {
+                                    handleCloseArtifact();
+                                } else {
+                                    handleOpenArtifact("BRAIN.md");
+                                }
+                            }}
+                            title="Brain Memory (workspace/BRAIN.md)"
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.35rem",
+                                padding: "0.35rem 0.65rem",
+                                borderRadius: "6px",
+                                border: "1px solid var(--border-subtle)",
+                                backgroundColor: artifactOpen && currentArtifactPath === "BRAIN.md" ? "var(--bg-secondary)" : "transparent",
+                                color: artifactOpen && currentArtifactPath === "BRAIN.md" ? "var(--accent-terracotta)" : "var(--text-secondary)",
+                                fontSize: "0.78rem",
+                                fontWeight: 500,
+                                cursor: "pointer",
+                                transition: "all 0.15s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                                if (!artifactOpen || currentArtifactPath !== "BRAIN.md") {
+                                    e.currentTarget.style.color = "var(--text-primary)";
+                                    e.currentTarget.style.borderColor = "var(--border-strong)";
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                if (!artifactOpen || currentArtifactPath !== "BRAIN.md") {
+                                    e.currentTarget.style.color = "var(--text-secondary)";
+                                    e.currentTarget.style.borderColor = "var(--border-subtle)";
+                                }
+                            }}
+                        >
+                            <Brain size={14} />
+                            <span>Brain Memory</span>
+                        </button>
+
+                        {/* AI Notes (workspace/NOTES.md) button */}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (artifactOpen && currentArtifactPath === "NOTES.md") {
+                                    handleCloseArtifact();
+                                } else {
+                                    handleOpenArtifact("NOTES.md");
+                                }
+                            }}
+                            title="AI Notes & Tasks (workspace/NOTES.md)"
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.35rem",
+                                padding: "0.35rem 0.65rem",
+                                borderRadius: "6px",
+                                border: "1px solid var(--border-subtle)",
+                                backgroundColor: artifactOpen && currentArtifactPath === "NOTES.md" ? "var(--bg-secondary)" : "transparent",
+                                color: artifactOpen && currentArtifactPath === "NOTES.md" ? "var(--accent-terracotta)" : "var(--text-secondary)",
+                                fontSize: "0.78rem",
+                                fontWeight: 500,
+                                cursor: "pointer",
+                                transition: "all 0.15s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                                if (!artifactOpen || currentArtifactPath !== "NOTES.md") {
+                                    e.currentTarget.style.color = "var(--text-primary)";
+                                    e.currentTarget.style.borderColor = "var(--border-strong)";
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                if (!artifactOpen || currentArtifactPath !== "NOTES.md") {
+                                    e.currentTarget.style.color = "var(--text-secondary)";
+                                    e.currentTarget.style.borderColor = "var(--border-subtle)";
+                                }
+                            }}
+                        >
+                            <FileText size={14} />
+                            <span>Notes</span>
+                        </button>
+
+                        {/* Top Light/Dark Theme Switcher Toggle */}
+                        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+                    </div>
+                </header>
+
+                {/* Messages Scroll Area */}
+                <div
+                    style={{
+                        flex: 1,
+                        overflowY: "auto",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: messages.length === 0 && !isStreaming ? "center" : "flex-start",
+                        padding: messages.length === 0 && !isStreaming ? "1.5rem 1rem 8rem 1rem" : "2.75rem 1rem 10rem 1rem",
+                    }}
+                >
+                    <div
+                        style={{
+                            width: "100%",
+                            maxWidth: "800px",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: messages.length === 0 && !isStreaming ? "center" : "flex-start",
+                            paddingTop: messages.length > 0 || isStreaming ? "1.5rem" : "0",
+                        }}
+                    >
+                        {/* Welcome Screen when no messages */}
+                        {messages.length === 0 && !isStreaming ? (
                             <div
                                 style={{
-                                    display: "grid",
-                                    gridTemplateColumns:
-                                        "repeat(auto-fit, minmax(230px, 1fr))",
-                                    gap: "0.85rem",
-                                    width: "100%",
+                                    padding: "3rem 1rem 1rem 1rem",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    textAlign: "center",
+                                    animation: "fadeIn 0.3s ease-out",
                                 }}
                             >
-                                {[
-                                    {
-                                        title: "Persistent Tasks",
-                                        desc: "Create SQLite tasks with deadlines and priority",
-                                        icon: CheckSquare,
-                                        prompt: 'Add a new high-priority task titled "Set up SearXNG web search engine".',
-                                    },
-                                    {
-                                        title: "Deep Research",
-                                        desc: "Enable deep research mode for comprehensive analysis",
-                                        icon: BotMessageSquare,
-                                        prompt: "Conduct a deep research on the latest advancements in AI language models.",
-                                    },
-                                ].map((card, i) => {
-                                    const Icon = card.icon;
-                                    return (
-                                        <div
-                                            key={i}
-                                            onClick={() =>
-                                                handleSend(card.prompt)
-                                            }
-                                            style={{
-                                                padding: "1.1rem",
-                                                backgroundColor:
-                                                    "var(--bg-card)",
-                                                border: "1px solid var(--border-subtle)",
-                                                borderRadius:
-                                                    "var(--radius-md)",
-                                                textAlign: "left",
-                                                cursor: "pointer",
-                                                transition: "all 0.15s ease",
-                                                boxShadow: "var(--shadow-sm)",
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.borderColor =
-                                                    "var(--accent-terracotta)";
-                                                e.currentTarget.style.transform =
-                                                    "translateY(-2px)";
-                                                e.currentTarget.style.boxShadow =
-                                                    "var(--shadow-md)";
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.style.borderColor =
-                                                    "var(--border-subtle)";
-                                                e.currentTarget.style.transform =
-                                                    "none";
-                                                e.currentTarget.style.boxShadow =
-                                                    "var(--shadow-sm)";
-                                            }}
-                                        >
+                                <h1
+                                    style={{
+                                        fontFamily: "var(--font-display)",
+                                        fontSize: "2.4rem",
+                                        fontWeight: 700,
+                                        color: "var(--text-primary)",
+                                        letterSpacing: "-0.025em",
+                                        marginBottom: "0.6rem",
+                                    }}
+                                >
+                                    {getGreeting()}
+                                </h1>
+
+                                <p
+                                    style={{
+                                        fontSize: "1.05rem",
+                                        color: "var(--text-secondary)",
+                                        maxWidth: "540px",
+                                        lineHeight: 1.6,
+                                        marginBottom: "2.5rem",
+                                        fontFamily: "monospace",
+                                    }}
+                                >
+                                    The world is yours
+                                </p>
+
+                                {/* Quick Prompt Suggestions */}
+                                <div
+                                    style={{
+                                        display: "grid",
+                                        gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
+                                        gap: "0.85rem",
+                                        width: "100%",
+                                    }}
+                                >
+                                    {[
+                                        {
+                                            title: "Persistent Tasks",
+                                            desc: "Create SQLite tasks with deadlines and priority",
+                                            icon: CheckSquare,
+                                            prompt: 'Add a new high-priority task titled "Set up SearXNG web search engine".',
+                                        },
+                                        {
+                                            title: "Deep Research",
+                                            desc: "Enable deep research mode for comprehensive analysis",
+                                            icon: BotMessageSquare,
+                                            prompt: "Conduct a deep research on the latest advancements in AI language models.",
+                                        },
+                                    ].map((card, i) => {
+                                        const Icon = card.icon;
+                                        return (
                                             <div
+                                                key={i}
+                                                onClick={() => handleSend(card.prompt)}
                                                 style={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    gap: "0.5rem",
-                                                    color: "var(--accent-terracotta)",
-                                                    marginBottom: "0.4rem",
+                                                    padding: "1.1rem",
+                                                    backgroundColor: "var(--bg-card)",
+                                                    border: "1px solid var(--border-subtle)",
+                                                    borderRadius: "var(--radius-md)",
+                                                    textAlign: "left",
+                                                    cursor: "pointer",
+                                                    transition: "all 0.15s ease",
+                                                    boxShadow: "var(--shadow-sm)",
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.borderColor = "var(--accent-terracotta)";
+                                                    e.currentTarget.style.transform = "translateY(-2px)";
+                                                    e.currentTarget.style.boxShadow = "var(--shadow-md)";
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.borderColor = "var(--border-subtle)";
+                                                    e.currentTarget.style.transform = "none";
+                                                    e.currentTarget.style.boxShadow = "var(--shadow-sm)";
                                                 }}
                                             >
-                                                <Icon size={16} />
-                                                <span
+                                                <div
                                                     style={{
-                                                        fontSize: "0.88rem",
-                                                        fontWeight: 600,
-                                                        color: "var(--text-primary)",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: "0.5rem",
+                                                        color: "var(--accent-terracotta)",
+                                                        marginBottom: "0.4rem",
                                                     }}
                                                 >
-                                                    {card.title}
-                                                </span>
+                                                    <Icon size={16} />
+                                                    <span
+                                                        style={{
+                                                            fontSize: "0.88rem",
+                                                            fontWeight: 600,
+                                                            color: "var(--text-primary)",
+                                                        }}
+                                                    >
+                                                        {card.title}
+                                                    </span>
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontSize: "0.78rem",
+                                                        color: "var(--text-muted)",
+                                                    }}
+                                                >
+                                                    {card.desc}
+                                                </div>
                                             </div>
-                                            <div
-                                                style={{
-                                                    fontSize: "0.78rem",
-                                                    color: "var(--text-muted)",
-                                                }}
-                                            >
-                                                {card.desc}
-                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ) : (
+                            /* Message list */
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "1.5rem",
+                                }}
+                            >
+                                {messages.map((msg, index) => {
+                                    const isUser = msg.role === "user";
+                                    return (
+                                        <div
+                                            key={msg.id || index}
+                                            className="animate-fade-in"
+                                            style={{
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                alignItems: isUser ? "flex-end" : "flex-start",
+                                                width: "100%",
+                                            }}
+                                        >
+                                            {isUser ? (
+                                                /* User message bubble */
+                                                <div
+                                                    style={{
+                                                        maxWidth: "82%",
+                                                        backgroundColor: "var(--bg-card)",
+                                                        border: "1px solid var(--border-strong)",
+                                                        borderRadius: "18px 18px 4px 18px",
+                                                        padding: "0.85rem 1.15rem",
+                                                        boxShadow: "var(--shadow-sm)",
+                                                        color: "var(--text-primary)",
+                                                        fontSize: "0.96rem",
+                                                        lineHeight: 1.55,
+                                                        whiteSpace: "pre-wrap",
+                                                        wordBreak: "break-word",
+                                                    }}
+                                                >
+                                                    {msg.content}
+                                                </div>
+                                            ) : (
+                                                /* Assistant message layout (Claude-style) */
+                                                <div
+                                                    style={{
+                                                        width: "100%",
+                                                        display: "flex",
+                                                        gap: "0.9rem",
+                                                        padding: "0.5rem 0",
+                                                    }}
+                                                >
+                                                    {/* Avatar */}
+                                                    <img
+                                                        src="/logo.png"
+                                                        alt="Marnie"
+                                                        style={{
+                                                            width: "28px",
+                                                            height: "28px",
+                                                            borderRadius: "var(--radius-sm)",
+                                                            objectFit: "contain",
+                                                            flexShrink: 0,
+                                                            marginTop: "0.2rem",
+                                                        }}
+                                                    />
+
+                                                    {/* Content & Actions */}
+                                                    <div
+                                                        style={{
+                                                            flex: 1,
+                                                            minWidth: 0,
+                                                        }}
+                                                    >
+                                                        {(() => {
+                                                            const { thinking, answer, toolOutputs, artifacts } = parseMessageContent(msg.content);
+                                                            return (
+                                                                <>
+                                                                    {thinking && <ThinkingBox thinking={thinking} defaultExpanded={false} />}
+                                                                    {toolOutputs && toolOutputs.length > 0 && (
+                                                                        <div style={{ marginBottom: "0.5rem" }}>
+                                                                            {toolOutputs.map((to, tIdx) => (
+                                                                                <CollapsibleToolOutput key={tIdx} toolName={to.toolName} output={to.output} defaultExpanded={false} />
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                    {artifacts && artifacts.length > 0 && (
+                                                                        <div style={{ marginBottom: "0.6rem" }}>
+                                                                            {artifacts.map((art, aIdx) => (
+                                                                                <ArtifactCard key={aIdx} artifact={art} onOpenArtifact={handleOpenArtifact} />
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="markdown-body">{formatMarkdown(answer || thinking || (!toolOutputs || toolOutputs.length === 0 ? msg.content : ""))}</div>
+                                                                </>
+                                                            );
+                                                        })()}
+
+                                                        {/* Message actions footer */}
+                                                        <div
+                                                            style={{
+                                                                marginTop: "0.65rem",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                gap: "0.5rem",
+                                                            }}
+                                                        >
+                                                            <button
+                                                                onClick={() => handleCopy(msg.content, index)}
+                                                                title="Copy response"
+                                                                style={{
+                                                                    display: "flex",
+                                                                    alignItems: "center",
+                                                                    gap: "0.3rem",
+                                                                    padding: "0.25rem 0.5rem",
+                                                                    borderRadius: "4px",
+                                                                    color: "var(--text-muted)",
+                                                                    fontSize: "0.74rem",
+                                                                }}
+                                                                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+                                                                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+                                                            >
+                                                                {copiedIndex === index ? <Check size={13} color="#16A34A" /> : <Copy size={13} />}
+                                                                <span>{copiedIndex === index ? "Copied" : "Copy"}</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}
-                            </div>
-                        </div>
-                    ) : (
-                        /* Message list */
-                        <div
-                            style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "1.5rem",
-                            }}
-                        >
-                            {messages.map((msg, index) => {
-                                const isUser = msg.role === "user";
-                                return (
+
+                                {/* Currently Streaming Message */}
+                                {isStreaming && (
                                     <div
-                                        key={msg.id || index}
-                                        className="animate-fade-in"
                                         style={{
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            alignItems: isUser
-                                                ? "flex-end"
-                                                : "flex-start",
                                             width: "100%",
+                                            display: "flex",
+                                            gap: "0.9rem",
+                                            padding: "0.5rem 0",
                                         }}
                                     >
-                                        {isUser ? (
-                                            /* User message bubble */
-                                            <div
-                                                style={{
-                                                    maxWidth: "82%",
-                                                    backgroundColor:
-                                                        "var(--bg-card)",
-                                                    border: "1px solid var(--border-strong)",
-                                                    borderRadius:
-                                                        "18px 18px 4px 18px",
-                                                    padding: "0.85rem 1.15rem",
-                                                    boxShadow:
-                                                        "var(--shadow-sm)",
-                                                    color: "var(--text-primary)",
-                                                    fontSize: "0.96rem",
-                                                    lineHeight: 1.55,
-                                                    whiteSpace: "pre-wrap",
-                                                    wordBreak: "break-word",
-                                                }}
-                                            >
-                                                {msg.content}
-                                            </div>
-                                        ) : (
-                                            /* Assistant message layout (Claude-style) */
-                                            <div
-                                                style={{
-                                                    width: "100%",
-                                                    display: "flex",
-                                                    gap: "0.9rem",
-                                                    padding: "0.5rem 0",
-                                                }}
-                                            >
-                                                {/* Avatar */}
-                                                <img
-                                                    src="/logo.png"
-                                                    alt="Marnie"
-                                                    style={{
-                                                        width: "28px",
-                                                        height: "28px",
-                                                        borderRadius:
-                                                            "var(--radius-sm)",
-                                                        objectFit: "contain",
-                                                        flexShrink: 0,
-                                                        marginTop: "0.2rem",
-                                                    }}
-                                                />
+                                        <img
+                                            src="/logo.png"
+                                            alt="Marnie"
+                                            style={{
+                                                width: "28px",
+                                                height: "28px",
+                                                borderRadius: "var(--radius-sm)",
+                                                objectFit: "contain",
+                                                flexShrink: 0,
+                                                marginTop: "0.2rem",
+                                            }}
+                                        />
 
-                                                {/* Content & Actions */}
-                                                <div
-                                                    style={{
-                                                        flex: 1,
-                                                        minWidth: 0,
-                                                    }}
-                                                >
-                                                    {(() => {
-                                                        const {
-                                                            thinking,
-                                                            answer,
-                                                            toolOutputs,
-                                                            artifacts,
-                                                        } = parseMessageContent(
-                                                            msg.content,
-                                                        );
-                                                        return (
-                                                            <>
-                                                                {thinking && (
-                                                                    <ThinkingBox
-                                                                        thinking={thinking}
-                                                                        defaultExpanded={false}
-                                                                    />
-                                                                )}
-                                                                {toolOutputs && toolOutputs.length > 0 && (
-                                                                    <div style={{ marginBottom: "0.5rem" }}>
-                                                                        {toolOutputs.map((to, tIdx) => (
-                                                                            <CollapsibleToolOutput
-                                                                                key={tIdx}
-                                                                                toolName={to.toolName}
-                                                                                output={to.output}
-                                                                                defaultExpanded={false}
-                                                                            />
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                                {artifacts && artifacts.length > 0 && (
-                                                                    <div style={{ marginBottom: "0.6rem" }}>
-                                                                        {artifacts.map((art, aIdx) => (
-                                                                            <ArtifactCard
-                                                                                key={aIdx}
-                                                                                artifact={art}
-                                                                                onOpenArtifact={handleOpenArtifact}
-                                                                            />
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                                <div className="markdown-body">
-                                                                    {formatMarkdown(
-                                                                        answer || thinking || (!toolOutputs || toolOutputs.length === 0 ? msg.content : "")
-                                                                    )}
-                                                                </div>
-                                                            </>
-                                                        );
-                                                    })()}
-
-                                                    {/* Message actions footer */}
-                                                    <div
-                                                        style={{
-                                                            marginTop:
-                                                                "0.65rem",
-                                                            display: "flex",
-                                                            alignItems:
-                                                                "center",
-                                                            gap: "0.5rem",
-                                                        }}
-                                                    >
-                                                        <button
-                                                            onClick={() =>
-                                                                handleCopy(
-                                                                    msg.content,
-                                                                    index,
-                                                                )
-                                                            }
-                                                            title="Copy response"
-                                                            style={{
-                                                                display: "flex",
-                                                                alignItems:
-                                                                    "center",
-                                                                gap: "0.3rem",
-                                                                padding:
-                                                                    "0.25rem 0.5rem",
-                                                                borderRadius:
-                                                                    "4px",
-                                                                color: "var(--text-muted)",
-                                                                fontSize:
-                                                                    "0.74rem",
-                                                            }}
-                                                            onMouseEnter={(e) =>
-                                                                (e.currentTarget.style.color =
-                                                                    "var(--text-primary)")
-                                                            }
-                                                            onMouseLeave={(e) =>
-                                                                (e.currentTarget.style.color =
-                                                                    "var(--text-muted)")
-                                                            }
-                                                        >
-                                                            {copiedIndex ===
-                                                            index ? (
-                                                                <Check
-                                                                    size={13}
-                                                                    color="#16A34A"
-                                                                />
-                                                            ) : (
-                                                                <Copy
-                                                                    size={13}
-                                                                />
-                                                            )}
-                                                            <span>
-                                                                {copiedIndex ===
-                                                                index
-                                                                    ? "Copied"
-                                                                    : "Copy"}
-                                                            </span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-
-                            {/* Currently Streaming Message */}
-                            {isStreaming && (
-                                <div
-                                    style={{
-                                        width: "100%",
-                                        display: "flex",
-                                        gap: "0.9rem",
-                                        padding: "0.5rem 0",
-                                    }}
-                                >
-                                    <img
-                                        src="/logo.png"
-                                        alt="Marnie"
-                                        style={{
-                                            width: "28px",
-                                            height: "28px",
-                                            borderRadius: "var(--radius-sm)",
-                                            objectFit: "contain",
-                                            flexShrink: 0,
-                                            marginTop: "0.2rem",
-                                        }}
-                                    />
-
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        {streamingThinking && (
-                                            <ThinkingBox
-                                                thinking={streamingThinking}
-                                                isStreaming={true}
-                                                defaultExpanded={false}
-                                            />
-                                        )}
-                                        {(() => {
-                                            if (!streamingContent) {
-                                                return (
-                                                    <div
-                                                        style={{
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            gap: "0.5rem",
-                                                            color: "var(--text-muted)",
-                                                            fontSize: "0.82rem",
-                                                            padding: "0.35rem 0",
-                                                        }}
-                                                    >
-                                                        <span
-                                                            className="typing-dot"
-                                                            style={{
-                                                                width: "6px",
-                                                                height: "6px",
-                                                                backgroundColor: "var(--accent-terracotta)",
-                                                                borderRadius: "50%",
-                                                                display: "inline-block",
-                                                            }}
-                                                        />
-                                                        <span>
-                                                            {streamingThinking
-                                                                ? "Deliberating and formulating response..."
-                                                                : "Marnie is thinking..."}
-                                                        </span>
-                                                    </div>
-                                                );
-                                            }
-                                            const {
-                                                answer,
-                                                toolOutputs,
-                                                artifacts,
-                                            } = parseMessageContent(streamingContent);
-                                            return (
-                                                <>
-                                                    {toolOutputs && toolOutputs.length > 0 && (
-                                                        <div style={{ marginBottom: "0.5rem" }}>
-                                                            {toolOutputs.map((to, tIdx) => (
-                                                                <CollapsibleToolOutput
-                                                                    key={tIdx}
-                                                                    toolName={to.toolName}
-                                                                    output={to.output}
-                                                                    defaultExpanded={false}
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    {artifacts && artifacts.length > 0 && (
-                                                        <div style={{ marginBottom: "0.6rem" }}>
-                                                            {artifacts.map((art, aIdx) => (
-                                                                <ArtifactCard
-                                                                    key={aIdx}
-                                                                    artifact={art}
-                                                                    onOpenArtifact={handleOpenArtifact}
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    {answer ? (
-                                                        <div className="markdown-body">
-                                                            {formatMarkdown(answer)}
-                                                            <span
-                                                                style={{
-                                                                    display: "inline-block",
-                                                                    width: "7px",
-                                                                    height: "14px",
-                                                                    backgroundColor:
-                                                                        "var(--accent-terracotta)",
-                                                                    marginLeft: "3px",
-                                                                    verticalAlign: "middle",
-                                                                }}
-                                                                className="typing-dot"
-                                                            />
-                                                        </div>
-                                                    ) : (
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            {streamingThinking && <ThinkingBox thinking={streamingThinking} isStreaming={true} defaultExpanded={false} />}
+                                            {(() => {
+                                                if (!streamingContent) {
+                                                    return (
                                                         <div
                                                             style={{
                                                                 display: "flex",
@@ -2167,1236 +1936,1154 @@ export default function ChatView({
                                                                     display: "inline-block",
                                                                 }}
                                                             />
-                                                            <span>Deliberating and formulating response...</span>
+                                                            <span>{streamingThinking ? "Deliberating and formulating response..." : "Marnie is thinking..."}</span>
                                                         </div>
-                                                    )}
-                                                </>
-                                            );
-                                        })()}
+                                                    );
+                                                }
+                                                const { answer, toolOutputs, artifacts } = parseMessageContent(streamingContent);
+                                                return (
+                                                    <>
+                                                        {toolOutputs && toolOutputs.length > 0 && (
+                                                            <div style={{ marginBottom: "0.5rem" }}>
+                                                                {toolOutputs.map((to, tIdx) => (
+                                                                    <CollapsibleToolOutput key={tIdx} toolName={to.toolName} output={to.output} defaultExpanded={false} />
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        {artifacts && artifacts.length > 0 && (
+                                                            <div style={{ marginBottom: "0.6rem" }}>
+                                                                {artifacts.map((art, aIdx) => (
+                                                                    <ArtifactCard key={aIdx} artifact={art} onOpenArtifact={handleOpenArtifact} />
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        {answer ? (
+                                                            <div className="markdown-body">
+                                                                {formatMarkdown(answer)}
+                                                                <span
+                                                                    style={{
+                                                                        display: "inline-block",
+                                                                        width: "7px",
+                                                                        height: "14px",
+                                                                        backgroundColor: "var(--accent-terracotta)",
+                                                                        marginLeft: "3px",
+                                                                        verticalAlign: "middle",
+                                                                    }}
+                                                                    className="typing-dot"
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <div
+                                                                style={{
+                                                                    display: "flex",
+                                                                    alignItems: "center",
+                                                                    gap: "0.5rem",
+                                                                    color: "var(--text-muted)",
+                                                                    fontSize: "0.82rem",
+                                                                    padding: "0.35rem 0",
+                                                                }}
+                                                            >
+                                                                <span
+                                                                    className="typing-dot"
+                                                                    style={{
+                                                                        width: "6px",
+                                                                        height: "6px",
+                                                                        backgroundColor: "var(--accent-terracotta)",
+                                                                        borderRadius: "50%",
+                                                                        display: "inline-block",
+                                                                    }}
+                                                                />
+                                                                <span>Deliberating and formulating response...</span>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                                )}
+                            </div>
+                        )}
 
-                    <div ref={messagesEndRef} />
+                        <div ref={messagesEndRef} />
+                    </div>
                 </div>
-            </div>
 
-            {/* Floating Bottom Prompt Box (Claude-style) */}
-            <div
-                style={{
-                    position: "absolute",
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    padding: "0.75rem 1.5rem 1.5rem 1.5rem",
-                    background:
-                        "linear-gradient(to top, var(--bg-primary) 70%, transparent 100%)",
-                    display: "flex",
-                    justifyContent: "center",
-                    zIndex: 20,
-                }}
-            >
+                {/* Floating Bottom Prompt Box (Claude-style) */}
                 <div
                     style={{
-                        width: "100%",
-                        maxWidth: "800px",
-                        backgroundColor: "var(--bg-card)",
-                        border: "1px solid var(--border-strong)",
-                        borderRadius: "16px",
-                        boxShadow: "var(--shadow-md)",
-                        padding: "0.85rem 1.1rem 0.75rem 1.1rem",
+                        position: "absolute",
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        padding: "0.75rem 1.5rem 1.5rem 1.5rem",
+                        background: "linear-gradient(to top, var(--bg-primary) 70%, transparent 100%)",
                         display: "flex",
-                        flexDirection: "column",
-                        gap: "0.6rem",
-                        minHeight: "96px",
-                        justifyContent: "space-between",
-                        transition: "border-color 0.15s ease, box-shadow 0.15s ease",
-                        position: "relative",
+                        justifyContent: "center",
+                        zIndex: 20,
                     }}
                 >
-                    {/* Discord-style Slash Command Popup List */}
-                    {isSlashMenuOpen && filteredSlashCommands.length > 0 && (
-                        <div
-                            style={{
-                                position: "absolute",
-                                bottom: "calc(100% + 10px)",
-                                left: 0,
-                                right: 0,
-                                backgroundColor: "var(--bg-card)",
-                                border: "1px solid var(--border-strong)",
-                                borderRadius: "var(--radius-md)",
-                                boxShadow: "var(--shadow-lg)",
-                                padding: "0.45rem",
-                                zIndex: 120,
-                                maxHeight: "310px",
-                                overflowY: "auto",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "2px",
-                                animation: "fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1)",
-                            }}
-                        >
+                    <div
+                        style={{
+                            width: "100%",
+                            maxWidth: "800px",
+                            backgroundColor: "var(--bg-card)",
+                            border: "1px solid var(--border-strong)",
+                            borderRadius: "16px",
+                            boxShadow: "var(--shadow-md)",
+                            padding: "0.85rem 1.1rem 0.75rem 1.1rem",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "0.6rem",
+                            minHeight: "96px",
+                            justifyContent: "space-between",
+                            transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+                            position: "relative",
+                        }}
+                    >
+                        {/* Discord-style Slash Command Popup List */}
+                        {isSlashMenuOpen && filteredSlashCommands.length > 0 && (
                             <div
                                 style={{
+                                    position: "absolute",
+                                    bottom: "calc(100% + 10px)",
+                                    left: 0,
+                                    right: 0,
+                                    backgroundColor: "var(--bg-card)",
+                                    border: "1px solid var(--border-strong)",
+                                    borderRadius: "var(--radius-md)",
+                                    boxShadow: "var(--shadow-lg)",
+                                    padding: "0.45rem",
+                                    zIndex: 120,
+                                    maxHeight: "310px",
+                                    overflowY: "auto",
                                     display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    padding: "0.35rem 0.65rem 0.25rem 0.65rem",
-                                    fontSize: "0.7rem",
-                                    fontWeight: 700,
-                                    letterSpacing: "0.05em",
-                                    color: "var(--text-muted)",
-                                    textTransform: "uppercase",
-                                    borderBottom: "1px solid var(--border-subtle)",
-                                    marginBottom: "0.25rem",
+                                    flexDirection: "column",
+                                    gap: "2px",
+                                    animation: "fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1)",
                                 }}
                             >
-                                <span style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                                    <Slash size={12} color="var(--accent-terracotta)" />
-                                    COMMANDS MATCHING &quot;{input}&quot;
-                                </span>
-                                <span style={{ fontSize: "0.68rem", fontWeight: 400, opacity: 0.8 }}>
-                                    ↑ ↓ to navigate • Enter to select • Esc to dismiss
-                                </span>
-                            </div>
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        padding: "0.35rem 0.65rem 0.25rem 0.65rem",
+                                        fontSize: "0.7rem",
+                                        fontWeight: 700,
+                                        letterSpacing: "0.05em",
+                                        color: "var(--text-muted)",
+                                        textTransform: "uppercase",
+                                        borderBottom: "1px solid var(--border-subtle)",
+                                        marginBottom: "0.25rem",
+                                    }}
+                                >
+                                    <span style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                                        <Slash size={12} color="var(--accent-terracotta)" />
+                                        COMMANDS MATCHING &quot;{input}&quot;
+                                    </span>
+                                    <span style={{ fontSize: "0.68rem", fontWeight: 400, opacity: 0.8 }}>↑ ↓ to navigate • Enter to select • Esc to dismiss</span>
+                                </div>
 
-                            {filteredSlashCommands.map((cmd, idx) => {
-                                const isSelected = idx === slashSelectedIndex;
-                                const Icon = cmd.icon;
-                                return (
-                                    <div
-                                        key={cmd.name}
-                                        onClick={() => handleSelectSlashCommand(cmd)}
-                                        onMouseEnter={() => setSlashSelectedIndex(idx)}
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            padding: "0.5rem 0.75rem",
-                                            borderRadius: "var(--radius-sm)",
-                                            backgroundColor: isSelected ? "var(--bg-card-hover)" : "transparent",
-                                            border: isSelected ? "1px solid var(--border-strong)" : "1px solid transparent",
-                                            cursor: "pointer",
-                                            transition: "background-color 0.1s ease",
-                                        }}
-                                    >
-                                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
-                                            <div
-                                                style={{
-                                                    width: "28px",
-                                                    height: "28px",
-                                                    borderRadius: "6px",
-                                                    backgroundColor: `${cmd.color}18`,
-                                                    color: cmd.color,
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                    flexShrink: 0,
-                                                }}
-                                            >
-                                                <Icon size={15} />
-                                            </div>
-                                            <div style={{ minWidth: 0 }}>
-                                                <div style={{ display: "flex", alignItems: "baseline", gap: "0.45rem" }}>
-                                                    <span
-                                                        style={{
-                                                            fontSize: "0.86rem",
-                                                            fontWeight: 600,
-                                                            color: isSelected ? "var(--accent-terracotta)" : "var(--text-primary)",
-                                                            fontFamily: "var(--font-mono)",
-                                                        }}
-                                                    >
-                                                        {cmd.name}
-                                                    </span>
-                                                    {cmd.args && (
+                                {filteredSlashCommands.map((cmd, idx) => {
+                                    const isSelected = idx === slashSelectedIndex;
+                                    const Icon = cmd.icon;
+                                    return (
+                                        <div
+                                            key={cmd.name}
+                                            onClick={() => handleSelectSlashCommand(cmd)}
+                                            onMouseEnter={() => setSlashSelectedIndex(idx)}
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "space-between",
+                                                padding: "0.5rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                backgroundColor: isSelected ? "var(--bg-card-hover)" : "transparent",
+                                                border: isSelected ? "1px solid var(--border-strong)" : "1px solid transparent",
+                                                cursor: "pointer",
+                                                transition: "background-color 0.1s ease",
+                                            }}
+                                        >
+                                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
+                                                <div
+                                                    style={{
+                                                        width: "28px",
+                                                        height: "28px",
+                                                        borderRadius: "6px",
+                                                        backgroundColor: `${cmd.color}18`,
+                                                        color: cmd.color,
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        flexShrink: 0,
+                                                    }}
+                                                >
+                                                    <Icon size={15} />
+                                                </div>
+                                                <div style={{ minWidth: 0 }}>
+                                                    <div style={{ display: "flex", alignItems: "baseline", gap: "0.45rem" }}>
                                                         <span
                                                             style={{
-                                                                fontSize: "0.72rem",
-                                                                color: "var(--text-muted)",
+                                                                fontSize: "0.86rem",
+                                                                fontWeight: 600,
+                                                                color: isSelected ? "var(--accent-terracotta)" : "var(--text-primary)",
                                                                 fontFamily: "var(--font-mono)",
                                                             }}
                                                         >
-                                                            {cmd.args}
+                                                            {cmd.name}
                                                         </span>
-                                                    )}
-                                                </div>
-                                                <div
-                                                    style={{
-                                                        fontSize: "0.76rem",
-                                                        color: "var(--text-secondary)",
-                                                        whiteSpace: "nowrap",
-                                                        overflow: "hidden",
-                                                        textOverflow: "ellipsis",
-                                                    }}
-                                                >
-                                                    {cmd.description}
+                                                        {cmd.args && (
+                                                            <span
+                                                                style={{
+                                                                    fontSize: "0.72rem",
+                                                                    color: "var(--text-muted)",
+                                                                    fontFamily: "var(--font-mono)",
+                                                                }}
+                                                            >
+                                                                {cmd.args}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div
+                                                        style={{
+                                                            fontSize: "0.76rem",
+                                                            color: "var(--text-secondary)",
+                                                            whiteSpace: "nowrap",
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                        }}
+                                                    >
+                                                        {cmd.description}
+                                                    </div>
                                                 </div>
                                             </div>
+
+                                            <div
+                                                style={{
+                                                    fontSize: "0.7rem",
+                                                    color: isSelected ? "var(--accent-terracotta)" : "var(--text-muted)",
+                                                    padding: "0.2rem 0.45rem",
+                                                    borderRadius: "4px",
+                                                    backgroundColor: isSelected ? "var(--accent-light)" : "transparent",
+                                                    fontWeight: 500,
+                                                    flexShrink: 0,
+                                                    marginLeft: "0.5rem",
+                                                }}
+                                            >
+                                                Tab ⇥
+                                            </div>
                                         </div>
+                                    );
+                                })}
+                            </div>
+                        )}
 
-                                        <div
-                                            style={{
-                                                fontSize: "0.7rem",
-                                                color: isSelected ? "var(--accent-terracotta)" : "var(--text-muted)",
-                                                padding: "0.2rem 0.45rem",
-                                                borderRadius: "4px",
-                                                backgroundColor: isSelected ? "var(--accent-light)" : "transparent",
-                                                fontWeight: 500,
-                                                flexShrink: 0,
-                                                marginLeft: "0.5rem",
-                                            }}
-                                        >
-                                            Tab ⇥
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    {/* Active Output Style indicator pill (if not standard) */}
-                    {outputStyle !== "standard" && (
-                        <div
-                            style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "0.4rem",
-                                padding: "0.2rem 0.55rem",
-                                borderRadius: "4px",
-                                backgroundColor: "rgba(99, 102, 241, 0.12)",
-                                border: "1px solid rgba(99, 102, 241, 0.3)",
-                                color: "#6366f1",
-                                fontSize: "0.72rem",
-                                fontWeight: 500,
-                                alignSelf: "flex-start",
-                                marginBottom: "-0.2rem",
-                            }}
-                        >
-                            <Palette size={12} />
-                            <span>
-                                Style: {OUTPUT_STYLES.find((s) => s.id === outputStyle)?.name || outputStyle}
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setOutputStyle("standard");
-                                    localStorage.setItem("marnie_output_style", "standard");
-                                }}
-                                title="Reset to standard style"
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    color: "#6366f1",
-                                    cursor: "pointer",
-                                    padding: 0,
-                                }}
-                            >
-                                <X size={12} />
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Top Row: Textarea on left, Voice Input button + Model Switcher trigger on right */}
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "flex-start",
-                            justifyContent: "space-between",
-                            gap: "0.75rem",
-                            width: "100%",
-                        }}
-                    >
-                        {/* Auto-growing Textarea */}
-                        <textarea
-                            ref={textareaRef}
-                            className="auto-grow"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder={
-                                webSearchActive
-                                    ? `Message Marnie with ${searchProvider === "searxng" ? "SearXNG" : "DuckDuckGo"}...`
-                                    : "Message Marnie ..."
-                            }
-                            rows={1}
-                            style={{
-                                flex: 1,
-                                minHeight: "36px",
-                                maxHeight: "160px",
-                                resize: "none",
-                                background: "transparent",
-                                border: "none",
-                                outline: "none",
-                                color: "var(--text-primary)",
-                                fontSize: "0.95rem",
-                                lineHeight: 1.5,
-                                padding: "2px 0 0 0",
-                                fontFamily: "inherit",
-                            }}
-                        />
-
-                        {/* Right side of typing bar: Direct Voice Input Button + Model Switcher */}
-                        <div
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.4rem",
-                                flexShrink: 0,
-                            }}
-                        >
-                            {/* Direct Voice Input Button */}
-                            <button
-                                type="button"
-                                onClick={toggleSpeechRecognition}
-                                title={
-                                    isListening
-                                        ? "Stop speech recognition"
-                                        : "Voice input (Speech to text)"
-                                }
+                        {/* Active Output Style indicator pill (if not standard) */}
+                        {outputStyle !== "standard" && (
+                            <div
                                 style={{
                                     display: "inline-flex",
                                     alignItems: "center",
-                                    justifyContent: "center",
-                                    width: "28px",
-                                    height: "28px",
-                                    borderRadius: "var(--radius-sm)",
-                                    backgroundColor: isListening
-                                        ? "rgba(239, 68, 68, 0.16)"
-                                        : "transparent",
-                                    border: isListening
-                                        ? "1px solid #EF4444"
-                                        : "1px solid transparent",
-                                    color: isListening
-                                        ? "#EF4444"
-                                        : "var(--text-muted)",
-                                    cursor: "pointer",
-                                    transition: "all 0.15s ease",
-                                }}
-                                onMouseEnter={(e) => {
-                                    if (!isListening) {
-                                        e.currentTarget.style.color = "var(--text-primary)";
-                                        e.currentTarget.style.backgroundColor = "var(--bg-secondary)";
-                                    }
-                                }}
-                                onMouseLeave={(e) => {
-                                    if (!isListening) {
-                                        e.currentTarget.style.color = "var(--text-muted)";
-                                        e.currentTarget.style.backgroundColor = "transparent";
-                                    }
+                                    gap: "0.4rem",
+                                    padding: "0.2rem 0.55rem",
+                                    borderRadius: "4px",
+                                    backgroundColor: "rgba(99, 102, 241, 0.12)",
+                                    border: "1px solid rgba(99, 102, 241, 0.3)",
+                                    color: "#6366f1",
+                                    fontSize: "0.72rem",
+                                    fontWeight: 500,
+                                    alignSelf: "flex-start",
+                                    marginBottom: "-0.2rem",
                                 }}
                             >
-                                {isListening ? <MicOff size={15} /> : <Mic size={15} />}
-                            </button>
-
-                            {/* Model Switcher inside Chatbox */}
-                            <div
-                                ref={modelDropdownRef}
-                                style={{ position: "relative", flexShrink: 0 }}
-                            >
+                                <Palette size={12} />
+                                <span>Style: {OUTPUT_STYLES.find((s) => s.id === outputStyle)?.name || outputStyle}</span>
                                 <button
                                     type="button"
-                                    onClick={() => setModelDropdownOpen((prev) => !prev)}
-                                    title="Switch model"
+                                    onClick={() => {
+                                        setOutputStyle("standard");
+                                        localStorage.setItem("marnie_output_style", "standard");
+                                    }}
+                                    title="Reset to standard style"
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        color: "#6366f1",
+                                        cursor: "pointer",
+                                        padding: 0,
+                                    }}
+                                >
+                                    <X size={12} />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Top Row: Textarea on left, Voice Input button + Model Switcher trigger on right */}
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "flex-start",
+                                justifyContent: "space-between",
+                                gap: "0.75rem",
+                                width: "100%",
+                            }}
+                        >
+                            {/* Auto-growing Textarea */}
+                            <textarea
+                                ref={textareaRef}
+                                className="auto-grow"
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                placeholder={webSearchActive ? `Message Marnie with ${searchProvider === "searxng" ? "SearXNG" : "DuckDuckGo"}...` : "Message Marnie ..."}
+                                rows={1}
+                                style={{
+                                    flex: 1,
+                                    minHeight: "36px",
+                                    maxHeight: "160px",
+                                    resize: "none",
+                                    background: "transparent",
+                                    border: "none",
+                                    outline: "none",
+                                    color: "var(--text-primary)",
+                                    fontSize: "0.95rem",
+                                    lineHeight: 1.5,
+                                    padding: "2px 0 0 0",
+                                    fontFamily: "inherit",
+                                }}
+                            />
+
+                            {/* Right side of typing bar: Direct Voice Input Button + Model Switcher */}
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.4rem",
+                                    flexShrink: 0,
+                                }}
+                            >
+                                {/* Direct Voice Input Button */}
+                                <button
+                                    type="button"
+                                    onClick={toggleSpeechRecognition}
+                                    title={isListening ? "Stop speech recognition" : "Voice input (Speech to text)"}
                                     style={{
                                         display: "inline-flex",
                                         alignItems: "center",
-                                        gap: "0.45rem",
-                                        padding: "0.25rem 0.5rem",
+                                        justifyContent: "center",
+                                        width: "28px",
+                                        height: "28px",
                                         borderRadius: "var(--radius-sm)",
-                                        background: "transparent",
-                                        color: "var(--text-secondary)",
-                                        fontSize: "0.62rem",
-                                        fontWeight: 500,
+                                        backgroundColor: isListening ? "rgba(239, 68, 68, 0.16)" : "transparent",
+                                        border: isListening ? "1px solid #EF4444" : "1px solid transparent",
+                                        color: isListening ? "#EF4444" : "var(--text-muted)",
                                         cursor: "pointer",
                                         transition: "all 0.15s ease",
                                     }}
                                     onMouseEnter={(e) => {
-                                        e.currentTarget.style.color =
-                                            "var(--text-primary)";
-                                        e.currentTarget.style.backgroundColor =
-                                            "var(--bg-secondary)";
+                                        if (!isListening) {
+                                            e.currentTarget.style.color = "var(--text-primary)";
+                                            e.currentTarget.style.backgroundColor = "var(--bg-secondary)";
+                                        }
                                     }}
                                     onMouseLeave={(e) => {
-                                        e.currentTarget.style.color =
-                                            "var(--text-secondary)";
-                                        e.currentTarget.style.backgroundColor =
-                                            "transparent";
+                                        if (!isListening) {
+                                            e.currentTarget.style.color = "var(--text-muted)";
+                                            e.currentTarget.style.backgroundColor = "transparent";
+                                        }
                                     }}
                                 >
-                                    {/* 3 vertical bars / equalizer icon matching screenshot */}
-                                    <svg
-                                        width="10"
-                                        height="10"
-                                        viewBox="0 0 14 14"
-                                        fill="currentColor"
-                                        style={{ opacity: 0.75, flexShrink: 0 }}
-                                    >
-                                        <rect x="2" y="7" width="2.2" height="7" rx="1.1" />
-                                        <rect x="7" y="2" width="2.2" height="12" rx="1.1" />
-                                        <rect x="12" y="5" width="2.2" height="9" rx="1.1" />
-                                    </svg>
-                                    <span
-                                        style={{
-                                            maxWidth: "140px",
-                                            overflow: "hidden",
-                                            textOverflow: "ellipsis",
-                                            whiteSpace: "nowrap",
-                                        }}
-                                    >
-                                        {activeModel || "Select Model"}
-                                    </span>
-                                    {modelDropdownOpen ? (
-                                        <ChevronUp size={12} />
-                                    ) : (
-                                        <ChevronDown size={12} />
-                                    )}
+                                    {isListening ? <MicOff size={15} /> : <Mic size={15} />}
                                 </button>
 
-                            {/* Dropdown Menu (Pops up above) */}
-                            {modelDropdownOpen && (
-                                <div
-                                    style={{
-                                        position: "absolute",
-                                        bottom: "calc(100% + 8px)",
-                                        right: 0,
-                                        minWidth: "220px",
-                                        maxWidth: "280px",
-                                        backgroundColor: "var(--bg-card)",
-                                        border: "1px solid var(--border-strong)",
-                                        borderRadius: "var(--radius-md)",
-                                        boxShadow: "var(--shadow-lg)",
-                                        padding: "0.4rem",
-                                        zIndex: 100,
-                                        maxHeight: "260px",
-                                        overflowY: "auto",
-                                        animation: "fadeIn 0.15s ease",
-                                    }}
-                                >
-                                    <div
+                                {/* Model Switcher inside Chatbox */}
+                                <div ref={modelDropdownRef} style={{ position: "relative", flexShrink: 0 }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setModelDropdownOpen((prev) => !prev)}
+                                        title="Switch model"
                                         style={{
-                                            padding: "0.35rem 0.6rem 0.25rem 0.6rem",
-                                            fontSize: "0.7rem",
-                                            fontWeight: 600,
-                                            color: "var(--text-muted)",
-                                            textTransform: "uppercase",
-                                            letterSpacing: "0.05em",
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: "0.45rem",
+                                            padding: "0.25rem 0.5rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            background: "transparent",
+                                            color: "var(--text-secondary)",
+                                            fontSize: "0.62rem",
+                                            fontWeight: 500,
+                                            cursor: "pointer",
+                                            transition: "all 0.15s ease",
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.color = "var(--text-primary)";
+                                            e.currentTarget.style.backgroundColor = "var(--bg-secondary)";
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.color = "var(--text-secondary)";
+                                            e.currentTarget.style.backgroundColor = "transparent";
                                         }}
                                     >
-                                        Select Model
-                                    </div>
-                                    {availableModels.length > 0 ? (
-                                        availableModels.map((m) => {
-                                            const isSelected = m === activeModel;
-                                            return (
-                                                <button
-                                                    key={m}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (onModelChanged)
-                                                            onModelChanged(m);
-                                                        setModelDropdownOpen(false);
-                                                    }}
-                                                    style={{
-                                                        width: "100%",
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        justifyContent:
-                                                            "space-between",
-                                                        padding: "0.45rem 0.65rem",
-                                                        borderRadius:
-                                                            "var(--radius-sm)",
-                                                        backgroundColor: isSelected
-                                                            ? "var(--accent-light)"
-                                                            : "transparent",
-                                                        color: isSelected
-                                                            ? "var(--accent-terracotta)"
-                                                            : "var(--text-primary)",
-                                                        fontSize: "0.82rem",
-                                                        fontWeight: isSelected
-                                                            ? 600
-                                                            : 400,
-                                                        textAlign: "left",
-                                                        cursor: "pointer",
-                                                        transition:
-                                                            "background-color 0.12s ease",
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                        if (!isSelected)
-                                                            e.currentTarget.style.backgroundColor =
-                                                                "var(--bg-card-hover)";
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                        if (!isSelected)
-                                                            e.currentTarget.style.backgroundColor =
-                                                                "transparent";
-                                                    }}
-                                                >
-                                                    <span
-                                                        style={{
-                                                            overflow: "hidden",
-                                                            textOverflow: "ellipsis",
-                                                            whiteSpace: "nowrap",
-                                                        }}
-                                                    >
-                                                        {m}
-                                                    </span>
-                                                    {isSelected && (
-                                                        <Check
-                                                            size={14}
-                                                            color="var(--accent-terracotta)"
-                                                        />
-                                                    )}
-                                                </button>
-                                            );
-                                        })
-                                    ) : (
-                                        <div
+                                        {/* 3 vertical bars / equalizer icon matching screenshot */}
+                                        <svg width="10" height="10" viewBox="0 0 14 14" fill="currentColor" style={{ opacity: 0.75, flexShrink: 0 }}>
+                                            <rect x="2" y="7" width="2.2" height="7" rx="1.1" />
+                                            <rect x="7" y="2" width="2.2" height="12" rx="1.1" />
+                                            <rect x="12" y="5" width="2.2" height="9" rx="1.1" />
+                                        </svg>
+                                        <span
                                             style={{
-                                                padding: "0.5rem 0.65rem",
-                                                fontSize: "0.8rem",
-                                                color: "var(--text-muted)",
+                                                maxWidth: "140px",
+                                                overflow: "hidden",
+                                                textOverflow: "ellipsis",
+                                                whiteSpace: "nowrap",
                                             }}
                                         >
-                                            {activeModel || "No models loaded"}
+                                            {activeModel || "Select Model"}
+                                        </span>
+                                        {modelDropdownOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                    </button>
+
+                                    {/* Dropdown Menu (Pops up above) */}
+                                    {modelDropdownOpen && (
+                                        <div
+                                            style={{
+                                                position: "absolute",
+                                                bottom: "calc(100% + 8px)",
+                                                right: 0,
+                                                minWidth: "220px",
+                                                maxWidth: "280px",
+                                                backgroundColor: "var(--bg-card)",
+                                                border: "1px solid var(--border-strong)",
+                                                borderRadius: "var(--radius-md)",
+                                                boxShadow: "var(--shadow-lg)",
+                                                padding: "0.4rem",
+                                                zIndex: 100,
+                                                maxHeight: "260px",
+                                                overflowY: "auto",
+                                                animation: "fadeIn 0.15s ease",
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    padding: "0.35rem 0.6rem 0.25rem 0.6rem",
+                                                    fontSize: "0.7rem",
+                                                    fontWeight: 600,
+                                                    color: "var(--text-muted)",
+                                                    textTransform: "uppercase",
+                                                    letterSpacing: "0.05em",
+                                                }}
+                                            >
+                                                Select Model
+                                            </div>
+                                            {availableModels.length > 0 ? (
+                                                availableModels.map((m) => {
+                                                    const isSelected = m === activeModel;
+                                                    return (
+                                                        <button
+                                                            key={m}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (onModelChanged) onModelChanged(m);
+                                                                setModelDropdownOpen(false);
+                                                            }}
+                                                            style={{
+                                                                width: "100%",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "space-between",
+                                                                padding: "0.45rem 0.65rem",
+                                                                borderRadius: "var(--radius-sm)",
+                                                                backgroundColor: isSelected ? "var(--accent-light)" : "transparent",
+                                                                color: isSelected ? "var(--accent-terracotta)" : "var(--text-primary)",
+                                                                fontSize: "0.82rem",
+                                                                fontWeight: isSelected ? 600 : 400,
+                                                                textAlign: "left",
+                                                                cursor: "pointer",
+                                                                transition: "background-color 0.12s ease",
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                if (!isSelected) e.currentTarget.style.backgroundColor = "var(--bg-card-hover)";
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                if (!isSelected) e.currentTarget.style.backgroundColor = "transparent";
+                                                            }}
+                                                        >
+                                                            <span
+                                                                style={{
+                                                                    overflow: "hidden",
+                                                                    textOverflow: "ellipsis",
+                                                                    whiteSpace: "nowrap",
+                                                                }}
+                                                            >
+                                                                {m}
+                                                            </span>
+                                                            {isSelected && <Check size={14} color="var(--accent-terracotta)" />}
+                                                        </button>
+                                                    );
+                                                })
+                                            ) : (
+                                                <div
+                                                    style={{
+                                                        padding: "0.5rem 0.65rem",
+                                                        fontSize: "0.8rem",
+                                                        color: "var(--text-muted)",
+                                                    }}
+                                                >
+                                                    {activeModel || "No models loaded"}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
-                            )}
+                            </div>
                         </div>
-                    </div>
-                </div>
 
-                    {/* Bottom Controls Bar */}
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            paddingTop: "0.25rem",
-                        }}
-                    >
-                        {/* Left Action Buttons: Search, Terminal */}
+                        {/* Bottom Controls Bar */}
                         <div
                             style={{
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "0.45rem",
+                                justifyContent: "space-between",
+                                paddingTop: "0.25rem",
                             }}
                         >
-                            {/* Search Button (Web Search toggle) */}
-                            <button
-                                type="button"
-                                onClick={() => setWebSearchActive(!webSearchActive)}
-                                title={
-                                    webSearchActive
-                                        ? `${searchProvider === "searxng" ? "SearXNG" : "DuckDuckGo"} Web Search enabled`
-                                        : `Enable ${searchProvider === "searxng" ? "SearXNG" : "DuckDuckGo"} Web Search`
-                                }
+                            {/* Left Action Buttons: Search, Terminal */}
+                            <div
                                 style={{
-                                    width: "30px",
-                                    height: "30px",
-                                    borderRadius: "8px",
-                                    backgroundColor: webSearchActive
-                                        ? "rgba(59, 130, 246, 0.18)"
-                                        : "var(--bg-secondary)",
-                                    border: webSearchActive
-                                        ? "1px solid #3B82F6"
-                                        : "1px solid var(--border-subtle)",
-                                    color: webSearchActive
-                                        ? "#3B82F6"
-                                        : "var(--text-secondary)",
                                     display: "flex",
                                     alignItems: "center",
-                                    justifyContent: "center",
-                                    cursor: "pointer",
-                                    transition: "all 0.15s ease",
-                                }}
-                                onMouseEnter={(e) => {
-                                    if (!webSearchActive) {
-                                        e.currentTarget.style.color =
-                                            "var(--text-primary)";
-                                        e.currentTarget.style.borderColor =
-                                            "var(--border-strong)";
-                                    }
-                                }}
-                                onMouseLeave={(e) => {
-                                    if (!webSearchActive) {
-                                        e.currentTarget.style.color =
-                                            "var(--text-secondary)";
-                                        e.currentTarget.style.borderColor =
-                                            "var(--border-subtle)";
-                                    }
+                                    gap: "0.45rem",
                                 }}
                             >
-                                <Search size={14} />
-                            </button>
-
-                            {/* Terminal / Tools Button */}
-                            <button
-                                type="button"
-                                onClick={onOpenTools}
-                                title="Open Tools & Workspace Terminal"
-                                style={{
-                                    width: "30px",
-                                    height: "30px",
-                                    borderRadius: "8px",
-                                    backgroundColor: "var(--bg-secondary)",
-                                    border: "1px solid var(--border-subtle)",
-                                    color: "var(--text-secondary)",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    cursor: "pointer",
-                                    transition: "all 0.15s ease",
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color =
-                                        "var(--text-primary)";
-                                    e.currentTarget.style.borderColor =
-                                        "var(--border-strong)";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color =
-                                        "var(--text-secondary)";
-                                    e.currentTarget.style.borderColor =
-                                        "var(--border-subtle)";
-                                }}
-                            >
-                                <span
+                                {/* Search Button (Web Search toggle) */}
+                                <button
+                                    type="button"
+                                    onClick={() => setWebSearchActive(!webSearchActive)}
+                                    title={
+                                        webSearchActive ? `${searchProvider === "searxng" ? "SearXNG" : "DuckDuckGo"} Web Search enabled` : `Enable ${searchProvider === "searxng" ? "SearXNG" : "DuckDuckGo"} Web Search`
+                                    }
                                     style={{
-                                        fontFamily: "var(--font-mono)",
-                                        fontSize: "0.8rem",
-                                        fontWeight: 700,
-                                        letterSpacing: "-1px",
-                                        lineHeight: 1,
-                                    }}
-                                >
-                                    &gt;_
-                                </span>
-                            </button>
-
-                            {/* Active speech recognition indicator */}
-                            {isListening && (
-                                <span
-                                    style={{
-                                        color: "#EF4444",
-                                        fontSize: "0.75rem",
-                                        fontWeight: 500,
+                                        width: "30px",
+                                        height: "30px",
+                                        borderRadius: "8px",
+                                        backgroundColor: webSearchActive ? "rgba(59, 130, 246, 0.18)" : "var(--bg-secondary)",
+                                        border: webSearchActive ? "1px solid #3B82F6" : "1px solid var(--border-subtle)",
+                                        color: webSearchActive ? "#3B82F6" : "var(--text-secondary)",
                                         display: "flex",
                                         alignItems: "center",
-                                        gap: "0.25rem",
-                                        marginLeft: "0.25rem",
+                                        justifyContent: "center",
+                                        cursor: "pointer",
+                                        transition: "all 0.15s ease",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        if (!webSearchActive) {
+                                            e.currentTarget.style.color = "var(--text-primary)";
+                                            e.currentTarget.style.borderColor = "var(--border-strong)";
+                                        }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        if (!webSearchActive) {
+                                            e.currentTarget.style.color = "var(--text-secondary)";
+                                            e.currentTarget.style.borderColor = "var(--border-subtle)";
+                                        }
+                                    }}
+                                >
+                                    <Search size={14} />
+                                </button>
+
+                                {/* Terminal / Tools Button */}
+                                <button
+                                    type="button"
+                                    onClick={onOpenTools}
+                                    title="Open Tools & Workspace Terminal"
+                                    style={{
+                                        width: "30px",
+                                        height: "30px",
+                                        borderRadius: "8px",
+                                        backgroundColor: "var(--bg-secondary)",
+                                        border: "1px solid var(--border-subtle)",
+                                        color: "var(--text-secondary)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        cursor: "pointer",
+                                        transition: "all 0.15s ease",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = "var(--text-primary)";
+                                        e.currentTarget.style.borderColor = "var(--border-strong)";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = "var(--text-secondary)";
+                                        e.currentTarget.style.borderColor = "var(--border-subtle)";
                                     }}
                                 >
                                     <span
                                         style={{
-                                            width: "6px",
-                                            height: "6px",
-                                            borderRadius: "50%",
-                                            backgroundColor: "#EF4444",
-                                            display: "inline-block",
-                                        }}
-                                    />
-                                    Listening...
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Right Action Controls: Agent / Chat Pill Toggle + Send Button */}
-                        <div
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.6rem",
-                            }}
-                        >
-                            {/* Segmented Pill Toggle: [ Agent | Chat ] */}
-                            <div
-                                style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    backgroundColor: "var(--bg-secondary)",
-                                    border: "1px solid var(--border-subtle)",
-                                    borderRadius: "9999px",
-                                    padding: "2px",
-                                    gap: "2px",
-                                }}
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() => setAgentModeActive(true)}
-                                    title="Agent Mode: Goals, tasks, and tool execution"
-                                    style={{
-                                        padding: "0.22rem 0.7rem",
-                                        borderRadius: "9999px",
-                                        fontSize: "0.78rem",
-                                        fontWeight: agentModeActive ? 600 : 500,
-                                        backgroundColor: agentModeActive
-                                            ? "var(--bg-card)"
-                                            : "transparent",
-                                        color: agentModeActive
-                                            ? "var(--text-primary)"
-                                            : "var(--text-muted)",
-                                        boxShadow: agentModeActive
-                                            ? "var(--shadow-sm)"
-                                            : "none",
-                                        cursor: "pointer",
-                                        transition: "all 0.15s ease",
-                                    }}
-                                >
-                                    Agent
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setAgentModeActive(false)}
-                                    title="Chat Mode: Standard conversational chat"
-                                    style={{
-                                        padding: "0.22rem 0.7rem",
-                                        borderRadius: "9999px",
-                                        fontSize: "0.78rem",
-                                        fontWeight: !agentModeActive ? 600 : 500,
-                                        backgroundColor: !agentModeActive
-                                            ? "var(--bg-card)"
-                                            : "transparent",
-                                        color: !agentModeActive
-                                            ? "var(--text-primary)"
-                                            : "var(--text-muted)",
-                                        boxShadow: !agentModeActive
-                                            ? "var(--shadow-sm)"
-                                            : "none",
-                                        cursor: "pointer",
-                                        transition: "all 0.15s ease",
-                                    }}
-                                >
-                                    Chat
-                                </button>
-                            </div>
-
-                            {/* Send / Stop Button */}
-                            {isStreaming ? (
-                                <button
-                                    onClick={handleStop}
-                                    title="Stop generating"
-                                    style={{
-                                        width: "32px",
-                                        height: "32px",
-                                        borderRadius: "8px",
-                                        backgroundColor: "var(--text-primary)",
-                                        color: "var(--bg-primary)",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        cursor: "pointer",
-                                    }}
-                                >
-                                    <Square size={13} fill="currentColor" />
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => handleSend()}
-                                    disabled={!input.trim()}
-                                    title="Send message"
-                                    style={{
-                                        width: "32px",
-                                        height: "32px",
-                                        borderRadius: "8px",
-                                        backgroundColor: "var(--accent-terracotta)",
-                                        opacity: input.trim() ? 1 : 0.65,
-                                        color: "#FFFFFF",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        cursor: input.trim()
-                                            ? "pointer"
-                                            : "default",
-                                        transition: "all 0.15s ease",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        if (input.trim())
-                                            e.currentTarget.style.backgroundColor =
-                                                "var(--accent-terracotta-hover)";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        if (input.trim())
-                                            e.currentTarget.style.backgroundColor =
-                                                "var(--accent-terracotta)";
-                                    }}
-                                >
-                                    <ArrowUp size={16} strokeWidth={2.5} />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Speech Recognition Error & Setup Modal */}
-            {speechModalInfo && (
-                <div
-                    style={{
-                        position: "fixed",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: "rgba(0, 0, 0, 0.65)",
-                        backdropFilter: "blur(4px)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 1000,
-                        padding: "1.25rem",
-                    }}
-                    onClick={() => setSpeechModalInfo(null)}
-                >
-                    <div
-                        style={{
-                            backgroundColor: "var(--bg-secondary)",
-                            border: "1px solid var(--border-subtle)",
-                            borderRadius: "var(--radius-lg)",
-                            width: "100%",
-                            maxWidth: "540px",
-                            boxShadow: "var(--shadow-xl)",
-                            overflow: "hidden",
-                            animation:
-                                "fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Modal Header */}
-                        <div
-                            style={{
-                                padding: "1.2rem 1.5rem",
-                                borderBottom: "1px solid var(--border-subtle)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                backgroundColor: "var(--bg-primary)",
-                            }}
-                        >
-                            <div
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.65rem",
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        width: "32px",
-                                        height: "32px",
-                                        borderRadius: "var(--radius-sm)",
-                                        backgroundColor:
-                                            "rgba(239, 68, 68, 0.12)",
-                                        color: "#EF4444",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                    }}
-                                >
-                                    <AlertTriangle size={18} />
-                                </div>
-                                <h3
-                                    style={{
-                                        fontFamily: "var(--font-display)",
-                                        fontSize: "1.1rem",
-                                        fontWeight: 600,
-                                        color: "var(--text-primary)",
-                                    }}
-                                >
-                                    {speechModalInfo.title}
-                                </h3>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setSpeechModalInfo(null)}
-                                style={{
-                                    background: "none",
-                                    border: "none",
-                                    color: "var(--text-muted)",
-                                    cursor: "pointer",
-                                    padding: "4px",
-                                    borderRadius: "4px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                }}
-                                onMouseEnter={(e) =>
-                                    (e.currentTarget.style.color =
-                                        "var(--text-primary)")
-                                }
-                                onMouseLeave={(e) =>
-                                    (e.currentTarget.style.color =
-                                        "var(--text-muted)")
-                                }
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
-
-                        {/* Modal Body */}
-                        <div
-                            style={{
-                                padding: "1.4rem",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "1rem",
-                            }}
-                        >
-                            <p
-                                style={{
-                                    fontSize: "0.88rem",
-                                    color: "var(--text-secondary)",
-                                    lineHeight: 1.5,
-                                    margin: 0,
-                                }}
-                            >
-                                {speechModalInfo.description}
-                            </p>
-
-                            {speechModalInfo.type === "network" && (
-                                <div
-                                    style={{
-                                        backgroundColor: "var(--bg-primary)",
-                                        border: "1px solid var(--border-subtle)",
-                                        borderRadius: "var(--radius-md)",
-                                        padding: "1rem 1.15rem",
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        gap: "0.75rem",
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "0.45rem",
-                                            fontWeight: 600,
-                                            color: "var(--text-primary)",
-                                            fontSize: "0.88rem",
+                                            fontFamily: "var(--font-mono)",
+                                            fontSize: "0.8rem",
+                                            fontWeight: 700,
+                                            letterSpacing: "-1px",
+                                            lineHeight: 1,
                                         }}
                                     >
-                                        <span>🦁 Using Brave Browser?</span>
-                                    </div>
-                                    <p
-                                        style={{
-                                            fontSize: "0.82rem",
-                                            color: "var(--text-secondary)",
-                                            lineHeight: 1.45,
-                                            margin: 0,
-                                        }}
-                                    >
-                                        Chromium&#39;s built-in Web Speech API
-                                        communicates with Google speech
-                                        recognition servers. Brave intentionally
-                                        blocks Google services by default for
-                                        privacy. To enable speech-to-text in
-                                        Brave:
-                                    </p>
-                                    <ol
-                                        style={{
-                                            margin: 0,
-                                            paddingLeft: "1.25rem",
-                                            fontSize: "0.82rem",
-                                            color: "var(--text-secondary)",
-                                            lineHeight: 1.65,
-                                        }}
-                                    >
-                                        <li>
-                                            Open a new tab and navigate to:{" "}
-                                            <code
-                                                style={{
-                                                    fontFamily:
-                                                        "var(--font-mono)",
-                                                    padding: "2px 5px",
-                                                    borderRadius: "4px",
-                                                    backgroundColor:
-                                                        "var(--bg-secondary)",
-                                                    border: "1px solid var(--border-subtle)",
-                                                    color: "var(--text-primary)",
-                                                }}
-                                            >
-                                                brave://settings/system
-                                            </code>
-                                        </li>
-                                        <li>
-                                            Enable the toggle:{" "}
-                                            <strong>
-                                                &quot;Use Google services for
-                                                speech recognition&quot;
-                                            </strong>
-                                        </li>
-                                        <li>Relaunch Brave Browser.</li>
-                                    </ol>
-
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            gap: "0.5rem",
-                                            marginTop: "0.2rem",
-                                        }}
-                                    >
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(
-                                                    "brave://settings/system",
-                                                );
-                                                setCopiedSetting(true);
-                                                setTimeout(
-                                                    () =>
-                                                        setCopiedSetting(false),
-                                                    2000,
-                                                );
-                                            }}
-                                            style={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                gap: "0.45rem",
-                                                padding: "0.45rem 0.85rem",
-                                                fontSize: "0.8rem",
-                                                fontWeight: 500,
-                                                borderRadius:
-                                                    "var(--radius-sm)",
-                                                backgroundColor:
-                                                    "var(--bg-secondary)",
-                                                border: "1px solid var(--border-subtle)",
-                                                color: "var(--text-primary)",
-                                                cursor: "pointer",
-                                            }}
-                                        >
-                                            {copiedSetting ? (
-                                                <Check
-                                                    size={14}
-                                                    color="#10B981"
-                                                />
-                                            ) : (
-                                                <Copy size={14} />
-                                            )}
-                                            {copiedSetting
-                                                ? "Copied settings URL"
-                                                : "Copy brave://settings/system"}
-                                        </button>
-                                    </div>
-
-                                    <div
-                                        style={{
-                                            borderTop:
-                                                "1px solid var(--border-subtle)",
-                                            paddingTop: "0.65rem",
-                                            marginTop: "0.2rem",
-                                        }}
-                                    >
-                                        <p
-                                            style={{
-                                                fontSize: "0.78rem",
-                                                color: "var(--text-muted)",
-                                                margin: 0,
-                                                lineHeight: 1.4,
-                                            }}
-                                        >
-                                            💡 <strong>Alternative:</strong>{" "}
-                                            Speech recognition also works
-                                            out-of-the-box in Google Chrome or
-                                            Microsoft Edge without changing any
-                                            browser flags.
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {speechModalInfo.type === "permission" && (
-                                <div
-                                    style={{
-                                        backgroundColor: "var(--bg-primary)",
-                                        border: "1px solid var(--border-subtle)",
-                                        borderRadius: "var(--radius-md)",
-                                        padding: "0.9rem 1.1rem",
-                                        fontSize: "0.82rem",
-                                        color: "var(--text-secondary)",
-                                        lineHeight: 1.5,
-                                    }}
-                                >
-                                    Click the permissions / padlock icon in your
-                                    browser address bar next to the URL, set{" "}
-                                    <strong>Microphone</strong> to{" "}
-                                    <strong>Allow</strong>, and refresh the
-                                    page.
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Modal Footer */}
-                        <div
-                            style={{
-                                padding: "0.9rem 1.4rem",
-                                borderTop: "1px solid var(--border-subtle)",
-                                display: "flex",
-                                justifyContent: "flex-end",
-                                backgroundColor: "var(--bg-primary)",
-                            }}
-                        >
-                            <button
-                                type="button"
-                                onClick={() => setSpeechModalInfo(null)}
-                                style={{
-                                    padding: "0.5rem 1.25rem",
-                                    borderRadius: "var(--radius-sm)",
-                                    backgroundColor: "var(--accent-terracotta)",
-                                    color: "#FFFFFF",
-                                    border: "none",
-                                    fontSize: "0.85rem",
-                                    fontWeight: 500,
-                                    cursor: "pointer",
-                                }}
-                            >
-                                Got it
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* /output-style Modal */}
-            {isStyleModalOpen && (
-                <div
-                    style={{
-                        position: "fixed",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: "rgba(0, 0, 0, 0.65)",
-                        backdropFilter: "blur(4px)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 1000,
-                        padding: "1.25rem",
-                    }}
-                    onClick={() => setIsStyleModalOpen(false)}
-                >
-                    <div
-                        style={{
-                            backgroundColor: "var(--bg-card)",
-                            border: "1px solid var(--border-strong)",
-                            borderRadius: "var(--radius-lg)",
-                            width: "100%",
-                            maxWidth: "520px",
-                            boxShadow: "var(--shadow-xl)",
-                            overflow: "hidden",
-                            animation: "fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div
-                            style={{
-                                padding: "1.1rem 1.4rem",
-                                borderBottom: "1px solid var(--border-subtle)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                backgroundColor: "var(--bg-primary)",
-                            }}
-                        >
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                                <div
-                                    style={{
-                                        width: "30px",
-                                        height: "30px",
-                                        borderRadius: "6px",
-                                        backgroundColor: "rgba(99, 102, 241, 0.14)",
-                                        color: "#6366f1",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                    }}
-                                >
-                                    <Palette size={16} />
-                                </div>
-                                <div>
-                                    <h3
-                                        style={{
-                                            fontFamily: "var(--font-display)",
-                                            fontSize: "1.05rem",
-                                            fontWeight: 600,
-                                            color: "var(--text-primary)",
-                                            margin: 0,
-                                        }}
-                                    >
-                                        Output Style Customization
-                                    </h3>
-                                    <span style={{ fontSize: "0.74rem", color: "var(--text-muted)" }}>
-                                        Customize how AI text responses are formatted and rendered
+                                        &gt;_
                                     </span>
-                                </div>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setIsStyleModalOpen(false)}
-                                style={{
-                                    background: "none",
-                                    border: "none",
-                                    color: "var(--text-muted)",
-                                    cursor: "pointer",
-                                    padding: "4px",
-                                }}
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
+                                </button>
 
-                        <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                            {OUTPUT_STYLES.map((style) => {
-                                const isSelected = outputStyle === style.id;
-                                return (
-                                    <div
-                                        key={style.id}
-                                        onClick={() => {
-                                            setOutputStyle(style.id);
-                                            localStorage.setItem("marnie_output_style", style.id);
-                                            setIsStyleModalOpen(false);
-                                            setMessages((prev) => [
-                                                ...prev,
-                                                {
-                                                    id: `style-update-${Date.now()}`,
-                                                    role: "assistant",
-                                                    content: `🎨 **Output Style Updated:** Response style set to **${style.name}**.\n\n*${style.desc}*`,
-                                                    created_at: Math.floor(Date.now() / 1000),
-                                                },
-                                            ]);
-                                        }}
+                                {/* Active speech recognition indicator */}
+                                {isListening && (
+                                    <span
                                         style={{
+                                            color: "#EF4444",
+                                            fontSize: "0.75rem",
+                                            fontWeight: 500,
                                             display: "flex",
                                             alignItems: "center",
-                                            justifyContent: "space-between",
-                                            padding: "0.75rem 1rem",
-                                            borderRadius: "var(--radius-sm)",
-                                            backgroundColor: isSelected ? "var(--bg-secondary)" : "var(--bg-primary)",
-                                            border: isSelected ? "1.5px solid #6366f1" : "1px solid var(--border-subtle)",
+                                            gap: "0.25rem",
+                                            marginLeft: "0.25rem",
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                width: "6px",
+                                                height: "6px",
+                                                borderRadius: "50%",
+                                                backgroundColor: "#EF4444",
+                                                display: "inline-block",
+                                            }}
+                                        />
+                                        Listening...
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Right Action Controls: Agent / Chat Pill Toggle + Send Button */}
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.6rem",
+                                }}
+                            >
+                                {/* Segmented Pill Toggle: [ Agent | Chat ] */}
+                                <div
+                                    style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        backgroundColor: "var(--bg-secondary)",
+                                        border: "1px solid var(--border-subtle)",
+                                        borderRadius: "9999px",
+                                        padding: "2px",
+                                        gap: "2px",
+                                    }}
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={() => setAgentModeActive(true)}
+                                        title="Agent Mode: Goals, tasks, and tool execution"
+                                        style={{
+                                            padding: "0.22rem 0.7rem",
+                                            borderRadius: "9999px",
+                                            fontSize: "0.78rem",
+                                            fontWeight: agentModeActive ? 600 : 500,
+                                            backgroundColor: agentModeActive ? "var(--bg-card)" : "transparent",
+                                            color: agentModeActive ? "var(--text-primary)" : "var(--text-muted)",
+                                            boxShadow: agentModeActive ? "var(--shadow-sm)" : "none",
                                             cursor: "pointer",
                                             transition: "all 0.15s ease",
                                         }}
                                     >
-                                        <div>
-                                            <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--text-primary)" }}>
-                                                {style.name}
-                                            </div>
-                                            <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)", marginTop: "2px" }}>
-                                                {style.desc}
-                                            </div>
-                                        </div>
-                                        {isSelected && <Check size={16} color="#6366f1" />}
-                                    </div>
-                                );
-                            })}
+                                        Agent
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAgentModeActive(false)}
+                                        title="Chat Mode: Standard conversational chat"
+                                        style={{
+                                            padding: "0.22rem 0.7rem",
+                                            borderRadius: "9999px",
+                                            fontSize: "0.78rem",
+                                            fontWeight: !agentModeActive ? 600 : 500,
+                                            backgroundColor: !agentModeActive ? "var(--bg-card)" : "transparent",
+                                            color: !agentModeActive ? "var(--text-primary)" : "var(--text-muted)",
+                                            boxShadow: !agentModeActive ? "var(--shadow-sm)" : "none",
+                                            cursor: "pointer",
+                                            transition: "all 0.15s ease",
+                                        }}
+                                    >
+                                        Chat
+                                    </button>
+                                </div>
+
+                                {/* Send / Stop Button */}
+                                {isStreaming ? (
+                                    <button
+                                        onClick={handleStop}
+                                        title="Stop generating"
+                                        style={{
+                                            width: "32px",
+                                            height: "32px",
+                                            borderRadius: "8px",
+                                            backgroundColor: "var(--text-primary)",
+                                            color: "var(--bg-primary)",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        <Square size={13} fill="currentColor" />
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => handleSend()}
+                                        disabled={!input.trim()}
+                                        title="Send message"
+                                        style={{
+                                            width: "32px",
+                                            height: "32px",
+                                            borderRadius: "8px",
+                                            backgroundColor: "var(--accent-terracotta)",
+                                            opacity: input.trim() ? 1 : 0.65,
+                                            color: "#FFFFFF",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            cursor: input.trim() ? "pointer" : "default",
+                                            transition: "all 0.15s ease",
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (input.trim()) e.currentTarget.style.backgroundColor = "var(--accent-terracotta-hover)";
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (input.trim()) e.currentTarget.style.backgroundColor = "var(--accent-terracotta)";
+                                        }}
+                                    >
+                                        <ArrowUp size={16} strokeWidth={2.5} />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
-            )}
+
+                {/* Speech Recognition Error & Setup Modal */}
+                {speechModalInfo && (
+                    <div
+                        style={{
+                            position: "fixed",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: "rgba(0, 0, 0, 0.65)",
+                            backdropFilter: "blur(4px)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            zIndex: 1000,
+                            padding: "1.25rem",
+                        }}
+                        onClick={() => setSpeechModalInfo(null)}
+                    >
+                        <div
+                            style={{
+                                backgroundColor: "var(--bg-secondary)",
+                                border: "1px solid var(--border-subtle)",
+                                borderRadius: "var(--radius-lg)",
+                                width: "100%",
+                                maxWidth: "540px",
+                                boxShadow: "var(--shadow-xl)",
+                                overflow: "hidden",
+                                animation: "fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Modal Header */}
+                            <div
+                                style={{
+                                    padding: "1.2rem 1.5rem",
+                                    borderBottom: "1px solid var(--border-subtle)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    backgroundColor: "var(--bg-primary)",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "0.65rem",
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            width: "32px",
+                                            height: "32px",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: "rgba(239, 68, 68, 0.12)",
+                                            color: "#EF4444",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                        }}
+                                    >
+                                        <AlertTriangle size={18} />
+                                    </div>
+                                    <h3
+                                        style={{
+                                            fontFamily: "var(--font-display)",
+                                            fontSize: "1.1rem",
+                                            fontWeight: 600,
+                                            color: "var(--text-primary)",
+                                        }}
+                                    >
+                                        {speechModalInfo.title}
+                                    </h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setSpeechModalInfo(null)}
+                                    style={{
+                                        background: "none",
+                                        border: "none",
+                                        color: "var(--text-muted)",
+                                        cursor: "pointer",
+                                        padding: "4px",
+                                        borderRadius: "4px",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+                                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+
+                            {/* Modal Body */}
+                            <div
+                                style={{
+                                    padding: "1.4rem",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "1rem",
+                                }}
+                            >
+                                <p
+                                    style={{
+                                        fontSize: "0.88rem",
+                                        color: "var(--text-secondary)",
+                                        lineHeight: 1.5,
+                                        margin: 0,
+                                    }}
+                                >
+                                    {speechModalInfo.description}
+                                </p>
+
+                                {speechModalInfo.type === "network" && (
+                                    <div
+                                        style={{
+                                            backgroundColor: "var(--bg-primary)",
+                                            border: "1px solid var(--border-subtle)",
+                                            borderRadius: "var(--radius-md)",
+                                            padding: "1rem 1.15rem",
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            gap: "0.75rem",
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.45rem",
+                                                fontWeight: 600,
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                            }}
+                                        >
+                                            <span>🦁 Using Brave Browser?</span>
+                                        </div>
+                                        <p
+                                            style={{
+                                                fontSize: "0.82rem",
+                                                color: "var(--text-secondary)",
+                                                lineHeight: 1.45,
+                                                margin: 0,
+                                            }}
+                                        >
+                                            Chromium&#39;s built-in Web Speech API communicates with Google speech recognition servers. Brave intentionally blocks Google services by default for privacy. To enable
+                                            speech-to-text in Brave:
+                                        </p>
+                                        <ol
+                                            style={{
+                                                margin: 0,
+                                                paddingLeft: "1.25rem",
+                                                fontSize: "0.82rem",
+                                                color: "var(--text-secondary)",
+                                                lineHeight: 1.65,
+                                            }}
+                                        >
+                                            <li>
+                                                Open a new tab and navigate to:{" "}
+                                                <code
+                                                    style={{
+                                                        fontFamily: "var(--font-mono)",
+                                                        padding: "2px 5px",
+                                                        borderRadius: "4px",
+                                                        backgroundColor: "var(--bg-secondary)",
+                                                        border: "1px solid var(--border-subtle)",
+                                                        color: "var(--text-primary)",
+                                                    }}
+                                                >
+                                                    brave://settings/system
+                                                </code>
+                                            </li>
+                                            <li>
+                                                Enable the toggle: <strong>&quot;Use Google services for speech recognition&quot;</strong>
+                                            </li>
+                                            <li>Relaunch Brave Browser.</li>
+                                        </ol>
+
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                gap: "0.5rem",
+                                                marginTop: "0.2rem",
+                                            }}
+                                        >
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText("brave://settings/system");
+                                                    setCopiedSetting(true);
+                                                    setTimeout(() => setCopiedSetting(false), 2000);
+                                                }}
+                                                style={{
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    gap: "0.45rem",
+                                                    padding: "0.45rem 0.85rem",
+                                                    fontSize: "0.8rem",
+                                                    fontWeight: 500,
+                                                    borderRadius: "var(--radius-sm)",
+                                                    backgroundColor: "var(--bg-secondary)",
+                                                    border: "1px solid var(--border-subtle)",
+                                                    color: "var(--text-primary)",
+                                                    cursor: "pointer",
+                                                }}
+                                            >
+                                                {copiedSetting ? <Check size={14} color="#10B981" /> : <Copy size={14} />}
+                                                {copiedSetting ? "Copied settings URL" : "Copy brave://settings/system"}
+                                            </button>
+                                        </div>
+
+                                        <div
+                                            style={{
+                                                borderTop: "1px solid var(--border-subtle)",
+                                                paddingTop: "0.65rem",
+                                                marginTop: "0.2rem",
+                                            }}
+                                        >
+                                            <p
+                                                style={{
+                                                    fontSize: "0.78rem",
+                                                    color: "var(--text-muted)",
+                                                    margin: 0,
+                                                    lineHeight: 1.4,
+                                                }}
+                                            >
+                                                💡 <strong>Alternative:</strong> Speech recognition also works out-of-the-box in Google Chrome or Microsoft Edge without changing any browser flags.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {speechModalInfo.type === "permission" && (
+                                    <div
+                                        style={{
+                                            backgroundColor: "var(--bg-primary)",
+                                            border: "1px solid var(--border-subtle)",
+                                            borderRadius: "var(--radius-md)",
+                                            padding: "0.9rem 1.1rem",
+                                            fontSize: "0.82rem",
+                                            color: "var(--text-secondary)",
+                                            lineHeight: 1.5,
+                                        }}
+                                    >
+                                        Click the permissions / padlock icon in your browser address bar next to the URL, set <strong>Microphone</strong> to <strong>Allow</strong>, and refresh the page.
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div
+                                style={{
+                                    padding: "0.9rem 1.4rem",
+                                    borderTop: "1px solid var(--border-subtle)",
+                                    display: "flex",
+                                    justifyContent: "flex-end",
+                                    backgroundColor: "var(--bg-primary)",
+                                }}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => setSpeechModalInfo(null)}
+                                    style={{
+                                        padding: "0.5rem 1.25rem",
+                                        borderRadius: "var(--radius-sm)",
+                                        backgroundColor: "var(--accent-terracotta)",
+                                        color: "#FFFFFF",
+                                        border: "none",
+                                        fontSize: "0.85rem",
+                                        fontWeight: 500,
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    Got it
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* /output-style Modal */}
+                {isStyleModalOpen && (
+                    <div
+                        style={{
+                            position: "fixed",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: "rgba(0, 0, 0, 0.65)",
+                            backdropFilter: "blur(4px)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            zIndex: 1000,
+                            padding: "1.25rem",
+                        }}
+                        onClick={() => setIsStyleModalOpen(false)}
+                    >
+                        <div
+                            style={{
+                                backgroundColor: "var(--bg-card)",
+                                border: "1px solid var(--border-strong)",
+                                borderRadius: "var(--radius-lg)",
+                                width: "100%",
+                                maxWidth: "520px",
+                                boxShadow: "var(--shadow-xl)",
+                                overflow: "hidden",
+                                animation: "fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div
+                                style={{
+                                    padding: "1.1rem 1.4rem",
+                                    borderBottom: "1px solid var(--border-subtle)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    backgroundColor: "var(--bg-primary)",
+                                }}
+                            >
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                                    <div
+                                        style={{
+                                            width: "30px",
+                                            height: "30px",
+                                            borderRadius: "6px",
+                                            backgroundColor: "rgba(99, 102, 241, 0.14)",
+                                            color: "#6366f1",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                        }}
+                                    >
+                                        <Palette size={16} />
+                                    </div>
+                                    <div>
+                                        <h3
+                                            style={{
+                                                fontFamily: "var(--font-display)",
+                                                fontSize: "1.05rem",
+                                                fontWeight: 600,
+                                                color: "var(--text-primary)",
+                                                margin: 0,
+                                            }}
+                                        >
+                                            Output Style Customization
+                                        </h3>
+                                        <span style={{ fontSize: "0.74rem", color: "var(--text-muted)" }}>Customize how AI text responses are formatted and rendered</span>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsStyleModalOpen(false)}
+                                    style={{
+                                        background: "none",
+                                        border: "none",
+                                        color: "var(--text-muted)",
+                                        cursor: "pointer",
+                                        padding: "4px",
+                                    }}
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+
+                            <div style={{ padding: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                                {OUTPUT_STYLES.map((style) => {
+                                    const isSelected = outputStyle === style.id;
+                                    return (
+                                        <div
+                                            key={style.id}
+                                            onClick={() => {
+                                                setOutputStyle(style.id);
+                                                localStorage.setItem("marnie_output_style", style.id);
+                                                setIsStyleModalOpen(false);
+                                                setMessages((prev) => [
+                                                    ...prev,
+                                                    {
+                                                        id: `style-update-${Date.now()}`,
+                                                        role: "assistant",
+                                                        content: `🎨 **Output Style Updated:** Response style set to **${style.name}**.\n\n*${style.desc}*`,
+                                                        created_at: Math.floor(Date.now() / 1000),
+                                                    },
+                                                ]);
+                                            }}
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "space-between",
+                                                padding: "0.75rem 1rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                backgroundColor: isSelected ? "var(--bg-secondary)" : "var(--bg-primary)",
+                                                border: isSelected ? "1.5px solid #6366f1" : "1px solid var(--border-subtle)",
+                                                cursor: "pointer",
+                                                transition: "all 0.15s ease",
+                                            }}
+                                        >
+                                            <div>
+                                                <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--text-primary)" }}>{style.name}</div>
+                                                <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)", marginTop: "2px" }}>{style.desc}</div>
+                                            </div>
+                                            {isSelected && <Check size={16} color="#6366f1" />}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Claude-style Artifact Side Panel */}
@@ -3413,19 +3100,13 @@ export default function ChatView({
     );
 }
 
-
 function renderKaTeX(formula, isBlock = false) {
     try {
         const html = katex.renderToString(formula, {
             displayMode: isBlock,
             throwOnError: false,
         });
-        return (
-            <span
-                dangerouslySetInnerHTML={{ __html: html }}
-                style={isBlock ? { display: "block", margin: "0.75rem 0", textAlign: "center", overflowX: "auto" } : {}}
-            />
-        );
+        return <span dangerouslySetInnerHTML={{ __html: html }} style={isBlock ? { display: "block", margin: "0.75rem 0", textAlign: "center", overflowX: "auto" } : {}} />;
     } catch {
         return <code>{formula}</code>;
     }
@@ -3450,14 +3131,8 @@ function formatMarkdown(content) {
         // 1. Code blocks
         if (part.startsWith("```") && part.endsWith("```")) {
             const firstLineBreak = part.indexOf("\n");
-            const lang =
-                firstLineBreak !== -1
-                    ? part.slice(3, firstLineBreak).trim()
-                    : "";
-            const code =
-                firstLineBreak !== -1
-                    ? part.slice(firstLineBreak + 1, -3)
-                    : part.slice(3, -3);
+            const lang = firstLineBreak !== -1 ? part.slice(3, firstLineBreak).trim() : "";
+            const code = firstLineBreak !== -1 ? part.slice(firstLineBreak + 1, -3) : part.slice(3, -3);
 
             // Check if lang is mermaid
             if (lang.toLowerCase() === "mermaid") {
@@ -3467,11 +3142,7 @@ function formatMarkdown(content) {
             // If code block is just { "sent": true }, display as plain text Successful
             try {
                 const parsed = JSON.parse(code.trim());
-                if (
-                    parsed &&
-                    parsed.sent === true &&
-                    Object.keys(parsed).length === 1
-                ) {
+                if (parsed && parsed.sent === true && Object.keys(parsed).length === 1) {
                     return (
                         <div
                             key={index}
@@ -3488,10 +3159,7 @@ function formatMarkdown(content) {
             } catch {}
 
             return (
-                <div
-                    key={index}
-                    style={{ position: "relative", margin: "0.85rem 0" }}
-                >
+                <div key={index} style={{ position: "relative", margin: "0.85rem 0" }}>
                     {lang && (
                         <div
                             style={{
@@ -3528,19 +3196,13 @@ function formatMarkdown(content) {
                     if (!line.trim()) return <br key={lIdx} />;
 
                     if (line.startsWith("### ")) {
-                        return (
-                            <h3 key={lIdx}>{renderInline(line.slice(4))}</h3>
-                        );
+                        return <h3 key={lIdx}>{renderInline(line.slice(4))}</h3>;
                     }
                     if (line.startsWith("## ")) {
-                        return (
-                            <h2 key={lIdx}>{renderInline(line.slice(3))}</h2>
-                        );
+                        return <h2 key={lIdx}>{renderInline(line.slice(3))}</h2>;
                     }
                     if (line.startsWith("# ")) {
-                        return (
-                            <h1 key={lIdx}>{renderInline(line.slice(2))}</h1>
-                        );
+                        return <h1 key={lIdx}>{renderInline(line.slice(2))}</h1>;
                     }
                     if (line.startsWith("- ") || line.startsWith("* ")) {
                         return (

@@ -1,21 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-    ArrowLeft,
-    Share2,
-    Copy,
-    Check,
-    ChevronDown,
-    ChevronRight,
-    ExternalLink,
-    FileText,
-    Link as LinkIcon,
-    Download,
-    Printer,
-    Sun,
-    Moon,
-    List,
-    ChevronUp,
-} from "lucide-react";
+import { ArrowLeft, Share2, Copy, Check, ChevronDown, ChevronRight, ExternalLink, FileText, Link as LinkIcon, Download, Printer, Sun, Moon, List, ChevronUp } from "lucide-react";
 import katex from "katex";
 import mermaid from "mermaid";
 import { getReportBySlug } from "../services/api";
@@ -150,9 +134,7 @@ function MermaidReportBlock({ chart }) {
                     color: "#9ca3af",
                 }}
             >
-                <span style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                    Interactive Diagram
-                </span>
+                <span style={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>Interactive Diagram</span>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                     <button
                         onClick={() => setViewRaw(!viewRaw)}
@@ -208,10 +190,7 @@ function MermaidReportBlock({ chart }) {
 
 function highlightCode(code, lang = "") {
     if (!code) return "";
-    let safe = code
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+    let safe = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
     safe = safe.replace(/(\/\/[^\n]*|#[^\n]*)/g, '<span style="color: #6b7280; font-style: italic;">$1</span>');
     safe = safe.replace(/(".*?"|'.*?'|`.*?`)/g, '<span style="color: #6ee7b7;">$1</span>');
@@ -316,7 +295,11 @@ function renderInlineText(str) {
             return <span key={i}>{renderKaTeX(tok.slice(1, -1), false)}</span>;
         }
         if (tok.startsWith("**") && tok.endsWith("**")) {
-            return <strong key={i} style={{ color: "#ffffff", fontWeight: 700 }}>{renderInlineText(tok.slice(2, -2))}</strong>;
+            return (
+                <strong key={i} style={{ color: "#ffffff", fontWeight: 700 }}>
+                    {renderInlineText(tok.slice(2, -2))}
+                </strong>
+            );
         }
         if (tok.startsWith("*") && tok.endsWith("*")) {
             return <em key={i}>{renderInlineText(tok.slice(1, -1))}</em>;
@@ -345,13 +328,7 @@ function renderInlineText(str) {
         const linkMatch = tok.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
         if (linkMatch) {
             return (
-                <a
-                    key={i}
-                    href={linkMatch[2]}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: "#fb923c", textDecoration: "underline", textUnderlineOffset: "3px" }}
-                >
+                <a key={i} href={linkMatch[2]} target="_blank" rel="noreferrer" style={{ color: "#fb923c", textDecoration: "underline", textUnderlineOffset: "3px" }}>
                     {linkMatch[1]}
                 </a>
             );
@@ -506,9 +483,7 @@ export default function ReportViewer({ slug, theme = "dark", onToggleTheme }) {
             >
                 <FileText size={48} style={{ opacity: 0.3, marginBottom: "1rem" }} />
                 <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.5rem" }}>Report Not Found</h1>
-                <p style={{ color: "#9ca3af", maxWidth: "400px", marginBottom: "1.5rem" }}>
-                    {error || "The requested markdown research file could not be located in workspace/research/."}
-                </p>
+                <p style={{ color: "#9ca3af", maxWidth: "400px", marginBottom: "1.5rem" }}>{error || "The requested markdown research file could not be located in workspace/research/."}</p>
                 <a
                     href="/"
                     style={{
@@ -1055,40 +1030,22 @@ export default function ReportViewer({ slug, theme = "dark", onToggleTheme }) {
                     }}
                 >
                     <div>
-                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>
-                            {report.duration || "533.4s"}
-                        </strong>{" "}
-                        <span>Duration</span>
+                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>{report.duration || "533.4s"}</strong> <span>Duration</span>
                     </div>
                     <div>
-                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>
-                            {report.rounds || 3}
-                        </strong>{" "}
-                        <span>Rounds</span>
+                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>{report.rounds || 3}</strong> <span>Rounds</span>
                     </div>
                     <div>
-                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>
-                            {report.queries || 7}
-                        </strong>{" "}
-                        <span>Queries</span>
+                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>{report.queries || 7}</strong> <span>Queries</span>
                     </div>
                     <div>
-                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>
-                            {report.urls_analyzed || (report.sources ? report.sources.length : 13)}
-                        </strong>{" "}
-                        <span>URLs Analyzed</span>
+                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>{report.urls_analyzed || (report.sources ? report.sources.length : 13)}</strong> <span>URLs Analyzed</span>
                     </div>
                     <div>
-                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>
-                            {report.model || "qwen3.5:9b"}
-                        </strong>{" "}
-                        <span>Model</span>
+                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>{report.model || "qwen3.5:9b"}</strong> <span>Model</span>
                     </div>
                     <div>
-                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>
-                            {report.search_engine || "duckduckgo"}
-                        </strong>{" "}
-                        <span>Search</span>
+                        <strong style={{ color: "#ffffff", fontWeight: 700 }}>{report.search_engine || "duckduckgo"}</strong> <span>Search</span>
                     </div>
                 </div>
             </div>
@@ -1271,9 +1228,7 @@ export default function ReportViewer({ slug, theme = "dark", onToggleTheme }) {
                                                 wordBreak: "break-all",
                                             }}
                                         >
-                                            <span style={{ color: "#6b7280", fontSize: "0.75rem", minWidth: "22px" }}>
-                                                [{i + 1}]
-                                            </span>
+                                            <span style={{ color: "#6b7280", fontSize: "0.75rem", minWidth: "22px" }}>[{i + 1}]</span>
                                             <a
                                                 href={url}
                                                 target="_blank"
