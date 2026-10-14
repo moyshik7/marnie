@@ -82,10 +82,10 @@ Slash commands can be used at the beginning of any prompt. Typing `/` automatica
 ## Supported LLM Sources
 
 - [x] Ollama
-- [ ] llama.cpp
+- [x] llama.cpp
 - [ ] Gemini API
-- [ ] Anthropic API
-- [ ] OpenAI API
+- [x] Anthropic API
+- [x] OpenAI API
 - [x] Deepseek API
 - [ ] Openrouter
 - [ ] Cloudflare
