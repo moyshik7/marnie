@@ -53,6 +53,11 @@ const updateSettingsHandler = (req, res) => {
         "deepseek_api_key",
         "deepseek_base_url",
         "deepseek_model",
+        "anthropic_api_key",
+        "anthropic_base_url",
+        "anthropic_model",
+        "llamacpp_base_url",
+        "llamacpp_model",
         "discord_webhook_url",
         "searxng_url",
         "search_provider",
@@ -109,6 +114,33 @@ router.post("/test-deepseek", async (req, res) => {
     } catch (err) {
         res.status(502).json({
             ok: false,
+            error: err.message,
+        });
+    }
+});
+
+// POST /api/settings/test-anthropic
+router.post("/test-anthropic", async (req, res) => {
+    try {
+        const result = await providers.testProvider("anthropic", req.body);
+        res.json(result);
+    } catch (err) {
+        res.status(502).json({
+            ok: false,
+            error: err.message,
+        });
+    }
+});
+
+// POST /api/settings/test-llamacpp
+router.post("/test-llamacpp", async (req, res) => {
+    try {
+        const result = await providers.testProvider("llamacpp", req.body);
+        res.json(result);
+    } catch (err) {
+        res.status(502).json({
+            ok: false,
+            url: req.body?.url,
             error: err.message,
         });
     }

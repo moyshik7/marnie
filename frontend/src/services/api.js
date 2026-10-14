@@ -202,6 +202,20 @@ export async function testDeepSeekConnection({ apiKey, baseUrl } = {}) {
     });
 }
 
+export async function testAnthropicConnection({ apiKey, baseUrl } = {}) {
+    return request("/settings/test-anthropic", {
+        method: "POST",
+        body: JSON.stringify({ apiKey: apiKey || undefined, baseUrl: baseUrl || undefined }),
+    });
+}
+
+export async function testLlamaCppConnection({ url } = {}) {
+    return request("/settings/test-llamacpp", {
+        method: "POST",
+        body: JSON.stringify({ url: url || undefined }),
+    });
+}
+
 export async function testDiscordAlert(webhookUrl) {
     return request("/settings/test-discord", {
         method: "POST",

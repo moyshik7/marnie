@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Check, AlertCircle, Bell, Cpu, Database, RefreshCw, BotIcon, Globe, Brain, Edit3, FileText, Eye, EyeOff, Key, Sparkles, Server } from "lucide-react";
-import { getSettings, updateSettings, testOllamaConnection, testDeepSeekConnection, testDiscordAlert, getCustomApiBase, setCustomApiBase, listModels, getBrainMemory, saveBrainMemory, consolidateBrainMemory } from "../services/api";
+import { getSettings, updateSettings, testOllamaConnection, testDeepSeekConnection, testAnthropicConnection, testLlamaCppConnection, testDiscordAlert, getCustomApiBase, setCustomApiBase, listModels, getBrainMemory, saveBrainMemory, consolidateBrainMemory } from "../services/api";
 
 export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, currentModel, onModelChanged }) {
     const [activeTab, setActiveTab] = useState("ollama");
@@ -17,6 +17,16 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
     const [showDeepseekKey, setShowDeepseekKey] = useState(false);
     const [deepseekBaseUrl, setDeepseekBaseUrl] = useState("https://api.deepseek.com");
     const [deepseekModel, setDeepseekModel] = useState("deepseek-chat");
+
+    // Anthropic form states
+    const [anthropicApiKey, setAnthropicApiKey] = useState("");
+    const [showAnthropicKey, setShowAnthropicKey] = useState(false);
+    const [anthropicBaseUrl, setAnthropicBaseUrl] = useState("https://api.anthropic.com");
+    const [anthropicModel, setAnthropicModel] = useState("claude-3-5-sonnet-20241022");
+
+    // llama.cpp form states
+    const [llamacppUrl, setLlamacppUrl] = useState("http://localhost:8080");
+    const [llamacppModel, setLlamacppModel] = useState("default");
 
     const [availableModels, setAvailableModels] = useState([]);
     const [discordWebhook, setDiscordWebhook] = useState("");
@@ -39,6 +49,10 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
     const [ollamaStatus, setOllamaStatus] = useState(null);
     const [deepseekTesting, setDeepseekTesting] = useState(false);
     const [deepseekStatus, setDeepseekStatus] = useState(null);
+    const [anthropicTesting, setAnthropicTesting] = useState(false);
+    const [anthropicStatus, setAnthropicStatus] = useState(null);
+    const [llamacppTesting, setLlamacppTesting] = useState(false);
+    const [llamacppStatus, setLlamacppStatus] = useState(null);
     const [discordTesting, setDiscordTesting] = useState(false);
     const [discordStatus, setDiscordStatus] = useState(null);
 
@@ -65,6 +79,11 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
             if (s.deepseek_api_key) setDeepseekApiKey(s.deepseek_api_key);
             if (s.deepseek_base_url) setDeepseekBaseUrl(s.deepseek_base_url);
             if (s.deepseek_model) setDeepseekModel(s.deepseek_model);
+            if (s.anthropic_api_key) setAnthropicApiKey(s.anthropic_api_key);
+            if (s.anthropic_base_url) setAnthropicBaseUrl(s.anthropic_base_url);
+            if (s.anthropic_model) setAnthropicModel(s.anthropic_model);
+            if (s.llamacpp_base_url) setLlamacppUrl(s.llamacpp_base_url);
+            if (s.llamacpp_model) setLlamacppModel(s.llamacpp_model);
             if (s.discord_webhook_url) setDiscordWebhook(s.discord_webhook_url);
             if (s.searxng_url) setSearxngUrl(s.searxng_url);
             if (s.search_provider) setSearchProvider(s.search_provider);
@@ -105,6 +124,11 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
             const deepseekKeyToSave = overrides.deepseekApiKey ?? deepseekApiKey;
             const deepseekUrlToSave = overrides.deepseekBaseUrl ?? deepseekBaseUrl;
             const deepseekModelToSave = overrides.deepseekModel ?? deepseekModel;
+            const anthropicKeyToSave = overrides.anthropicApiKey ?? anthropicApiKey;
+            const anthropicUrlToSave = overrides.anthropicBaseUrl ?? anthropicBaseUrl;
+            const anthropicModelToSave = overrides.anthropicModel ?? anthropicModel;
+            const llamacppUrlToSave = overrides.llamacppUrl ?? llamacppUrl;
+            const llamacppModelToSave = overrides.llamacppModel ?? llamacppModel;
             const discordWebhookToSave = overrides.discordWebhook ?? discordWebhook;
             const searxngUrlToSave = overrides.searxngUrl ?? searxngUrl;
             const searchProviderToSave = overrides.searchProvider ?? searchProvider;
@@ -120,6 +144,11 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                 deepseek_api_key: deepseekKeyToSave,
                 deepseek_base_url: deepseekUrlToSave,
                 deepseek_model: deepseekModelToSave,
+                anthropic_api_key: anthropicKeyToSave,
+                anthropic_base_url: anthropicUrlToSave,
+                anthropic_model: anthropicModelToSave,
+                llamacpp_base_url: llamacppUrlToSave,
+                llamacpp_model: llamacppModelToSave,
                 discord_webhook_url: discordWebhookToSave,
                 searxng_url: searxngUrlToSave,
                 search_provider: searchProviderToSave,
@@ -137,7 +166,14 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                 onSettingsUpdated(payload);
             }
 
-            const activeModelToReport = providerToSave === "deepseek" ? deepseekModelToSave : defaultModelToSave;
+            let activeModelToReport = defaultModelToSave;
+            if (providerToSave === "deepseek") {
+                activeModelToReport = deepseekModelToSave;
+            } else if (providerToSave === "anthropic" || providerToSave === "claude") {
+                activeModelToReport = anthropicModelToSave;
+            } else if (providerToSave === "llamacpp") {
+                activeModelToReport = llamacppModelToSave;
+            }
             if (onModelChanged && activeModelToReport) {
                 onModelChanged(activeModelToReport);
             }
@@ -170,6 +206,16 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                         setDeepseekModel(models[0]);
                         performSave({ selectedProvider: newProvider, deepseekModel: models[0] });
                     }
+                } else if (newProvider === "anthropic" || newProvider === "claude") {
+                    if (!models.includes(anthropicModel)) {
+                        setAnthropicModel(models[0]);
+                        performSave({ selectedProvider: newProvider, anthropicModel: models[0] });
+                    }
+                } else if (newProvider === "llamacpp") {
+                    if (!models.includes(llamacppModel)) {
+                        setLlamacppModel(models[0]);
+                        performSave({ selectedProvider: newProvider, llamacppModel: models[0] });
+                    }
                 } else {
                     if (!models.includes(defaultModel)) {
                         setDefaultModel(models[0]);
@@ -186,7 +232,12 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
         setBrainConsolidating(true);
         setBrainConsolidateMsg(null);
         try {
-            const res = await consolidateBrainMemory(null, selectedProvider === "deepseek" ? deepseekModel : defaultModel);
+            let modelForConsolidate = defaultModel;
+            if (selectedProvider === "deepseek") modelForConsolidate = deepseekModel;
+            else if (selectedProvider === "anthropic" || selectedProvider === "claude") modelForConsolidate = anthropicModel;
+            else if (selectedProvider === "llamacpp") modelForConsolidate = llamacppModel;
+
+            const res = await consolidateBrainMemory(null, modelForConsolidate);
             if (res.updated) {
                 setBrainContent(res.content);
                 setBrainLastUpdated(new Date().toISOString());
@@ -272,6 +323,58 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
             });
         } finally {
             setDeepseekTesting(false);
+        }
+    };
+
+    const handleTestAnthropic = async () => {
+        setAnthropicTesting(true);
+        setAnthropicStatus(null);
+        try {
+            const res = await testAnthropicConnection({ apiKey: anthropicApiKey, baseUrl: anthropicBaseUrl });
+            setAnthropicStatus({
+                ok: true,
+                message: res.message || `Connected to Anthropic! API key verified.`,
+            });
+            if (res.models && res.models.length > 0 && (selectedProvider === "anthropic" || selectedProvider === "claude")) {
+                setAvailableModels(res.models);
+                if (!res.models.includes(anthropicModel)) {
+                    setAnthropicModel(res.models[0]);
+                    performSave({ anthropicModel: res.models[0] });
+                }
+            }
+        } catch (err) {
+            setAnthropicStatus({
+                ok: false,
+                message: err.message || "Anthropic connection failed",
+            });
+        } finally {
+            setAnthropicTesting(false);
+        }
+    };
+
+    const handleTestLlamaCpp = async () => {
+        setLlamacppTesting(true);
+        setLlamacppStatus(null);
+        try {
+            const res = await testLlamaCppConnection({ url: llamacppUrl });
+            setLlamacppStatus({
+                ok: true,
+                message: res.message || `Connected to llama.cpp server!`,
+            });
+            if (res.models && res.models.length > 0 && selectedProvider === "llamacpp") {
+                setAvailableModels(res.models);
+                if (!res.models.includes(llamacppModel)) {
+                    setLlamacppModel(res.models[0]);
+                    performSave({ llamacppModel: res.models[0] });
+                }
+            }
+        } catch (err) {
+            setLlamacppStatus({
+                ok: false,
+                message: err.message || "llama.cpp connection failed",
+            });
+        } finally {
+            setLlamacppTesting(false);
         }
     };
 
@@ -477,8 +580,22 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                             fontSize: "0.72rem",
                                             padding: "0.2rem 0.55rem",
                                             borderRadius: "999px",
-                                            backgroundColor: selectedProvider === "deepseek" ? "rgba(59, 130, 246, 0.12)" : "rgba(34, 197, 94, 0.12)",
-                                            color: selectedProvider === "deepseek" ? "#2563EB" : "#16A34A",
+                                            backgroundColor:
+                                                selectedProvider === "deepseek"
+                                                    ? "rgba(59, 130, 246, 0.12)"
+                                                    : selectedProvider === "anthropic" || selectedProvider === "claude"
+                                                    ? "rgba(217, 119, 6, 0.12)"
+                                                    : selectedProvider === "llamacpp"
+                                                    ? "rgba(168, 85, 247, 0.12)"
+                                                    : "rgba(34, 197, 94, 0.12)",
+                                            color:
+                                                selectedProvider === "deepseek"
+                                                    ? "#2563EB"
+                                                    : selectedProvider === "anthropic" || selectedProvider === "claude"
+                                                    ? "#D97706"
+                                                    : selectedProvider === "llamacpp"
+                                                    ? "#9333EA"
+                                                    : "#16A34A",
                                             fontWeight: 600,
                                             display: "flex",
                                             alignItems: "center",
@@ -490,11 +607,25 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                                 width: "6px",
                                                 height: "6px",
                                                 borderRadius: "50%",
-                                                backgroundColor: selectedProvider === "deepseek" ? "#2563EB" : "#16A34A",
+                                                backgroundColor:
+                                                    selectedProvider === "deepseek"
+                                                        ? "#2563EB"
+                                                        : selectedProvider === "anthropic" || selectedProvider === "claude"
+                                                        ? "#D97706"
+                                                        : selectedProvider === "llamacpp"
+                                                        ? "#9333EA"
+                                                        : "#16A34A",
                                                 display: "inline-block",
                                             }}
                                         />
-                                        Active: {selectedProvider === "deepseek" ? "DeepSeek API (Cloud)" : "Ollama (Local)"}
+                                        Active:{" "}
+                                        {selectedProvider === "deepseek"
+                                            ? "DeepSeek API (Cloud)"
+                                            : selectedProvider === "anthropic" || selectedProvider === "claude"
+                                            ? "Anthropic Claude (Cloud)"
+                                            : selectedProvider === "llamacpp"
+                                            ? "llama.cpp Server (Local)"
+                                            : "Ollama (Local)"}
                                     </span>
                                 </div>
 
@@ -516,10 +647,10 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                 >
                                     <option value="ollama">Ollama (Local / Self-hosted)</option>
                                     <option value="deepseek">DeepSeek API (Cloud)</option>
+                                    <option value="anthropic">Anthropic Claude API (Cloud)</option>
+                                    <option value="llamacpp">llama.cpp HTTP Server (Local / Remote)</option>
                                     <option value="openai" disabled>OpenAI API (Coming Soon)</option>
-                                    <option value="claude" disabled>Anthropic Claude API (Coming Soon)</option>
                                     <option value="gemini" disabled>Google Gemini API (Coming Soon)</option>
-                                    <option value="llamacpp" disabled>llama.cpp HTTP Server (Coming Soon)</option>
                                 </select>
                                 <div
                                     style={{
@@ -862,7 +993,352 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                 </div>
                             </div>
 
-                            {/* Section 3: Default Model Selection */}
+                            {/* Section: Anthropic Claude API Configuration */}
+                            <div
+                                style={{
+                                    border: "1px solid var(--border-subtle)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                    backgroundColor: (selectedProvider === "anthropic" || selectedProvider === "claude") ? "var(--bg-card)" : "transparent",
+                                    opacity: (selectedProvider === "anthropic" || selectedProvider === "claude") ? 1 : 0.75,
+                                    transition: "opacity 0.15s ease",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        marginBottom: "0.75rem",
+                                    }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                            Anthropic Claude API Configuration
+                                        </span>
+                                        <span
+                                            style={{
+                                                fontSize: "0.68rem",
+                                                fontWeight: 600,
+                                                padding: "0.15rem 0.45rem",
+                                                borderRadius: "999px",
+                                                backgroundColor: "rgba(217, 119, 6, 0.12)",
+                                                color: "#D97706",
+                                            }}
+                                        >
+                                            Claude 3.5 Sonnet & Haiku
+                                        </span>
+                                    </div>
+                                    <span
+                                        style={{
+                                            fontSize: "0.7rem",
+                                            fontWeight: 500,
+                                            padding: "0.15rem 0.5rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    >
+                                        Cloud
+                                    </span>
+                                </div>
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                                    {/* Anthropic API Key */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            Anthropic API Key
+                                        </label>
+                                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                                            <div style={{ position: "relative", flex: 1 }}>
+                                                <input
+                                                    type={showAnthropicKey ? "text" : "password"}
+                                                    value={anthropicApiKey}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setAnthropicApiKey(val);
+                                                        triggerAutoSave({ anthropicApiKey: val });
+                                                    }}
+                                                    placeholder="sk-ant-api03-..."
+                                                    style={{
+                                                        width: "100%",
+                                                        padding: "0.6rem 2.4rem 0.6rem 0.75rem",
+                                                        borderRadius: "var(--radius-sm)",
+                                                        border: "1px solid var(--border-strong)",
+                                                        backgroundColor: "var(--bg-card)",
+                                                        color: "var(--text-primary)",
+                                                        fontSize: "0.88rem",
+                                                        outline: "none",
+                                                        fontFamily: showAnthropicKey ? "monospace" : "inherit",
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowAnthropicKey((prev) => !prev)}
+                                                    title={showAnthropicKey ? "Hide API Key" : "Show API Key"}
+                                                    style={{
+                                                        position: "absolute",
+                                                        right: "0.6rem",
+                                                        top: "50%",
+                                                        transform: "translateY(-50%)",
+                                                        background: "none",
+                                                        border: "none",
+                                                        color: "var(--text-muted)",
+                                                        cursor: "pointer",
+                                                        padding: "0.2rem",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                    }}
+                                                >
+                                                    {showAnthropicKey ? <EyeOff size={15} /> : <Eye size={15} />}
+                                                </button>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleTestAnthropic}
+                                                disabled={anthropicTesting || !anthropicApiKey.trim()}
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "0.4rem",
+                                                    padding: "0.6rem 0.9rem",
+                                                    backgroundColor: "var(--bg-card)",
+                                                    border: "1px solid var(--border-strong)",
+                                                    borderRadius: "var(--radius-sm)",
+                                                    fontSize: "0.82rem",
+                                                    fontWeight: 500,
+                                                    color: "var(--text-primary)",
+                                                    cursor: !anthropicApiKey.trim() ? "not-allowed" : "pointer",
+                                                    opacity: !anthropicApiKey.trim() ? 0.6 : 1,
+                                                }}
+                                            >
+                                                <RefreshCw size={14} className={anthropicTesting ? "typing-dot" : ""} />
+                                                <span>{anthropicTesting ? "Verifying..." : "Verify Key"}</span>
+                                            </button>
+                                        </div>
+                                        <div
+                                            style={{
+                                                fontSize: "0.75rem",
+                                                color: "var(--text-muted)",
+                                                marginTop: "0.35rem",
+                                            }}
+                                        >
+                                            Required for Claude API requests. Saved securely in local database.
+                                        </div>
+                                    </div>
+
+                                    {/* Anthropic Custom Endpoint */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            Custom Anthropic Endpoint URL (Optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={anthropicBaseUrl}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setAnthropicBaseUrl(val);
+                                                triggerAutoSave({ anthropicBaseUrl: val });
+                                            }}
+                                            placeholder="https://api.anthropic.com"
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-card)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                fontSize: "0.75rem",
+                                                color: "var(--text-muted)",
+                                                marginTop: "0.35rem",
+                                            }}
+                                        >
+                                            Default: <code>https://api.anthropic.com</code>. Supports reverse proxies or enterprise gateways.
+                                        </div>
+                                    </div>
+
+                                    {anthropicStatus && (
+                                        <div
+                                            style={{
+                                                marginTop: "0.25rem",
+                                                padding: "0.5rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                backgroundColor: anthropicStatus.ok ? "rgba(74, 222, 128, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                                                color: anthropicStatus.ok ? "#15803D" : "#DC2626",
+                                                fontSize: "0.8rem",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.4rem",
+                                            }}
+                                        >
+                                            {anthropicStatus.ok ? <Check size={14} /> : <AlertCircle size={14} />}
+                                            <span>{anthropicStatus.message}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Section: llama.cpp Server Configuration */}
+                            <div
+                                style={{
+                                    border: "1px solid var(--border-subtle)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                    backgroundColor: selectedProvider === "llamacpp" ? "var(--bg-card)" : "transparent",
+                                    opacity: selectedProvider === "llamacpp" ? 1 : 0.75,
+                                    transition: "opacity 0.15s ease",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        marginBottom: "0.75rem",
+                                    }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                            llama.cpp Server Configuration
+                                        </span>
+                                        <span
+                                            style={{
+                                                fontSize: "0.68rem",
+                                                fontWeight: 600,
+                                                padding: "0.15rem 0.45rem",
+                                                borderRadius: "999px",
+                                                backgroundColor: "rgba(168, 85, 247, 0.12)",
+                                                color: "#9333EA",
+                                            }}
+                                        >
+                                            llama-server / GGUF
+                                        </span>
+                                    </div>
+                                    <span
+                                        style={{
+                                            fontSize: "0.7rem",
+                                            fontWeight: 500,
+                                            padding: "0.15rem 0.5rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    >
+                                        Local
+                                    </span>
+                                </div>
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            llama.cpp HTTP Server URL
+                                        </label>
+                                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                                            <input
+                                                type="text"
+                                                value={llamacppUrl}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setLlamacppUrl(val);
+                                                    triggerAutoSave({ llamacppUrl: val });
+                                                }}
+                                                placeholder="http://localhost:8080"
+                                                style={{
+                                                    flex: 1,
+                                                    padding: "0.6rem 0.75rem",
+                                                    borderRadius: "var(--radius-sm)",
+                                                    border: "1px solid var(--border-strong)",
+                                                    backgroundColor: "var(--bg-card)",
+                                                    color: "var(--text-primary)",
+                                                    fontSize: "0.88rem",
+                                                    outline: "none",
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleTestLlamaCpp}
+                                                disabled={llamacppTesting}
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "0.4rem",
+                                                    padding: "0.6rem 0.9rem",
+                                                    backgroundColor: "var(--bg-card)",
+                                                    border: "1px solid var(--border-strong)",
+                                                    borderRadius: "var(--radius-sm)",
+                                                    fontSize: "0.82rem",
+                                                    fontWeight: 500,
+                                                    color: "var(--text-primary)",
+                                                    cursor: "pointer",
+                                                }}
+                                            >
+                                                <RefreshCw size={14} className={llamacppTesting ? "typing-dot" : ""} />
+                                                <span>{llamacppTesting ? "Testing..." : "Test Server"}</span>
+                                            </button>
+                                        </div>
+                                        <div
+                                            style={{
+                                                fontSize: "0.75rem",
+                                                color: "var(--text-muted)",
+                                                marginTop: "0.35rem",
+                                            }}
+                                        >
+                                            Base endpoint for <code>llama-server</code> running locally or remotely (default: <code>http://localhost:8080</code>).
+                                        </div>
+                                    </div>
+
+                                    {llamacppStatus && (
+                                        <div
+                                            style={{
+                                                marginTop: "0.25rem",
+                                                padding: "0.5rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                backgroundColor: llamacppStatus.ok ? "rgba(74, 222, 128, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                                                color: llamacppStatus.ok ? "#15803D" : "#DC2626",
+                                                fontSize: "0.8rem",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.4rem",
+                                            }}
+                                        >
+                                            {llamacppStatus.ok ? <Check size={14} /> : <AlertCircle size={14} />}
+                                            <span>{llamacppStatus.message}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Section: Default Model Selection */}
                             <div
                                 style={{
                                     border: "1px solid var(--border-subtle)",
@@ -880,7 +1356,15 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                         marginBottom: "0.35rem",
                                     }}
                                 >
-                                    Default Model ({selectedProvider === "deepseek" ? "DeepSeek" : "Ollama"})
+                                    Default Model ({
+                                        selectedProvider === "deepseek"
+                                            ? "DeepSeek"
+                                            : (selectedProvider === "anthropic" || selectedProvider === "claude")
+                                            ? "Anthropic Claude"
+                                            : selectedProvider === "llamacpp"
+                                            ? "llama.cpp"
+                                            : "Ollama"
+                                    })
                                 </label>
 
                                 {selectedProvider === "deepseek" ? (
@@ -912,6 +1396,84 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                             ))}
                                         </select>
                                     </div>
+                                ) : (selectedProvider === "anthropic" || selectedProvider === "claude") ? (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                                        <select
+                                            value={anthropicModel}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setAnthropicModel(val);
+                                                performSave({ anthropicModel: val });
+                                            }}
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-secondary)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        >
+                                            <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet-20241022 (Claude 3.5 Sonnet - Recommended)</option>
+                                            <option value="claude-3-5-haiku-20241022">claude-3-5-haiku-20241022 (Claude 3.5 Haiku - Fast & Lightweight)</option>
+                                            <option value="claude-3-opus-20240229">claude-3-opus-20240229 (Claude 3 Opus - Complex Analysis)</option>
+                                            {availableModels.filter((m) => !["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"].includes(m)).map((m) => (
+                                                <option key={m} value={m}>
+                                                    {m}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : selectedProvider === "llamacpp" ? (
+                                    availableModels.length > 0 ? (
+                                        <select
+                                            value={llamacppModel}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setLlamacppModel(val);
+                                                performSave({ llamacppModel: val });
+                                            }}
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-secondary)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        >
+                                            {availableModels.map((m) => (
+                                                <option key={m} value={m}>
+                                                    {m}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            value={llamacppModel}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setLlamacppModel(val);
+                                                triggerAutoSave({ llamacppModel: val });
+                                            }}
+                                            placeholder="default"
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-secondary)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        />
+                                    )
                                 ) : availableModels.length > 0 ? (
                                     <select
                                         value={defaultModel}
@@ -971,7 +1533,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                 </div>
                             </div>
 
-                            {/* Section 4: Upcoming Integrations (Extensible architecture) */}
+                            {/* Section: Upcoming Integrations (Extensible architecture) */}
                             <div
                                 style={{
                                     border: "1px dashed var(--border-strong)",
@@ -988,11 +1550,11 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                         More Integrations Under Development
                                     </span>
                                     <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
-                                        Anthropic Claude, Google Gemini, OpenAI, and llama.cpp HTTP server will be available as selectable endpoints soon.
+                                        Google Gemini and OpenAI API integrations will be available as selectable endpoints soon.
                                     </div>
                                 </div>
                                 <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-                                    {["Claude", "Gemini", "OpenAI", "llama.cpp"].map((name) => (
+                                    {["Gemini", "OpenAI"].map((name) => (
                                         <span
                                             key={name}
                                             style={{

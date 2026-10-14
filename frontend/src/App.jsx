@@ -125,9 +125,15 @@ export default function App() {
         try {
             const settingsData = await getSettings();
             activeProv = settingsData?.settings?.default_provider || "ollama";
-            configuredModel = activeProv === "deepseek"
-                ? (settingsData?.settings?.deepseek_model || "deepseek-chat")
-                : (settingsData?.settings?.default_model || "llama3.2");
+            if (activeProv === "deepseek") {
+                configuredModel = settingsData?.settings?.deepseek_model || "deepseek-chat";
+            } else if (activeProv === "anthropic" || activeProv === "claude") {
+                configuredModel = settingsData?.settings?.anthropic_model || "claude-3-5-sonnet-20241022";
+            } else if (activeProv === "llamacpp") {
+                configuredModel = settingsData?.settings?.llamacpp_model || "default";
+            } else {
+                configuredModel = settingsData?.settings?.default_model || "llama3.2";
+            }
         } catch (e) {
             console.warn("Could not load settings:", e);
         }
@@ -151,7 +157,10 @@ export default function App() {
             initialModel = modelsList[0];
         }
         if (!initialModel) {
-            initialModel = activeProv === "deepseek" ? "deepseek-chat" : "llama3.2";
+            if (activeProv === "deepseek") initialModel = "deepseek-chat";
+            else if (activeProv === "anthropic" || activeProv === "claude") initialModel = "claude-3-5-sonnet-20241022";
+            else if (activeProv === "llamacpp") initialModel = "default";
+            else initialModel = "llama3.2";
         }
 
         setActiveModel(initialModel);
@@ -389,10 +398,16 @@ export default function App() {
                     if (prov) {
                         try {
                             const models = await listModels(prov);
-                            setAvailableModels(models);
-                            const modelToUse = prov === "deepseek"
-                                ? (newSettings.deepseek_model || (models.length > 0 ? models[0] : "deepseek-chat"))
-                                : (newSettings.default_model || (models.length > 0 ? models[0] : "llama3.2"));
+                            let modelToUse = newSettings.default_model;
+                            if (prov === "deepseek") {
+                                modelToUse = newSettings.deepseek_model || (models.length > 0 ? models[0] : "deepseek-chat");
+                            } else if (prov === "anthropic" || prov === "claude") {
+                                modelToUse = newSettings.anthropic_model || (models.length > 0 ? models[0] : "claude-3-5-sonnet-20241022");
+                            } else if (prov === "llamacpp") {
+                                modelToUse = newSettings.llamacpp_model || (models.length > 0 ? models[0] : "default");
+                            } else {
+                                modelToUse = newSettings.default_model || (models.length > 0 ? models[0] : "llama3.2");
+                            }
                             handleModelChange(modelToUse);
                             return;
                         } catch (e) {

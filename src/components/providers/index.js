@@ -3,10 +3,15 @@
 const db = require("../../db/index");
 const ollama = require("./ollama/interact");
 const deepseek = require("./deepseek/interact");
+const anthropic = require("./anthropic/interact");
+const llamacpp = require("./llamacpp/interact");
 
 const PROVIDERS = {
     ollama,
     deepseek,
+    anthropic,
+    claude: anthropic,
+    llamacpp,
 };
 
 /**
@@ -38,24 +43,36 @@ const PROVIDER_METADATA = [
         status: "active",
     },
     {
+        id: "anthropic",
+        name: "Anthropic Claude API (Cloud)",
+        type: "cloud",
+        description: "Claude 3.5 Sonnet and Haiku state-of-the-art models via Anthropic API",
+        defaultBaseUrl: "https://api.anthropic.com",
+        defaultModel: "claude-3-5-sonnet-20241022",
+        requiresApiKey: true,
+        supportsStreaming: true,
+        supportsTools: true,
+        status: "active",
+    },
+    {
+        id: "llamacpp",
+        name: "llama.cpp HTTP Server (Local)",
+        type: "local",
+        description: "High-performance local GGUF model execution via llama.cpp server",
+        defaultBaseUrl: "http://localhost:8080",
+        defaultModel: "default",
+        requiresApiKey: false,
+        supportsStreaming: true,
+        supportsTools: true,
+        status: "active",
+    },
+    {
         id: "openai",
         name: "OpenAI API",
         type: "cloud",
         description: "GPT-4o, o1, and o3-mini models via OpenAI API",
         defaultBaseUrl: "https://api.openai.com/v1",
         defaultModel: "gpt-4o",
-        requiresApiKey: true,
-        supportsStreaming: true,
-        supportsTools: true,
-        status: "coming_soon",
-    },
-    {
-        id: "claude",
-        name: "Anthropic Claude API",
-        type: "cloud",
-        description: "Claude 3.5 Sonnet and Haiku models via Anthropic API",
-        defaultBaseUrl: "https://api.anthropic.com/v1",
-        defaultModel: "claude-3-5-sonnet-20241022",
         requiresApiKey: true,
         supportsStreaming: true,
         supportsTools: true,
@@ -69,18 +86,6 @@ const PROVIDER_METADATA = [
         defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta",
         defaultModel: "gemini-2.0-flash",
         requiresApiKey: true,
-        supportsStreaming: true,
-        supportsTools: true,
-        status: "coming_soon",
-    },
-    {
-        id: "llamacpp",
-        name: "llama.cpp HTTP Server",
-        type: "local",
-        description: "High-performance C++ local inference server",
-        defaultBaseUrl: "http://localhost:8080",
-        defaultModel: "default",
-        requiresApiKey: false,
         supportsStreaming: true,
         supportsTools: true,
         status: "coming_soon",
@@ -121,12 +126,21 @@ function getDefaultModel(providerName) {
         if (prov === "deepseek") {
             const row = db.prepare("SELECT value FROM settings WHERE key = 'deepseek_model'").get();
             return (row && row.value) || "deepseek-chat";
+        } else if (prov === "anthropic" || prov === "claude") {
+            const row = db.prepare("SELECT value FROM settings WHERE key = 'anthropic_model'").get();
+            return (row && row.value) || "claude-3-5-sonnet-20241022";
+        } else if (prov === "llamacpp") {
+            const row = db.prepare("SELECT value FROM settings WHERE key = 'llamacpp_model'").get();
+            return (row && row.value) || "default";
         } else {
             const row = db.prepare("SELECT value FROM settings WHERE key = 'default_model'").get();
             return (row && row.value) || process.env.DEFAULT_MODEL || "llama3.2";
         }
     } catch {}
-    return prov === "deepseek" ? "deepseek-chat" : "llama3.2";
+    if (prov === "deepseek") return "deepseek-chat";
+    if (prov === "anthropic" || prov === "claude") return "claude-3-5-sonnet-20241022";
+    if (prov === "llamacpp") return "default";
+    return "llama3.2";
 }
 
 /**
