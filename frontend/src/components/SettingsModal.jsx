@@ -289,7 +289,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                     }}
                 >
                     {[
-                        { id: "ollama", label: "AI", icon: Cpu },
+                        { id: "ollama", label: "Models", icon: Cpu },
                         { id: "discord", label: "Integrations", icon: Bell },
                         { id: "websearch", label: "Web Search", icon: Globe },
                         { id: "storage", label: "Memory", icon: Database },
@@ -857,27 +857,6 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                         />
                                         <span>{brainConsolidating ? "Consolidating..." : "Consolidate Memory Now"}</span>
                                     </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => setBrainEditing(!brainEditing)}
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "0.4rem",
-                                            padding: "0.45rem 0.85rem",
-                                            borderRadius: "var(--radius-sm)",
-                                            backgroundColor: brainEditing ? "var(--bg-secondary)" : "var(--bg-card)",
-                                            border: "1px solid var(--border-strong)",
-                                            color: brainEditing ? "var(--accent-terracotta)" : "var(--text-primary)",
-                                            fontSize: "0.82rem",
-                                            fontWeight: 500,
-                                            cursor: "pointer",
-                                        }}
-                                    >
-                                        <Edit3 size={13} />
-                                        <span>{brainEditing ? "Hide Editor" : "View / Edit Memory"}</span>
-                                    </button>
                                 </div>
 
                                 {brainConsolidateMsg && (
@@ -948,65 +927,6 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                         </div>
                                     </div>
                                 )}
-                            </div>
-                            <div
-                                style={{
-                                    padding: "1.1rem",
-                                    backgroundColor: "var(--bg-secondary)",
-                                    borderRadius: "var(--radius-sm)",
-                                    border: "1px solid var(--border-subtle)",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: "0.65rem",
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "0.5rem",
-                                    }}
-                                >
-                                    <Database size={18} color="var(--accent-terracotta)" />
-                                    <div
-                                        style={{
-                                            fontSize: "0.95rem",
-                                            fontWeight: 600,
-                                        }}
-                                    >
-                                        SQLite Persistent Database
-                                    </div>
-                                </div>
-                                <div
-                                    style={{
-                                        fontSize: "0.84rem",
-                                        color: "var(--text-secondary)",
-                                        lineHeight: 1.6,
-                                    }}
-                                >
-                                    All conversations, user messages, assistant tool calls, background tasks, and scheduled jobs are written to <code>./data/marnie.db</code> using <code>better-sqlite3</code> with WAL
-                                    mode enabled.
-                                </div>
-                                <div
-                                    style={{
-                                        padding: "0.5rem 0.75rem",
-                                        backgroundColor: "var(--bg-card)",
-                                        borderRadius: "4px",
-                                        fontFamily: "var(--font-mono)",
-                                        fontSize: "0.78rem",
-                                    }}
-                                >
-                                    Schema Tables: <code>conversations</code>, <code>messages</code>, <code>tasks</code>, <code>cron_jobs</code>, <code>settings</code>
-                                </div>
-                            </div>
-
-                            <div
-                                style={{
-                                    fontSize: "0.8rem",
-                                    color: "var(--text-muted)",
-                                }}
-                            >
-                                Conversations are never lost when restarting the server. You can resume any chat history at any time from the left sidebar.
                             </div>
                         </div>
                     )}
