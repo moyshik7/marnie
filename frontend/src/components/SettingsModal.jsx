@@ -293,18 +293,8 @@ export default function SettingsModal({
                                 letterSpacing: "-0.02em",
                             }}
                         >
-                            Workspace Settings & Integrations
+                            Settings & Integrations
                         </h2>
-                        <p
-                            style={{
-                                fontSize: "0.8rem",
-                                color: "var(--text-muted)",
-                                marginTop: "0.15rem",
-                            }}
-                        >
-                            Configure Ollama endpoints, Discord alerts, tools,
-                            and future agent extensions.
-                        </p>
                     </div>
                     <button
                         onClick={onClose}
@@ -342,16 +332,7 @@ export default function SettingsModal({
                         { id: "ollama", label: "AI", icon: Cpu },
                         { id: "discord", label: "Integrations", icon: Bell },
                         { id: "websearch", label: "Web Search", icon: Globe },
-                        {
-                            id: "future",
-                            label: "Research & Agents (Future)",
-                            icon: BotIcon,
-                        },
-                        {
-                            id: "storage",
-                            label: "Memory",
-                            icon: Database,
-                        },
+                        { id: "storage", label: "Memory", icon: Database },
                     ].map((tab) => {
                         const Icon = tab.icon;
                         const isActive = activeTab === tab.id;
@@ -409,7 +390,7 @@ export default function SettingsModal({
                                         marginBottom: "0.35rem",
                                     }}
                                 >
-                                    Ollama Base Route URL
+                                    Ollama Base URL
                                 </label>
                                 <div style={{ display: "flex", gap: "0.5rem" }}>
                                     <input
@@ -562,39 +543,6 @@ export default function SettingsModal({
                                     Model invoked for chat reasoning and tool
                                     selection.
                                 </div>
-                            </div>
-
-                            <div>
-                                <label
-                                    style={{
-                                        display: "block",
-                                        fontSize: "0.82rem",
-                                        fontWeight: 600,
-                                        color: "var(--text-primary)",
-                                        marginBottom: "0.35rem",
-                                    }}
-                                >
-                                    System Prompt
-                                </label>
-                                <textarea
-                                    value={systemPrompt}
-                                    onChange={(e) =>
-                                        setSystemPrompt(e.target.value)
-                                    }
-                                    rows={4}
-                                    style={{
-                                        width: "100%",
-                                        padding: "0.6rem 0.75rem",
-                                        borderRadius: "var(--radius-sm)",
-                                        border: "1px solid var(--border-strong)",
-                                        backgroundColor: "var(--bg-card)",
-                                        fontSize: "0.85rem",
-                                        outline: "none",
-                                        resize: "vertical",
-                                        lineHeight: 1.5,
-                                    }}
-                                    placeholder="System instructions for the AI workspace assistant..."
-                                />
                             </div>
                         </div>
                     )}
@@ -857,270 +805,6 @@ export default function SettingsModal({
                                     }}
                                 >
                                     URL of your local or remote SearXNG instance (e.g. <code>http://localhost:8080</code>).
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* TAB 3: FUTURE FEATURES */}
-                    {activeTab === "future" && (
-                        <div
-                            style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "1.25rem",
-                            }}
-                        >
-                            <div
-                                style={{
-                                    padding: "0.85rem 1rem",
-                                    backgroundColor: "rgba(200, 91, 56, 0.08)",
-                                    border: "1px solid rgba(200, 91, 56, 0.25)",
-                                    borderRadius: "var(--radius-sm)",
-                                    fontSize: "0.82rem",
-                                    color: "var(--text-primary)",
-                                }}
-                            >
-                                <strong>Future Roadmap & Extensibility:</strong>{" "}
-                                These toggles and endpoints prepare the
-                                workspace for SearXNG private search, recursive
-                                Deep Research pipelines, and Multi-Agent
-                                Orchestration.
-                            </div>
-
-                            <div>
-                                <label
-                                    style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                        fontSize: "0.82rem",
-                                        fontWeight: 600,
-                                        color: "var(--text-primary)",
-                                        marginBottom: "0.35rem",
-                                    }}
-                                >
-                                    <span>SearXNG Search Endpoint</span>
-                                    <span
-                                        style={{
-                                            fontSize: "0.7rem",
-                                            padding: "0.15rem 0.4rem",
-                                            borderRadius: "4px",
-                                            backgroundColor:
-                                                "var(--bg-tertiary)",
-                                            color: "var(--text-muted)",
-                                        }}
-                                    >
-                                        Future Todo
-                                    </span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={searxngUrl}
-                                    onChange={(e) =>
-                                        setSearxngUrl(e.target.value)
-                                    }
-                                    placeholder="http://localhost:8080"
-                                    style={{
-                                        width: "100%",
-                                        padding: "0.6rem 0.75rem",
-                                        borderRadius: "var(--radius-sm)",
-                                        border: "1px solid var(--border-strong)",
-                                        backgroundColor: "var(--bg-card)",
-                                        fontSize: "0.88rem",
-                                        outline: "none",
-                                    }}
-                                />
-                                <div
-                                    style={{
-                                        fontSize: "0.75rem",
-                                        color: "var(--text-muted)",
-                                        marginTop: "0.35rem",
-                                    }}
-                                >
-                                    Self-hosted SearXNG metasearch instance for
-                                    private, untracked web exploration.
-                                </div>
-                            </div>
-
-                            {/* Deep Research Toggle */}
-                            <div
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    padding: "0.85rem 1rem",
-                                    backgroundColor: "var(--bg-card)",
-                                    borderRadius: "var(--radius-sm)",
-                                    border: "1px solid var(--border-subtle)",
-                                }}
-                            >
-                                <div>
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "0.5rem",
-                                        }}
-                                    >
-                                        <span
-                                            style={{
-                                                fontSize: "0.88rem",
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            Deep Research Mode
-                                        </span>
-                                        <span
-                                            style={{
-                                                fontSize: "0.68rem",
-                                                padding: "0.1rem 0.4rem",
-                                                borderRadius: "4px",
-                                                backgroundColor:
-                                                    "rgba(217, 119, 6, 0.15)",
-                                                color: "var(--accent-gold)",
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            ROADMAP
-                                        </span>
-                                    </div>
-                                    <div
-                                        style={{
-                                            fontSize: "0.76rem",
-                                            color: "var(--text-muted)",
-                                            marginTop: "0.2rem",
-                                        }}
-                                    >
-                                        Multi-step query expansion, web
-                                        crawling, iterative synthesis, and
-                                        citation generation.
-                                    </div>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={deepResearchEnabled}
-                                    onChange={(e) =>
-                                        setDeepResearchEnabled(e.target.checked)
-                                    }
-                                    style={{
-                                        width: "18px",
-                                        height: "18px",
-                                        cursor: "pointer",
-                                        accentColor: "var(--accent-terracotta)",
-                                    }}
-                                />
-                            </div>
-
-                            {/* Agent Mode Toggle */}
-                            <div
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    padding: "0.85rem 1rem",
-                                    backgroundColor: "var(--bg-card)",
-                                    borderRadius: "var(--radius-sm)",
-                                    border: "1px solid var(--border-subtle)",
-                                }}
-                            >
-                                <div>
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "0.5rem",
-                                        }}
-                                    >
-                                        <span
-                                            style={{
-                                                fontSize: "0.88rem",
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            Agent Mode (Sub-Agent Spawner)
-                                        </span>
-                                        <span
-                                            style={{
-                                                fontSize: "0.68rem",
-                                                padding: "0.1rem 0.4rem",
-                                                borderRadius: "4px",
-                                                backgroundColor:
-                                                    "rgba(200, 91, 56, 0.15)",
-                                                color: "var(--accent-terracotta)",
-                                                fontWeight: 600,
-                                            }}
-                                        >
-                                            ROADMAP
-                                        </span>
-                                    </div>
-                                    <div
-                                        style={{
-                                            fontSize: "0.76rem",
-                                            color: "var(--text-muted)",
-                                            marginTop: "0.2rem",
-                                        }}
-                                    >
-                                        Empower the model to break tasks into
-                                        sub-goals and invoke concurrent
-                                        specialized sub-agents.
-                                    </div>
-                                </div>
-                                <input
-                                    type="checkbox"
-                                    checked={agentModeEnabled}
-                                    onChange={(e) =>
-                                        setAgentModeEnabled(e.target.checked)
-                                    }
-                                    style={{
-                                        width: "18px",
-                                        height: "18px",
-                                        cursor: "pointer",
-                                        accentColor: "var(--accent-terracotta)",
-                                    }}
-                                />
-                            </div>
-
-                            {/* Custom API Base */}
-                            <div>
-                                <label
-                                    style={{
-                                        display: "block",
-                                        fontSize: "0.82rem",
-                                        fontWeight: 600,
-                                        color: "var(--text-primary)",
-                                        marginBottom: "0.35rem",
-                                    }}
-                                >
-                                    Custom Backend API Base URL
-                                </label>
-                                <input
-                                    type="text"
-                                    value={apiBaseUrl}
-                                    onChange={(e) =>
-                                        setApiBaseUrl(e.target.value)
-                                    }
-                                    placeholder="/api (Default: auto-proxy)"
-                                    style={{
-                                        width: "100%",
-                                        padding: "0.6rem 0.75rem",
-                                        borderRadius: "var(--radius-sm)",
-                                        border: "1px solid var(--border-strong)",
-                                        backgroundColor: "var(--bg-card)",
-                                        fontSize: "0.88rem",
-                                        outline: "none",
-                                    }}
-                                />
-                                <div
-                                    style={{
-                                        fontSize: "0.75rem",
-                                        color: "var(--text-muted)",
-                                        marginTop: "0.35rem",
-                                    }}
-                                >
-                                    Leave empty to use default local Express
-                                    routes, or specify remote host (e.g.{" "}
-                                    <code>http://192.168.1.50:3000/api</code>).
                                 </div>
                             </div>
                         </div>
