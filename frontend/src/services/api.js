@@ -209,6 +209,13 @@ export async function testAnthropicConnection({ apiKey, baseUrl } = {}) {
     });
 }
 
+export async function testOpenAIConnection({ apiKey, baseUrl } = {}) {
+    return request("/settings/test-openai", {
+        method: "POST",
+        body: JSON.stringify({ apiKey: apiKey || undefined, baseUrl: baseUrl || undefined }),
+    });
+}
+
 export async function testLlamaCppConnection({ url } = {}) {
     return request("/settings/test-llamacpp", {
         method: "POST",

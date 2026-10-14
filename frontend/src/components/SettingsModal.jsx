@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Check, AlertCircle, Bell, Cpu, Database, RefreshCw, BotIcon, Globe, Brain, Edit3, FileText, Eye, EyeOff, Key, Sparkles, Server } from "lucide-react";
-import { getSettings, updateSettings, testOllamaConnection, testDeepSeekConnection, testAnthropicConnection, testLlamaCppConnection, testDiscordAlert, getCustomApiBase, setCustomApiBase, listModels, getBrainMemory, saveBrainMemory, consolidateBrainMemory } from "../services/api";
+import { getSettings, updateSettings, testOllamaConnection, testDeepSeekConnection, testAnthropicConnection, testOpenAIConnection, testLlamaCppConnection, testDiscordAlert, getCustomApiBase, setCustomApiBase, listModels, getBrainMemory, saveBrainMemory, consolidateBrainMemory } from "../services/api";
 
 export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, currentModel, onModelChanged }) {
     const [activeTab, setActiveTab] = useState("ollama");
@@ -23,6 +23,12 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
     const [showAnthropicKey, setShowAnthropicKey] = useState(false);
     const [anthropicBaseUrl, setAnthropicBaseUrl] = useState("https://api.anthropic.com");
     const [anthropicModel, setAnthropicModel] = useState("claude-3-5-sonnet-20241022");
+
+    // OpenAI form states
+    const [openaiApiKey, setOpenaiApiKey] = useState("");
+    const [showOpenaiKey, setShowOpenaiKey] = useState(false);
+    const [openaiBaseUrl, setOpenaiBaseUrl] = useState("https://api.openai.com/v1");
+    const [openaiModel, setOpenaiModel] = useState("gpt-4o");
 
     // llama.cpp form states
     const [llamacppUrl, setLlamacppUrl] = useState("http://localhost:8080");
@@ -51,6 +57,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
     const [deepseekStatus, setDeepseekStatus] = useState(null);
     const [anthropicTesting, setAnthropicTesting] = useState(false);
     const [anthropicStatus, setAnthropicStatus] = useState(null);
+    const [openaiTesting, setOpenaiTesting] = useState(false);
+    const [openaiStatus, setOpenaiStatus] = useState(null);
     const [llamacppTesting, setLlamacppTesting] = useState(false);
     const [llamacppStatus, setLlamacppStatus] = useState(null);
     const [discordTesting, setDiscordTesting] = useState(false);
@@ -82,6 +90,9 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
             if (s.anthropic_api_key) setAnthropicApiKey(s.anthropic_api_key);
             if (s.anthropic_base_url) setAnthropicBaseUrl(s.anthropic_base_url);
             if (s.anthropic_model) setAnthropicModel(s.anthropic_model);
+            if (s.openai_api_key) setOpenaiApiKey(s.openai_api_key);
+            if (s.openai_base_url) setOpenaiBaseUrl(s.openai_base_url);
+            if (s.openai_model) setOpenaiModel(s.openai_model);
             if (s.llamacpp_base_url) setLlamacppUrl(s.llamacpp_base_url);
             if (s.llamacpp_model) setLlamacppModel(s.llamacpp_model);
             if (s.discord_webhook_url) setDiscordWebhook(s.discord_webhook_url);
@@ -127,6 +138,9 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
             const anthropicKeyToSave = overrides.anthropicApiKey ?? anthropicApiKey;
             const anthropicUrlToSave = overrides.anthropicBaseUrl ?? anthropicBaseUrl;
             const anthropicModelToSave = overrides.anthropicModel ?? anthropicModel;
+            const openaiKeyToSave = overrides.openaiApiKey ?? openaiApiKey;
+            const openaiUrlToSave = overrides.openaiBaseUrl ?? openaiBaseUrl;
+            const openaiModelToSave = overrides.openaiModel ?? openaiModel;
             const llamacppUrlToSave = overrides.llamacppUrl ?? llamacppUrl;
             const llamacppModelToSave = overrides.llamacppModel ?? llamacppModel;
             const discordWebhookToSave = overrides.discordWebhook ?? discordWebhook;
@@ -147,6 +161,9 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                 anthropic_api_key: anthropicKeyToSave,
                 anthropic_base_url: anthropicUrlToSave,
                 anthropic_model: anthropicModelToSave,
+                openai_api_key: openaiKeyToSave,
+                openai_base_url: openaiUrlToSave,
+                openai_model: openaiModelToSave,
                 llamacpp_base_url: llamacppUrlToSave,
                 llamacpp_model: llamacppModelToSave,
                 discord_webhook_url: discordWebhookToSave,
@@ -171,6 +188,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                 activeModelToReport = deepseekModelToSave;
             } else if (providerToSave === "anthropic" || providerToSave === "claude") {
                 activeModelToReport = anthropicModelToSave;
+            } else if (providerToSave === "openai") {
+                activeModelToReport = openaiModelToSave;
             } else if (providerToSave === "llamacpp") {
                 activeModelToReport = llamacppModelToSave;
             }
@@ -211,6 +230,11 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                         setAnthropicModel(models[0]);
                         performSave({ selectedProvider: newProvider, anthropicModel: models[0] });
                     }
+                } else if (newProvider === "openai") {
+                    if (!models.includes(openaiModel)) {
+                        setOpenaiModel(models[0]);
+                        performSave({ selectedProvider: newProvider, openaiModel: models[0] });
+                    }
                 } else if (newProvider === "llamacpp") {
                     if (!models.includes(llamacppModel)) {
                         setLlamacppModel(models[0]);
@@ -235,6 +259,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
             let modelForConsolidate = defaultModel;
             if (selectedProvider === "deepseek") modelForConsolidate = deepseekModel;
             else if (selectedProvider === "anthropic" || selectedProvider === "claude") modelForConsolidate = anthropicModel;
+            else if (selectedProvider === "openai") modelForConsolidate = openaiModel;
             else if (selectedProvider === "llamacpp") modelForConsolidate = llamacppModel;
 
             const res = await consolidateBrainMemory(null, modelForConsolidate);
@@ -349,6 +374,32 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
             });
         } finally {
             setAnthropicTesting(false);
+        }
+    };
+
+    const handleTestOpenAI = async () => {
+        setOpenaiTesting(true);
+        setOpenaiStatus(null);
+        try {
+            const res = await testOpenAIConnection({ apiKey: openaiApiKey, baseUrl: openaiBaseUrl });
+            setOpenaiStatus({
+                ok: true,
+                message: res.message || `Connected to OpenAI! Key verified.`,
+            });
+            if (res.models && res.models.length > 0 && selectedProvider === "openai") {
+                setAvailableModels(res.models);
+                if (!res.models.includes(openaiModel)) {
+                    setOpenaiModel(res.models[0]);
+                    performSave({ openaiModel: res.models[0] });
+                }
+            }
+        } catch (err) {
+            setOpenaiStatus({
+                ok: false,
+                message: err.message || "OpenAI connection failed",
+            });
+        } finally {
+            setOpenaiTesting(false);
         }
     };
 
@@ -585,6 +636,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                                     ? "rgba(59, 130, 246, 0.12)"
                                                     : selectedProvider === "anthropic" || selectedProvider === "claude"
                                                     ? "rgba(217, 119, 6, 0.12)"
+                                                    : selectedProvider === "openai"
+                                                    ? "rgba(16, 163, 127, 0.12)"
                                                     : selectedProvider === "llamacpp"
                                                     ? "rgba(168, 85, 247, 0.12)"
                                                     : "rgba(34, 197, 94, 0.12)",
@@ -593,6 +646,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                                     ? "#2563EB"
                                                     : selectedProvider === "anthropic" || selectedProvider === "claude"
                                                     ? "#D97706"
+                                                    : selectedProvider === "openai"
+                                                    ? "#10A37F"
                                                     : selectedProvider === "llamacpp"
                                                     ? "#9333EA"
                                                     : "#16A34A",
@@ -612,6 +667,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                                         ? "#2563EB"
                                                         : selectedProvider === "anthropic" || selectedProvider === "claude"
                                                         ? "#D97706"
+                                                        : selectedProvider === "openai"
+                                                        ? "#10A37F"
                                                         : selectedProvider === "llamacpp"
                                                         ? "#9333EA"
                                                         : "#16A34A",
@@ -623,6 +680,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                             ? "DeepSeek API (Cloud)"
                                             : selectedProvider === "anthropic" || selectedProvider === "claude"
                                             ? "Anthropic Claude (Cloud)"
+                                            : selectedProvider === "openai"
+                                            ? "OpenAI API (Cloud)"
                                             : selectedProvider === "llamacpp"
                                             ? "llama.cpp Server (Local)"
                                             : "Ollama (Local)"}
@@ -648,8 +707,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                     <option value="ollama">Ollama (Local / Self-hosted)</option>
                                     <option value="deepseek">DeepSeek API (Cloud)</option>
                                     <option value="anthropic">Anthropic Claude API (Cloud)</option>
+                                    <option value="openai">OpenAI API (Cloud)</option>
                                     <option value="llamacpp">llama.cpp HTTP Server (Local / Remote)</option>
-                                    <option value="openai" disabled>OpenAI API (Coming Soon)</option>
                                     <option value="gemini" disabled>Google Gemini API (Coming Soon)</option>
                                 </select>
                                 <div
@@ -1200,6 +1259,213 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                 </div>
                             </div>
 
+                            {/* Section: OpenAI API Configuration */}
+                            <div
+                                style={{
+                                    border: "1px solid var(--border-subtle)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                    backgroundColor: selectedProvider === "openai" ? "var(--bg-card)" : "transparent",
+                                    opacity: selectedProvider === "openai" ? 1 : 0.75,
+                                    transition: "opacity 0.15s ease",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        marginBottom: "0.75rem",
+                                    }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                            OpenAI API Configuration
+                                        </span>
+                                        <span
+                                            style={{
+                                                fontSize: "0.68rem",
+                                                fontWeight: 600,
+                                                padding: "0.15rem 0.45rem",
+                                                borderRadius: "999px",
+                                                backgroundColor: "rgba(16, 163, 127, 0.12)",
+                                                color: "#10A37F",
+                                            }}
+                                        >
+                                            GPT-4o & o1 / o3
+                                        </span>
+                                    </div>
+                                    <span
+                                        style={{
+                                            fontSize: "0.7rem",
+                                            fontWeight: 500,
+                                            padding: "0.15rem 0.5rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    >
+                                        Cloud
+                                    </span>
+                                </div>
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                                    {/* OpenAI API Key */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            OpenAI API Key
+                                        </label>
+                                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                                            <div style={{ position: "relative", flex: 1 }}>
+                                                <input
+                                                    type={showOpenaiKey ? "text" : "password"}
+                                                    value={openaiApiKey}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setOpenaiApiKey(val);
+                                                        triggerAutoSave({ openaiApiKey: val });
+                                                    }}
+                                                    placeholder="sk-proj-..."
+                                                    style={{
+                                                        width: "100%",
+                                                        padding: "0.6rem 2.4rem 0.6rem 0.75rem",
+                                                        borderRadius: "var(--radius-sm)",
+                                                        border: "1px solid var(--border-strong)",
+                                                        backgroundColor: "var(--bg-card)",
+                                                        color: "var(--text-primary)",
+                                                        fontSize: "0.88rem",
+                                                        outline: "none",
+                                                        fontFamily: showOpenaiKey ? "monospace" : "inherit",
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowOpenaiKey((prev) => !prev)}
+                                                    title={showOpenaiKey ? "Hide API Key" : "Show API Key"}
+                                                    style={{
+                                                        position: "absolute",
+                                                        right: "0.6rem",
+                                                        top: "50%",
+                                                        transform: "translateY(-50%)",
+                                                        background: "none",
+                                                        border: "none",
+                                                        color: "var(--text-muted)",
+                                                        cursor: "pointer",
+                                                        padding: "0.2rem",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                    }}
+                                                >
+                                                    {showOpenaiKey ? <EyeOff size={15} /> : <Eye size={15} />}
+                                                </button>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleTestOpenAI}
+                                                disabled={openaiTesting || !openaiApiKey.trim()}
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "0.4rem",
+                                                    padding: "0.6rem 0.9rem",
+                                                    backgroundColor: "var(--bg-card)",
+                                                    border: "1px solid var(--border-strong)",
+                                                    borderRadius: "var(--radius-sm)",
+                                                    fontSize: "0.82rem",
+                                                    fontWeight: 500,
+                                                    color: "var(--text-primary)",
+                                                    cursor: !openaiApiKey.trim() ? "not-allowed" : "pointer",
+                                                    opacity: !openaiApiKey.trim() ? 0.6 : 1,
+                                                }}
+                                            >
+                                                <RefreshCw size={14} className={openaiTesting ? "typing-dot" : ""} />
+                                                <span>{openaiTesting ? "Verifying..." : "Verify Key"}</span>
+                                            </button>
+                                        </div>
+                                        <div
+                                            style={{
+                                                fontSize: "0.75rem",
+                                                color: "var(--text-muted)",
+                                                marginTop: "0.35rem",
+                                            }}
+                                        >
+                                            Required for OpenAI API requests. Saved securely in local database.
+                                        </div>
+                                    </div>
+
+                                    {/* OpenAI Custom Endpoint */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            Custom OpenAI Endpoint URL (Optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={openaiBaseUrl}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setOpenaiBaseUrl(val);
+                                                triggerAutoSave({ openaiBaseUrl: val });
+                                            }}
+                                            placeholder="https://api.openai.com/v1"
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-card)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                fontSize: "0.75rem",
+                                                color: "var(--text-muted)",
+                                                marginTop: "0.35rem",
+                                            }}
+                                        >
+                                            Default: <code>https://api.openai.com/v1</code>. Supports OpenAI-compatible reverse proxies, Azure gateways, or Helicone.
+                                        </div>
+                                    </div>
+
+                                    {openaiStatus && (
+                                        <div
+                                            style={{
+                                                marginTop: "0.25rem",
+                                                padding: "0.5rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                backgroundColor: openaiStatus.ok ? "rgba(74, 222, 128, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                                                color: openaiStatus.ok ? "#15803D" : "#DC2626",
+                                                fontSize: "0.8rem",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.4rem",
+                                            }}
+                                        >
+                                            {openaiStatus.ok ? <Check size={14} /> : <AlertCircle size={14} />}
+                                            <span>{openaiStatus.message}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
                             {/* Section: llama.cpp Server Configuration */}
                             <div
                                 style={{
@@ -1361,6 +1627,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                             ? "DeepSeek"
                                             : (selectedProvider === "anthropic" || selectedProvider === "claude")
                                             ? "Anthropic Claude"
+                                            : selectedProvider === "openai"
+                                            ? "OpenAI"
                                             : selectedProvider === "llamacpp"
                                             ? "llama.cpp"
                                             : "Ollama"
@@ -1420,6 +1688,38 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                             <option value="claude-3-5-haiku-20241022">claude-3-5-haiku-20241022 (Claude 3.5 Haiku - Fast & Lightweight)</option>
                                             <option value="claude-3-opus-20240229">claude-3-opus-20240229 (Claude 3 Opus - Complex Analysis)</option>
                                             {availableModels.filter((m) => !["claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"].includes(m)).map((m) => (
+                                                <option key={m} value={m}>
+                                                    {m}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : selectedProvider === "openai" ? (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                                        <select
+                                            value={openaiModel}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setOpenaiModel(val);
+                                                performSave({ openaiModel: val });
+                                            }}
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-secondary)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        >
+                                            <option value="gpt-4o">gpt-4o (Omni Flagship - Recommended)</option>
+                                            <option value="gpt-4o-mini">gpt-4o-mini (Fast & Affordable)</option>
+                                            <option value="o1">o1 (Full Chain-of-Thought Reasoning)</option>
+                                            <option value="o3-mini">o3-mini (High-speed STEM Reasoning)</option>
+                                            <option value="gpt-4-turbo">gpt-4-turbo (High Capacity)</option>
+                                            {availableModels.filter((m) => !["gpt-4o", "gpt-4o-mini", "o1", "o3-mini", "gpt-4-turbo"].includes(m)).map((m) => (
                                                 <option key={m} value={m}>
                                                     {m}
                                                 </option>
@@ -1550,11 +1850,11 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                         More Integrations Under Development
                                     </span>
                                     <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
-                                        Google Gemini and OpenAI API integrations will be available as selectable endpoints soon.
+                                        Google Gemini API integration will be available as a selectable endpoint soon.
                                     </div>
                                 </div>
                                 <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-                                    {["Gemini", "OpenAI"].map((name) => (
+                                    {["Gemini"].map((name) => (
                                         <span
                                             key={name}
                                             style={{

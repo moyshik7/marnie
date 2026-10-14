@@ -129,6 +129,8 @@ export default function App() {
                 configuredModel = settingsData?.settings?.deepseek_model || "deepseek-chat";
             } else if (activeProv === "anthropic" || activeProv === "claude") {
                 configuredModel = settingsData?.settings?.anthropic_model || "claude-3-5-sonnet-20241022";
+            } else if (activeProv === "openai") {
+                configuredModel = settingsData?.settings?.openai_model || "gpt-4o";
             } else if (activeProv === "llamacpp") {
                 configuredModel = settingsData?.settings?.llamacpp_model || "default";
             } else {
@@ -159,6 +161,7 @@ export default function App() {
         if (!initialModel) {
             if (activeProv === "deepseek") initialModel = "deepseek-chat";
             else if (activeProv === "anthropic" || activeProv === "claude") initialModel = "claude-3-5-sonnet-20241022";
+            else if (activeProv === "openai") initialModel = "gpt-4o";
             else if (activeProv === "llamacpp") initialModel = "default";
             else initialModel = "llama3.2";
         }
@@ -403,6 +406,8 @@ export default function App() {
                                 modelToUse = newSettings.deepseek_model || (models.length > 0 ? models[0] : "deepseek-chat");
                             } else if (prov === "anthropic" || prov === "claude") {
                                 modelToUse = newSettings.anthropic_model || (models.length > 0 ? models[0] : "claude-3-5-sonnet-20241022");
+                            } else if (prov === "openai") {
+                                modelToUse = newSettings.openai_model || (models.length > 0 ? models[0] : "gpt-4o");
                             } else if (prov === "llamacpp") {
                                 modelToUse = newSettings.llamacpp_model || (models.length > 0 ? models[0] : "default");
                             } else {

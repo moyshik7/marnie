@@ -5,6 +5,7 @@ const ollama = require("./ollama/interact");
 const deepseek = require("./deepseek/interact");
 const anthropic = require("./anthropic/interact");
 const llamacpp = require("./llamacpp/interact");
+const openai = require("./openai/interact");
 
 const PROVIDERS = {
     ollama,
@@ -12,6 +13,7 @@ const PROVIDERS = {
     anthropic,
     claude: anthropic,
     llamacpp,
+    openai,
 };
 
 /**
@@ -68,15 +70,15 @@ const PROVIDER_METADATA = [
     },
     {
         id: "openai",
-        name: "OpenAI API",
+        name: "OpenAI API (Cloud)",
         type: "cloud",
-        description: "GPT-4o, o1, and o3-mini models via OpenAI API",
+        description: "GPT-4o, GPT-4o-mini, o1, and o3-mini models via OpenAI API",
         defaultBaseUrl: "https://api.openai.com/v1",
         defaultModel: "gpt-4o",
         requiresApiKey: true,
         supportsStreaming: true,
         supportsTools: true,
-        status: "coming_soon",
+        status: "active",
     },
     {
         id: "gemini",
@@ -129,6 +131,9 @@ function getDefaultModel(providerName) {
         } else if (prov === "anthropic" || prov === "claude") {
             const row = db.prepare("SELECT value FROM settings WHERE key = 'anthropic_model'").get();
             return (row && row.value) || "claude-3-5-sonnet-20241022";
+        } else if (prov === "openai") {
+            const row = db.prepare("SELECT value FROM settings WHERE key = 'openai_model'").get();
+            return (row && row.value) || "gpt-4o";
         } else if (prov === "llamacpp") {
             const row = db.prepare("SELECT value FROM settings WHERE key = 'llamacpp_model'").get();
             return (row && row.value) || "default";
@@ -139,6 +144,7 @@ function getDefaultModel(providerName) {
     } catch {}
     if (prov === "deepseek") return "deepseek-chat";
     if (prov === "anthropic" || prov === "claude") return "claude-3-5-sonnet-20241022";
+    if (prov === "openai") return "gpt-4o";
     if (prov === "llamacpp") return "default";
     return "llama3.2";
 }
