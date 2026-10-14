@@ -283,7 +283,7 @@ export default function ExpandedCapacityView({ onClose }) {
                         >
                             Expanded Capacity
                         </h1>
-                        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>Add files to reference in your notebook</p>
+                        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>Add files to reference in your RAg (Retrieval-Augmented Generation)</p>
                     </div>
                 </div>
 
@@ -433,7 +433,7 @@ export default function ExpandedCapacityView({ onClose }) {
                         }}
                     >
                         <Clipboard size={16} color="var(--accent-terracotta)" />
-                        <span>Copied text</span>
+                        <span>Paste Text</span>
                     </button>
 
                     {/* Search filter in notebook */}
@@ -595,7 +595,7 @@ export default function ExpandedCapacityView({ onClose }) {
                                     }}
                                 >
                                     <Plus size={16} />
-                                    <span>Upload files</span>
+                                    <span>Upload</span>
                                 </button>
                             )}
                         </div>

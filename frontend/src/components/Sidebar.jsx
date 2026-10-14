@@ -149,7 +149,6 @@ export default function Sidebar({
                                 display: "inline-block",
                             }}
                         />
-                        {backendConnected ? "Live" : "Offline"}
                     </div>
                 )}
             </div>
