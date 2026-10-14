@@ -283,7 +283,7 @@ export default function ExpandedCapacityView({ onClose }) {
                         >
                             Expanded Capacity
                         </h1>
-                        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>Add files to reference in your RAg (Retrieval-Augmented Generation)</p>
+                        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>Add files to reference in your RAG (Retrieval-Augmented Generation)</p>
                     </div>
                 </div>
 

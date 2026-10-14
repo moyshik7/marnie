@@ -18,10 +18,6 @@ export default function Sidebar({
     isArtifactOpen = false,
     activeSection = "chat",
     isResearchOngoing = false,
-    theme,
-    onToggleTheme,
-    backendConnected,
-    activeModel,
     isCollapsed = false,
     onToggleCollapse,
 }) {
@@ -123,34 +119,6 @@ export default function Sidebar({
                         </div>
                     )}
                 </button>
-
-                {/* Backend status dot */}
-                {!isCollapsed && (
-                    <div
-                        title={backendConnected ? "Backend Connected" : "Connecting to Backend..."}
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.35rem",
-                            padding: "0.2rem 0.5rem",
-                            borderRadius: "var(--radius-full)",
-                            backgroundColor: backendConnected ? "rgba(74, 222, 128, 0.12)" : "rgba(239, 68, 68, 0.12)",
-                            fontSize: "0.72rem",
-                            color: backendConnected ? "#16A34A" : "#DC2626",
-                            fontWeight: 500,
-                        }}
-                    >
-                        <span
-                            style={{
-                                width: "6px",
-                                height: "6px",
-                                borderRadius: "50%",
-                                backgroundColor: backendConnected ? "#16A34A" : "#DC2626",
-                                display: "inline-block",
-                            }}
-                        />
-                    </div>
-                )}
             </div>
 
             {/* Action Buttons: New Chat & Search in chats */}
