@@ -18,13 +18,13 @@ const BASE_URL = () => {
 };
 
 const API_KEY = () => getSetting("anthropic_api_key", process.env.ANTHROPIC_API_KEY || "");
-const DEFAULT_MODEL = () => getSetting("anthropic_model", process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-20241022");
+const DEFAULT_MODEL = () => getSetting("anthropic_model", process.env.ANTHROPIC_MODEL || "claude-opus-5-5");
 
 const FALLBACK_MODELS = [
-    "claude-3-5-sonnet-20241022",
-    "claude-3-5-haiku-20241022",
-    "claude-3-opus-20240229",
-    "claude-3-haiku-20240307",
+    "claude-opus-5-5",
+    "claude-fable-5-1",
+    "claude-sonnet-5-5",
+    "claude-haiku-5-5",
 ];
 
 /**

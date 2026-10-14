@@ -20,7 +20,7 @@ const BASE_URL = () => {
 const API_KEY = () => getSetting("deepseek_api_key", process.env.DEEPSEEK_API_KEY || "");
 const DEFAULT_MODEL = () => getSetting("deepseek_model", process.env.DEEPSEEK_MODEL || "deepseek-chat");
 
-const FALLBACK_MODELS = ["deepseek-chat", "deepseek-reasoner"];
+const FALLBACK_MODELS = ["deepseek-flash", "deepseek-v4-pro"];
 
 /**
  * List available models from DeepSeek.
