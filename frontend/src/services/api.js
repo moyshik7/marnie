@@ -216,6 +216,13 @@ export async function testOpenAIConnection({ apiKey, baseUrl } = {}) {
     });
 }
 
+export async function testGeminiConnection({ apiKey, baseUrl } = {}) {
+    return request("/settings/test-gemini", {
+        method: "POST",
+        body: JSON.stringify({ apiKey: apiKey || undefined, baseUrl: baseUrl || undefined }),
+    });
+}
+
 export async function testLlamaCppConnection({ url } = {}) {
     return request("/settings/test-llamacpp", {
         method: "POST",

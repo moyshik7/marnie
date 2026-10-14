@@ -59,6 +59,9 @@ const updateSettingsHandler = (req, res) => {
         "openai_api_key",
         "openai_base_url",
         "openai_model",
+        "gemini_api_key",
+        "gemini_base_url",
+        "gemini_model",
         "llamacpp_base_url",
         "llamacpp_model",
         "discord_webhook_url",
@@ -139,6 +142,19 @@ router.post("/test-anthropic", async (req, res) => {
 router.post("/test-openai", async (req, res) => {
     try {
         const result = await providers.testProvider("openai", req.body);
+        res.json(result);
+    } catch (err) {
+        res.status(502).json({
+            ok: false,
+            error: err.message,
+        });
+    }
+});
+
+// POST /api/settings/test-gemini
+router.post("/test-gemini", async (req, res) => {
+    try {
+        const result = await providers.testProvider("gemini", req.body);
         res.json(result);
     } catch (err) {
         res.status(502).json({

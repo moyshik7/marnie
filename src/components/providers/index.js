@@ -6,6 +6,7 @@ const deepseek = require("./deepseek/interact");
 const anthropic = require("./anthropic/interact");
 const llamacpp = require("./llamacpp/interact");
 const openai = require("./openai/interact");
+const gemini = require("./gemini/interact");
 
 const PROVIDERS = {
     ollama,
@@ -14,6 +15,7 @@ const PROVIDERS = {
     claude: anthropic,
     llamacpp,
     openai,
+    gemini,
 };
 
 /**
@@ -82,15 +84,15 @@ const PROVIDER_METADATA = [
     },
     {
         id: "gemini",
-        name: "Google Gemini API",
+        name: "Google Gemini API (Cloud)",
         type: "cloud",
-        description: "Gemini 2.5 Flash and Pro models via Google AI Studio",
+        description: "Gemini 2.5 Flash, 2.0 Flash, and Pro models via Google AI Studio API",
         defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta",
         defaultModel: "gemini-2.0-flash",
         requiresApiKey: true,
         supportsStreaming: true,
         supportsTools: true,
-        status: "coming_soon",
+        status: "active",
     },
 ];
 
@@ -134,6 +136,9 @@ function getDefaultModel(providerName) {
         } else if (prov === "openai") {
             const row = db.prepare("SELECT value FROM settings WHERE key = 'openai_model'").get();
             return (row && row.value) || "gpt-4o";
+        } else if (prov === "gemini") {
+            const row = db.prepare("SELECT value FROM settings WHERE key = 'gemini_model'").get();
+            return (row && row.value) || "gemini-2.0-flash";
         } else if (prov === "llamacpp") {
             const row = db.prepare("SELECT value FROM settings WHERE key = 'llamacpp_model'").get();
             return (row && row.value) || "default";
@@ -145,6 +150,7 @@ function getDefaultModel(providerName) {
     if (prov === "deepseek") return "deepseek-chat";
     if (prov === "anthropic" || prov === "claude") return "claude-3-5-sonnet-20241022";
     if (prov === "openai") return "gpt-4o";
+    if (prov === "gemini") return "gemini-2.0-flash";
     if (prov === "llamacpp") return "default";
     return "llama3.2";
 }

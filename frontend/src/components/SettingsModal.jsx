@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Check, AlertCircle, Bell, Cpu, Database, RefreshCw, BotIcon, Globe, Brain, Edit3, FileText, Eye, EyeOff, Key, Sparkles, Server } from "lucide-react";
-import { getSettings, updateSettings, testOllamaConnection, testDeepSeekConnection, testAnthropicConnection, testOpenAIConnection, testLlamaCppConnection, testDiscordAlert, getCustomApiBase, setCustomApiBase, listModels, getBrainMemory, saveBrainMemory, consolidateBrainMemory } from "../services/api";
+import { getSettings, updateSettings, testOllamaConnection, testDeepSeekConnection, testAnthropicConnection, testOpenAIConnection, testGeminiConnection, testLlamaCppConnection, testDiscordAlert, getCustomApiBase, setCustomApiBase, listModels, getBrainMemory, saveBrainMemory, consolidateBrainMemory } from "../services/api";
 
 export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, currentModel, onModelChanged }) {
     const [activeTab, setActiveTab] = useState("ollama");
@@ -29,6 +29,12 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
     const [showOpenaiKey, setShowOpenaiKey] = useState(false);
     const [openaiBaseUrl, setOpenaiBaseUrl] = useState("https://api.openai.com/v1");
     const [openaiModel, setOpenaiModel] = useState("gpt-4o");
+
+    // Google Gemini form states
+    const [geminiApiKey, setGeminiApiKey] = useState("");
+    const [showGeminiKey, setShowGeminiKey] = useState(false);
+    const [geminiBaseUrl, setGeminiBaseUrl] = useState("https://generativelanguage.googleapis.com/v1beta");
+    const [geminiModel, setGeminiModel] = useState("gemini-2.0-flash");
 
     // llama.cpp form states
     const [llamacppUrl, setLlamacppUrl] = useState("http://localhost:8080");
@@ -59,6 +65,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
     const [anthropicStatus, setAnthropicStatus] = useState(null);
     const [openaiTesting, setOpenaiTesting] = useState(false);
     const [openaiStatus, setOpenaiStatus] = useState(null);
+    const [geminiTesting, setGeminiTesting] = useState(false);
+    const [geminiStatus, setGeminiStatus] = useState(null);
     const [llamacppTesting, setLlamacppTesting] = useState(false);
     const [llamacppStatus, setLlamacppStatus] = useState(null);
     const [discordTesting, setDiscordTesting] = useState(false);
@@ -93,6 +101,9 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
             if (s.openai_api_key) setOpenaiApiKey(s.openai_api_key);
             if (s.openai_base_url) setOpenaiBaseUrl(s.openai_base_url);
             if (s.openai_model) setOpenaiModel(s.openai_model);
+            if (s.gemini_api_key) setGeminiApiKey(s.gemini_api_key);
+            if (s.gemini_base_url) setGeminiBaseUrl(s.gemini_base_url);
+            if (s.gemini_model) setGeminiModel(s.gemini_model);
             if (s.llamacpp_base_url) setLlamacppUrl(s.llamacpp_base_url);
             if (s.llamacpp_model) setLlamacppModel(s.llamacpp_model);
             if (s.discord_webhook_url) setDiscordWebhook(s.discord_webhook_url);
@@ -141,6 +152,9 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
             const openaiKeyToSave = overrides.openaiApiKey ?? openaiApiKey;
             const openaiUrlToSave = overrides.openaiBaseUrl ?? openaiBaseUrl;
             const openaiModelToSave = overrides.openaiModel ?? openaiModel;
+            const geminiKeyToSave = overrides.geminiApiKey ?? geminiApiKey;
+            const geminiUrlToSave = overrides.geminiBaseUrl ?? geminiBaseUrl;
+            const geminiModelToSave = overrides.geminiModel ?? geminiModel;
             const llamacppUrlToSave = overrides.llamacppUrl ?? llamacppUrl;
             const llamacppModelToSave = overrides.llamacppModel ?? llamacppModel;
             const discordWebhookToSave = overrides.discordWebhook ?? discordWebhook;
@@ -164,6 +178,9 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                 openai_api_key: openaiKeyToSave,
                 openai_base_url: openaiUrlToSave,
                 openai_model: openaiModelToSave,
+                gemini_api_key: geminiKeyToSave,
+                gemini_base_url: geminiUrlToSave,
+                gemini_model: geminiModelToSave,
                 llamacpp_base_url: llamacppUrlToSave,
                 llamacpp_model: llamacppModelToSave,
                 discord_webhook_url: discordWebhookToSave,
@@ -190,6 +207,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                 activeModelToReport = anthropicModelToSave;
             } else if (providerToSave === "openai") {
                 activeModelToReport = openaiModelToSave;
+            } else if (providerToSave === "gemini") {
+                activeModelToReport = geminiModelToSave;
             } else if (providerToSave === "llamacpp") {
                 activeModelToReport = llamacppModelToSave;
             }
@@ -235,6 +254,11 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                         setOpenaiModel(models[0]);
                         performSave({ selectedProvider: newProvider, openaiModel: models[0] });
                     }
+                } else if (newProvider === "gemini") {
+                    if (!models.includes(geminiModel)) {
+                        setGeminiModel(models[0]);
+                        performSave({ selectedProvider: newProvider, geminiModel: models[0] });
+                    }
                 } else if (newProvider === "llamacpp") {
                     if (!models.includes(llamacppModel)) {
                         setLlamacppModel(models[0]);
@@ -260,6 +284,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
             if (selectedProvider === "deepseek") modelForConsolidate = deepseekModel;
             else if (selectedProvider === "anthropic" || selectedProvider === "claude") modelForConsolidate = anthropicModel;
             else if (selectedProvider === "openai") modelForConsolidate = openaiModel;
+            else if (selectedProvider === "gemini") modelForConsolidate = geminiModel;
             else if (selectedProvider === "llamacpp") modelForConsolidate = llamacppModel;
 
             const res = await consolidateBrainMemory(null, modelForConsolidate);
@@ -400,6 +425,32 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
             });
         } finally {
             setOpenaiTesting(false);
+        }
+    };
+
+    const handleTestGemini = async () => {
+        setGeminiTesting(true);
+        setGeminiStatus(null);
+        try {
+            const res = await testGeminiConnection({ apiKey: geminiApiKey, baseUrl: geminiBaseUrl });
+            setGeminiStatus({
+                ok: true,
+                message: res.message || `Connected to Google Gemini! Key verified.`,
+            });
+            if (res.models && res.models.length > 0 && selectedProvider === "gemini") {
+                setAvailableModels(res.models);
+                if (!res.models.includes(geminiModel)) {
+                    setGeminiModel(res.models[0]);
+                    performSave({ geminiModel: res.models[0] });
+                }
+            }
+        } catch (err) {
+            setGeminiStatus({
+                ok: false,
+                message: err.message || "Gemini connection failed",
+            });
+        } finally {
+            setGeminiTesting(false);
         }
     };
 
@@ -639,6 +690,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                                     ? "#D97706"
                                                     : selectedProvider === "openai"
                                                     ? "#10A37F"
+                                                    : selectedProvider === "gemini"
+                                                    ? "#1A73E8"
                                                     : selectedProvider === "llamacpp"
                                                     ? "#9333EA"
                                                     : "#16A34A",
@@ -655,6 +708,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                             ? "Anthropic Claude (Cloud)"
                                             : selectedProvider === "openai"
                                             ? "OpenAI API (Cloud)"
+                                            : selectedProvider === "gemini"
+                                            ? "Google Gemini API (Cloud)"
                                             : selectedProvider === "llamacpp"
                                             ? "llama.cpp Server (Local)"
                                             : "Ollama (Local)"}
@@ -681,8 +736,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                     <option value="deepseek">DeepSeek API (Cloud)</option>
                                     <option value="anthropic">Anthropic Claude API (Cloud)</option>
                                     <option value="openai">OpenAI API (Cloud)</option>
+                                    <option value="gemini">Google Gemini API (Cloud)</option>
                                     <option value="llamacpp">llama.cpp HTTP Server (Local / Remote)</option>
-                                    <option value="gemini" disabled>Google Gemini API (Coming Soon)</option>
                                 </select>
                             </div>
 
@@ -1366,6 +1421,192 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                 </div>
                             </div>
 
+                            {/* Section: Google Gemini API Configuration */}
+                            <div
+                                style={{
+                                    border: "1px solid var(--border-subtle)",
+                                    borderRadius: "var(--radius-md)",
+                                    padding: "1rem",
+                                    backgroundColor: selectedProvider === "gemini" ? "var(--bg-card)" : "transparent",
+                                    opacity: selectedProvider === "gemini" ? 1 : 0.75,
+                                    transition: "opacity 0.15s ease",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        marginBottom: "0.75rem",
+                                    }}
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                            Google Gemini API Configuration
+                                        </span>
+                                    </div>
+                                    <span
+                                        style={{
+                                            fontSize: "0.7rem",
+                                            fontWeight: 500,
+                                            padding: "0.15rem 0.5rem",
+                                            borderRadius: "var(--radius-sm)",
+                                            backgroundColor: "var(--bg-secondary)",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    >
+                                        Cloud
+                                    </span>
+                                </div>
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                                    {/* Gemini API Key */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            Google Gemini API Key
+                                        </label>
+                                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                                            <div style={{ position: "relative", flex: 1 }}>
+                                                <input
+                                                    type={showGeminiKey ? "text" : "password"}
+                                                    value={geminiApiKey}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        setGeminiApiKey(val);
+                                                        triggerAutoSave({ geminiApiKey: val });
+                                                    }}
+                                                    placeholder="AIzaSy..."
+                                                    style={{
+                                                        width: "100%",
+                                                        padding: "0.6rem 2.4rem 0.6rem 0.75rem",
+                                                        borderRadius: "var(--radius-sm)",
+                                                        border: "1px solid var(--border-strong)",
+                                                        backgroundColor: "var(--bg-card)",
+                                                        color: "var(--text-primary)",
+                                                        fontSize: "0.88rem",
+                                                        outline: "none",
+                                                        fontFamily: showGeminiKey ? "monospace" : "inherit",
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowGeminiKey((prev) => !prev)}
+                                                    title={showGeminiKey ? "Hide API Key" : "Show API Key"}
+                                                    style={{
+                                                        position: "absolute",
+                                                        right: "0.6rem",
+                                                        top: "50%",
+                                                        transform: "translateY(-50%)",
+                                                        background: "none",
+                                                        border: "none",
+                                                        color: "var(--text-muted)",
+                                                        cursor: "pointer",
+                                                        padding: "0.2rem",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                    }}
+                                                >
+                                                    {showGeminiKey ? <EyeOff size={15} /> : <Eye size={15} />}
+                                                </button>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleTestGemini}
+                                                disabled={geminiTesting || !geminiApiKey.trim()}
+                                                style={{
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "0.4rem",
+                                                    padding: "0.6rem 0.9rem",
+                                                    backgroundColor: "var(--bg-card)",
+                                                    border: "1px solid var(--border-strong)",
+                                                    borderRadius: "var(--radius-sm)",
+                                                    fontSize: "0.82rem",
+                                                    fontWeight: 500,
+                                                    color: "var(--text-primary)",
+                                                    cursor: !geminiApiKey.trim() ? "not-allowed" : "pointer",
+                                                    opacity: !geminiApiKey.trim() ? 0.6 : 1,
+                                                }}
+                                            >
+                                                <RefreshCw size={14} className={geminiTesting ? "typing-dot" : ""} />
+                                                <span>{geminiTesting ? "Verifying..." : "Verify Key"}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Gemini Custom Endpoint */}
+                                    <div>
+                                        <label
+                                            style={{
+                                                display: "block",
+                                                fontSize: "0.8rem",
+                                                fontWeight: 500,
+                                                color: "var(--text-secondary)",
+                                                marginBottom: "0.35rem",
+                                            }}
+                                        >
+                                            Custom Gemini Endpoint URL (Optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={geminiBaseUrl}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setGeminiBaseUrl(val);
+                                                triggerAutoSave({ geminiBaseUrl: val });
+                                            }}
+                                            placeholder="https://generativelanguage.googleapis.com/v1beta"
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-card)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        />
+                                        <div
+                                            style={{
+                                                fontSize: "0.75rem",
+                                                color: "var(--text-muted)",
+                                                marginTop: "0.35rem",
+                                            }}
+                                        >
+                                            Default: <code>https://generativelanguage.googleapis.com/v1beta</code>. Generative Language API endpoint.
+                                        </div>
+                                    </div>
+
+                                    {geminiStatus && (
+                                        <div
+                                            style={{
+                                                marginTop: "0.25rem",
+                                                padding: "0.5rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                backgroundColor: geminiStatus.ok ? "rgba(74, 222, 128, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                                                color: geminiStatus.ok ? "#15803D" : "#DC2626",
+                                                fontSize: "0.8rem",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "0.4rem",
+                                            }}
+                                        >
+                                            {geminiStatus.ok ? <Check size={14} /> : <AlertCircle size={14} />}
+                                            <span>{geminiStatus.message}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
                             {/* Section: llama.cpp Server Configuration */}
                             <div
                                 style={{
@@ -1517,6 +1758,8 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                             ? "Anthropic Claude"
                                             : selectedProvider === "openai"
                                             ? "OpenAI"
+                                            : selectedProvider === "gemini"
+                                            ? "Google Gemini"
                                             : selectedProvider === "llamacpp"
                                             ? "llama.cpp"
                                             : "Ollama"
@@ -1608,6 +1851,37 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                             <option value="o3-mini">o3-mini (High-speed STEM Reasoning)</option>
                                             <option value="gpt-4-turbo">gpt-4-turbo (High Capacity)</option>
                                             {availableModels.filter((m) => !["gpt-4o", "gpt-4o-mini", "o1", "o3-mini", "gpt-4-turbo"].includes(m)).map((m) => (
+                                                <option key={m} value={m}>
+                                                    {m}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ) : selectedProvider === "gemini" ? (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                                        <select
+                                            value={geminiModel}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setGeminiModel(val);
+                                                performSave({ geminiModel: val });
+                                            }}
+                                            style={{
+                                                width: "100%",
+                                                padding: "0.6rem 0.75rem",
+                                                borderRadius: "var(--radius-sm)",
+                                                border: "1px solid var(--border-strong)",
+                                                backgroundColor: "var(--bg-secondary)",
+                                                color: "var(--text-primary)",
+                                                fontSize: "0.88rem",
+                                                outline: "none",
+                                            }}
+                                        >
+                                            <option value="gemini-2.0-flash">gemini-2.0-flash (Next-gen Fast & Multimodal - Recommended)</option>
+                                            <option value="gemini-2.5-flash">gemini-2.5-flash (Experimental High Efficiency)</option>
+                                            <option value="gemini-1.5-pro">gemini-1.5-pro (Complex Reasoning & Large Context)</option>
+                                            <option value="gemini-1.5-flash">gemini-1.5-flash (Fast & Lightweight)</option>
+                                            {availableModels.filter((m) => !["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-pro", "gemini-1.5-flash"].includes(m)).map((m) => (
                                                 <option key={m} value={m}>
                                                     {m}
                                                 </option>
@@ -1738,7 +2012,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsUpdated, curr
                                         More LLM sources coming soon!
                                     </span>
                                     <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
-                                        Todo: Gemini, Mistral, Alibaba Cloud (Qwen), Openrouter, Amazon Bedrock, Cloudflare etc
+                                        Todo: Mistral, Alibaba Cloud (Qwen), Openrouter, Amazon Bedrock, Cloudflare etc
                                     </div>
                                 </div>
                             </div>

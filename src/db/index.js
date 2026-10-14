@@ -124,6 +124,9 @@ seedStmt.run("anthropic_model", process.env.ANTHROPIC_MODEL || "claude-3-5-sonne
 seedStmt.run("openai_api_key", process.env.OPENAI_API_KEY || "");
 seedStmt.run("openai_base_url", process.env.OPENAI_BASE_URL || "https://api.openai.com/v1");
 seedStmt.run("openai_model", process.env.OPENAI_MODEL || "gpt-4o");
+seedStmt.run("gemini_api_key", process.env.GEMINI_API_KEY || "");
+seedStmt.run("gemini_base_url", process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com/v1beta");
+seedStmt.run("gemini_model", process.env.GEMINI_MODEL || "gemini-2.0-flash");
 seedStmt.run("llamacpp_base_url", process.env.LLAMACPP_BASE_URL || "http://localhost:8080");
 seedStmt.run("llamacpp_model", process.env.LLAMACPP_MODEL || "default");
 seedStmt.run("discord_webhook_url", process.env.DISCORD_WEBHOOK_URL || "");
